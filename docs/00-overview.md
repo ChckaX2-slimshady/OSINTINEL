@@ -1,11 +1,13 @@
 # 00 — Overview, Foundational Separation & Epistemic Integrity
 
-## 1. What OSINETENAL Is
+## 1. What OSINTENAL Is
 
-OSINETENAL (Open Source Intelligence Sentinel) is an **Autonomous Evidence Intelligence
-Operating System**: a layer that orchestrates specialist agents and tool adapters to
-*query, aggregate, investigate, synthesize, and continuously refine* insights from niche,
-publicly available data.
+**OSINTENAL** — Open Source Intelligence Sentinel :: *Autonomous Aggregation :: Insight via
+Intelligence :: Evolution via Recursive Improvement*. A layer that orchestrates specialist
+agents and tool adapters to *query, aggregate, investigate, synthesize, and continuously
+refine* insights from niche, publicly available data — through investigation, adaptive
+planning, provenance tracking, structured skepticism, epistemic scrutinizing, and **recursive
+evaluation**.
 
 It is deliberately **more** than any of its parts:
 
@@ -23,77 +25,94 @@ It is deliberately **more** than any of its parts:
 > structuring, and recursive critical analysis.
 
 Every architectural decision in this corpus is justified against this directive and against
-the success criterion: **evidence integrity, preserved uncertainty, self-challenge, and
-auditable insight** — not raw answer generation.
+the success criterion: **logical coherence integrity, preserved uncertainty, self-challenge,
+and auditable insight** — not raw answer generation.
 
 ## 3. Foundational Separation Principle
 
 These five categories **must never be merged**. They form a strict, directional epistemic
 ladder. Each rung is a *different kind of object* with its own schema, storage, and
-confidence semantics.
+confidence semantics. **Crucially, Speculation and Extrapolation are the two *types of
+explanation*** — not bands of a hypothesis — and both feed *upward into* hypotheses.
 
 ```
-                 (raises/lowers confidence of)
-   AGGREGATION ──▶ CONNECTION ──▶ HYPOTHESIS ──▶ INSIGHT
-                                     ▲   ▲
-                                     │   │
-                          SPECULATION┘   └EXTRAPOLATION
-                       (low-confidence)   (high-confidence)
+                          (the two types of explanation)
+                          ┌───────────────────────────────┐
+                          │  SPECULATION    EXTRAPOLATION  │
+                          │ (low-confidence) (high-conf.)  │
+                          └───────────────┬───────────────┘
+                       both synthesize into │
+   AGGREGATION ──▶ CONNECTION ──▶ EXPLANATION ──▶ HYPOTHESIS ──▶ INSIGHT
+   (information)   (verifiable    (a possible      (competing      (backed
+                    links)         account)         hypotheses)     conclusion)
 ```
 
 The chain of reasoning the system is built to honor:
 
 1. **Aggregation of data is simply information.** Raw, expertly gathered observations.
-2. **Information makes connections**, and verifiable connections logically sequenced are
-   *possible explanations*.
+2. **Information is used to make connections** — verifiable connections logically sequenced
+   are *possible explanations*.
 3. **Explanations strengthen or weaken hypotheses.**
-4. **Assumption is low-confidence probability.** **Extrapolation is high-confidence
-   probability.**
-5. **High-confidence probabilities can be synthesized into hypotheses.**
+4. **There are two types of explanation:** **Speculation = Low-Confidence Probability** and
+   **Extrapolation = High-Confidence Probability.**
+5. **Both types of confidence probability can be synthesized into hypotheses.**
 6. **Competing hypotheses lead to insight.**
 
-No component may bypass these distinctions. In implementation terms this is enforced by:
+So the ladder is `INFORMATION → CONNECTION → EXPLANATION{SPECULATION | EXTRAPOLATION} →
+HYPOTHESIS → INSIGHT`. No component may bypass these distinctions. In implementation terms
+this is enforced by:
 
-- **Type separation** — distinct schemas (`Observation`, `Connection`, `Hypothesis`,
-  `Speculation`, `Insight`) that cannot be silently coerced into one another (see
-  [03-data-schemas.md](03-data-schemas.md)).
+- **Type separation** — distinct schemas (`Observation`, `Connection`, `Explanation`,
+  `Hypothesis`, `Insight`) that cannot be silently coerced into one another. An
+  `Explanation`'s class is always `SPECULATION` or `EXTRAPOLATION`; a `Hypothesis`'s class is
+  always `HYPOTHESIS` or `INSIGHT` (see [03-data-schemas.md](03-data-schemas.md)).
 - **Transition rules** — an object may only be promoted up the ladder through an explicit,
-  logged operation that records the supporting evidence and the agent responsible.
+  logged operation that records the supporting evidence and the agent responsible. Synthesis
+  of explanations *into* a hypothesis is one such logged transition.
 - **Graph-level constraints** — edge types encode the relationship (`supports`,
-  `contradicts`, `derived_from`) so that an `INSIGHT` node is *never* directly attached to a
-  raw source without the intervening hypothesis/connection chain (see
-  [04-knowledge-graph.md](04-knowledge-graph.md)).
+  `contradicts`, `derived_from`, `synthesized_from`) so that an `INSIGHT` node is *never*
+  directly attached to a raw source without the intervening
+  hypothesis → explanation → connection chain (see [04-knowledge-graph.md](04-knowledge-graph.md)).
 
 ## 4. Epistemic Integrity Layer
 
-Every output produced by OSINETENAL — internal or user-facing — carries an explicit
+Every output produced by OSINTENAL — internal or user-facing — carries an explicit
 **epistemic class**:
 
-| Class | Definition | Confidence semantics | Produced by |
-|-------|------------|----------------------|-------------|
-| `INFORMATION` | Expertly aggregated data → nuanced information | Per-observation source confidence | Aggregation Agent |
-| `CONNECTION` | Information that is *verifiably* connected; builds confidence scores for competing explanations | Connection strength + verification status | Connections Agent |
-| `HYPOTHESIS` | Competing explanations synthesized into a more complex hypothesis | Aggregate probability over supporting/contradicting evidence | Synthesis Agent (proposed by Connections) |
-| `SPECULATION` | A hypothesis with a **low** probability confidence score | Separate, explicitly-bounded confidence model | Speculative Possibility Engine |
-| `EXTRAPOLATION` | A hypothesis with a **high** probability confidence score | High-confidence probability | Synthesis + Confidence Agents |
-| `INSIGHT` | A conclusion with full epistemic provenance backing it | Calibrated, explainable confidence | Synthesis Agent after Skeptic + Confidence review |
+| Class | Tier | Definition | Produced by |
+|-------|------|------------|-------------|
+| `INFORMATION` | information | Expertly aggregated data → nuanced information | Aggregation Agent |
+| `CONNECTION` | connection | Information that is *verifiably* connected; builds confidence scores for competing explanations | Connections Agent |
+| `SPECULATION` | **explanation** | An explanation with a **low**-probability confidence score | Connections / Speculative Possibility Engine |
+| `EXTRAPOLATION` | **explanation** | An explanation with a **high**-probability confidence score | Connections + Confidence Agents |
+| `HYPOTHESIS` | hypothesis | Competing explanations synthesized into a more complex hypothesis | Synthesis Agent |
+| `INSIGHT` | insight | A backed conclusion emerging from competing hypotheses; has full epistemic provenance | Synthesis Agent after Skeptic + Confidence review |
+
+`SPECULATION` and `EXTRAPOLATION` sit at the **explanation tier** (between connection and
+hypothesis); they are the two confidence-types of an explanation and *both* synthesize into
+hypotheses. This reconciles the two readings: a speculation/extrapolation is an
+explanation-level account whose confidence is low/high respectively.
 
 **Rules of the layer:**
 
 - Nothing is emitted without a class. The class is a first-class field on every message and
   every graph node (`epistemic_class`).
-- **Speculation is quarantined.** It uses a separate confidence model, is always labeled, and
-  is never allowed to flow into an `INSIGHT` without being re-derived as a hypothesis with
-  supporting evidence. Speculation exists to *expand the investigative possibility space*,
-  not to establish truth.
-- Promotion across classes is an audited event (who, when, on what evidence). Demotion is
-  equally audited.
-- Every `INSIGHT` must resolve to a reasoning chain that terminates in `INFORMATION` nodes,
-  each of which has provenance. This is the **auditability guarantee**.
+- **Tiers are never merged.** An explanation is always `SPECULATION`/`EXTRAPOLATION`; a
+  hypothesis is always `HYPOTHESIS`/`INSIGHT`. The runtime rejects a hypothesis labeled as an
+  explanation type, and vice-versa (enforced invariant, see [09-testing-methodology.md](09-testing-methodology.md)).
+- **The Speculative Possibility Engine is kept separate from conclusions.** It uses a separate
+  confidence model, is always labeled, and its items never flow into an `INSIGHT` without
+  being re-derived as an evidence-backed explanation/hypothesis. Speculation exists to
+  *expand the investigative possibility space*, not to establish truth.
+- Promotion across tiers (e.g. a leading hypothesis → `INSIGHT`) is an audited event (who,
+  when, on what evidence) and is gated by the Skeptic. Demotion is equally audited.
+- Every `INSIGHT` must resolve to a reasoning chain that traces down through its hypotheses
+  and explanations to `INFORMATION` nodes, each of which has provenance. This is the
+  **auditability guarantee**.
 
 ## 5. Knowledge-State Framework
 
-Alongside the evidence ladder, the system continuously maintains awareness of three
+Alongside the epistemic ladder, the system continuously maintains awareness of three
 knowledge domains for every active investigation:
 
 - **Knowns** — information supported by evidence.

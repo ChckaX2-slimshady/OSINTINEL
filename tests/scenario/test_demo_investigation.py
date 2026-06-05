@@ -7,9 +7,9 @@ termination conditions are honored.
 
 from __future__ import annotations
 
-from osinetenal.core.runtime import InvestigationController
-from osinetenal.core.schemas import EpistemicClass, InsightReport
-from osinetenal.scenarios import build_demo_investigation
+from osintenal.core.runtime import InvestigationController
+from osintenal.core.schemas import EpistemicClass, InsightReport
+from osintenal.scenarios import build_demo_investigation
 
 
 def test_run_emits_schema_valid_report(demo_result):
@@ -26,8 +26,18 @@ def test_converges_on_communications_structure(demo_result):
     leader = cps.ranked_hypotheses[0]
     assert leader.statement == "communications structure"
     assert leader.confidence >= 0.85
-    assert leader.epistemic_class is EpistemicClass.EXTRAPOLATION
+    # The hypothesis is promoted to INSIGHT (the backed conclusion); its backing explanation
+    # is the high-confidence type, EXTRAPOLATION (doc 00 §3).
+    assert leader.epistemic_class is EpistemicClass.INSIGHT
+    assert leader.explanation_type is EpistemicClass.EXTRAPOLATION
     assert demo_result.loop.termination.reason == "confidence_threshold"
+
+
+def test_losing_hypotheses_backed_by_speculation(demo_result):
+    cps = demo_result.report.connective_probability_scores[0]
+    for rh in cps.ranked_hypotheses[1:]:
+        assert rh.epistemic_class is EpistemicClass.HYPOTHESIS
+        assert rh.explanation_type is EpistemicClass.SPECULATION  # low-confidence explanation
 
 
 def test_competing_hypotheses_present_with_residual(demo_result):
@@ -43,21 +53,22 @@ def test_skeptic_gate_holds_promotion_until_independent_corroboration():
     investigation, registry = build_demo_investigation()
     controller = InvestigationController(registry)
 
-    from osinetenal.core.budget import BudgetGovernor
-    from osinetenal.core.state import InvestigationState
-    from osinetenal.ledger import Ledger
+    from osintenal.core.budget import BudgetGovernor
+    from osintenal.core.state import InvestigationState
+    from osintenal.ledger import Ledger
 
     ledger = Ledger()
     state = InvestigationState(investigation.investigation_id, ledger)
     governor = BudgetGovernor(investigation.config.budgets)
     engine = controller.engine
 
-    from osinetenal.agents import AgentContext
+    from osintenal.agents import AgentContext
 
     def step(i):
         ctx = AgentContext(investigation, state, i, governor, registry)
         engine.aggregation.run(ctx)
         engine.connections.run(ctx)
+        engine.synthesis.synthesize_hypotheses(ctx)  # explanations -> hypotheses
         reqs = engine.planning.run(ctx)
         plans = engine.selection.run(ctx, reqs)
         engine.acquisition.run(ctx, plans)
@@ -84,7 +95,7 @@ def test_skeptic_gate_holds_promotion_until_independent_corroboration():
     leader = max(state.active_hypotheses(hs_id), key=lambda h: h.confidence)
     assert len(state.independent_source_groups(leader.hypothesis_id)) >= 2
     assert not state.unresolved_blocking_findings(leader.hypothesis_id)
-    assert leader.epistemic_class is EpistemicClass.EXTRAPOLATION  # now promoted
+    assert leader.epistemic_class is EpistemicClass.INSIGHT  # promoted to backed conclusion
 
 
 def test_budget_termination():

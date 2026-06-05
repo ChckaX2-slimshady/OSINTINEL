@@ -1,4 +1,4 @@
-"""Evidence Acquisition Agent (doc 02 §5) — produces EvidenceObjects (INFORMATION).
+"""Information Acquisition Agent (doc 02 §5) — produces EvidenceObjects (INFORMATION).
 
 Executes ToolPlans against adapters, charges the budget, records the call, and normalizes
 results into schema-valid evidence with provenance. On adapter exhaustion it returns empty

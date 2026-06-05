@@ -34,9 +34,13 @@ class Hypothesis(BaseModel):
     hypothesis_id: str = Field(default_factory=new_id)
     set_id: str
     statement: str
+    # A hypothesis is HYPOTHESIS, or INSIGHT once it is the gate-cleared backed conclusion.
+    # It is never SPECULATION/EXTRAPOLATION — those classify the explanations it is built from.
     epistemic_class: EpistemicClass = EpistemicClass.HYPOTHESIS
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     status: Literal["active", "archived", "reactivated"] = "active"
+    # The competing explanations synthesized into this hypothesis (doc 00 §3).
+    derived_from_explanations: list[str] = Field(default_factory=list)
     supporting_evidence: list[str] = Field(default_factory=list)
     contradicting_evidence: list[str] = Field(default_factory=list)
     confidence_history: list[ConfidenceHistoryEntry] = Field(default_factory=list)
@@ -52,7 +56,8 @@ class HypothesisSet(BaseModel):
 
     set_id: str = Field(default_factory=new_id)
     question: str
-    hypotheses: list[str] = Field(default_factory=list)
+    explanations: list[str] = Field(default_factory=list)  # competing explanations (the tier below)
+    hypotheses: list[str] = Field(default_factory=list)     # synthesized from the explanations
     normalized: bool = True
     # Probability reserved for "none of the above" — a first-class UU indicator.
     residual_mass: float = Field(default=0.0, ge=0.0, le=1.0)

@@ -19,7 +19,9 @@ class RankedHypothesis(BaseModel):
     hypothesis_id: str
     statement: str
     confidence: float = Field(ge=0.0, le=1.0)
-    epistemic_class: EpistemicClass
+    epistemic_class: EpistemicClass  # HYPOTHESIS or INSIGHT
+    # The type of the backing explanation: SPECULATION (low-conf) or EXTRAPOLATION (high-conf).
+    explanation_type: EpistemicClass | None = None
 
 
 class ConnectiveProbabilityScore(BaseModel):

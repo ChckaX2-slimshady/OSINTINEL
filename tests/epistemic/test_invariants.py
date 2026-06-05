@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import pytest
 
-from osinetenal.core import invariants
-from osinetenal.core.invariants import InvariantViolation
-from osinetenal.core.schemas import EpistemicClass
+from osintenal.core import invariants
+from osintenal.core.invariants import InvariantViolation
+from osintenal.core.schemas import EpistemicClass
 
 
 def test_demo_state_and_report_satisfy_invariants(demo_result):
@@ -48,8 +48,22 @@ def test_competing_hypotheses_preserved(demo_result):
             assert hid in demo_result.state.hypotheses
 
 
+def test_foundational_separation_tiers_not_merged(demo_result):
+    # Foundational Separation (doc 00 §3): explanations are SPECULATION/EXTRAPOLATION;
+    # hypotheses are HYPOTHESIS/INSIGHT. The two tiers must never be merged.
+    from osintenal.core.schemas import EXPLANATION_CLASSES, HYPOTHESIS_CLASSES
+    state = demo_result.state
+    assert state.explanations  # the explanation tier exists
+    for ex in state.explanations.values():
+        assert ex.epistemic_class in EXPLANATION_CLASSES
+    for h in state.hypotheses.values():
+        assert h.epistemic_class in HYPOTHESIS_CLASSES
+        # every synthesized hypothesis traces back to a competing explanation
+        assert h.derived_from_explanations
+
+
 def test_auditability_chain_terminates_in_information(demo_result):
-    # Invariant 2: the leading EXTRAPOLATION cites supporting evidence (INFORMATION).
+    # Invariant 2: the leading INSIGHT cites supporting evidence (INFORMATION).
     state = demo_result.state
     for hs in state.hypothesis_sets.values():
         leader = max(state.active_hypotheses(hs.set_id), key=lambda h: h.confidence)
@@ -68,7 +82,7 @@ def test_skeptic_gate_violation_is_detected(demo_result):
     hs = next(iter(state.hypothesis_sets.values()))
     leader = max(state.active_hypotheses(hs.set_id), key=lambda h: h.confidence)
 
-    from osinetenal.core.schemas import AcquisitionMethod, AgentName, SkepticFinding, Provenance
+    from osintenal.core.schemas import AcquisitionMethod, AgentName, SkepticFinding, Provenance
 
     finding = SkepticFinding(
         target_ref=leader.hypothesis_id,
@@ -80,14 +94,14 @@ def test_skeptic_gate_violation_is_detected(demo_result):
                               investigation_id=state.investigation_id),
     )
     state.add_finding(finding, iteration=99)
-    leader.epistemic_class = EpistemicClass.EXTRAPOLATION  # illegal under blocking finding
+    leader.epistemic_class = EpistemicClass.INSIGHT  # illegal promotion under blocking finding
     with pytest.raises(InvariantViolation):
         invariants.check_skeptic_gate(state, leader.hypothesis_id)
 
 
 def test_set_minimum_preserved_on_archive(demo_result):
     # Invariant 6: cannot archive the last active member of a set.
-    from osinetenal.core.state import StatePreservationError
+    from osintenal.core.state import StatePreservationError
 
     state = demo_result.state
     hs = next(iter(state.hypothesis_sets.values()))

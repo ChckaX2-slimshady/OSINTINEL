@@ -2,7 +2,7 @@
 
 These schemas are the contract that the orchestration runtime, agents, graph, and adapters
 are all written against. They are presented as JSON Schema / typed-shape sketches intended to
-be realized as **Pydantic v2 models** in `osinetenal/core/schemas/`. Field names here are
+be realized as **Pydantic v2 models** in `osintenal/core/schemas/`. Field names here are
 normative.
 
 > Convention: all ids are UUIDv7 strings (time-sortable). All timestamps are RFC 3339 UTC.
@@ -13,6 +13,10 @@ normative.
 ```jsonc
 EpistemicClass = "INFORMATION" | "CONNECTION" | "HYPOTHESIS"
                | "SPECULATION" | "EXTRAPOLATION" | "INSIGHT"
+// Tiers (doc 00 §3), never merged:
+//   explanation tier  = { SPECULATION (low-conf), EXTRAPOLATION (high-conf) }
+//   hypothesis tier   = { HYPOTHESIS, INSIGHT }
+// explanation_type_for_confidence(c) -> EXTRAPOLATION if c >= 0.5 else SPECULATION
 
 KnowledgeState = "KNOWN" | "KNOWN_UNKNOWN" | "UNKNOWN_UNKNOWN_INDICATOR"
 
@@ -21,6 +25,7 @@ AcquisitionMethod = "api" | "scrape" | "file_upload" | "archive_fetch"
 
 AgentName = "aggregation" | "connections" | "evidence_planning" | "tool_selection"
           | "acquisition" | "synthesis" | "skeptic" | "confidence" | "epistemology"
+          | "speculation"
 ```
 
 ## 1. Provenance (attached to everything)
@@ -44,7 +49,7 @@ Provenance = {
 }
 ```
 
-Every conclusion must be traceable to originating evidence via `derived_from` chains that
+Every insight must be traceable to originating evidence via `derived_from` chains that
 terminate in `INFORMATION` objects with a non-derived `Provenance`.
 
 ## 2. Observation (Aggregation Agent output) — `INFORMATION`
@@ -104,20 +109,44 @@ Connection = {
 }
 ```
 
-## 5. Hypothesis (preserved, never deleted) — `HYPOTHESIS`/`SPECULATION`/`EXTRAPOLATION`
+## 4b. Explanation (the explanation tier) — `SPECULATION` | `EXTRAPOLATION`
 
-The central object of the system. A hypothesis lives in a **HypothesisSet** (competing
-explanations for one question). Its `epistemic_class` is derived from its confidence band but
-stored explicitly for auditing.
+A possible account built from verifiable connections (doc 00 §3). There are exactly **two
+types**, distinguished by confidence; both are synthesized *into* hypotheses by the Synthesis
+Agent. An `Explanation`'s `epistemic_class` is always `SPECULATION` (low-confidence) or
+`EXTRAPOLATION` (high-confidence) and is derived from its confidence — never `HYPOTHESIS`.
+
+```jsonc
+Explanation = {
+  "explanation_id": "uuid",
+  "set_id": "uuid",              // the competing-explanations group (question)
+  "statement": "string",         // e.g. "communications structure"
+  "epistemic_class": "SPECULATION|EXTRAPOLATION",   // == explanation_type_for_confidence(confidence)
+  "confidence": 0.0,
+  "hypothesis_id": "uuid | null",// the hypothesis it has been synthesized into (set by Synthesis)
+  "derived_from": ["uuid"],      // connection / observation ids
+  "status": "active|archived|reactivated",
+  "provenance": Provenance
+}
+```
+
+## 5. Hypothesis (preserved, never deleted) — `HYPOTHESIS` | `INSIGHT`
+
+The central object of the system, **synthesized from competing explanations**. A hypothesis
+lives in a **HypothesisSet** (competing explanations/hypotheses for one question). Its
+`epistemic_class` is `HYPOTHESIS`, or `INSIGHT` once it is the gate-cleared backed conclusion
+— it is **never** an explanation type (`SPECULATION`/`EXTRAPOLATION`); those classify the
+explanations it was built from.
 
 ```jsonc
 Hypothesis = {
   "hypothesis_id": "uuid",
   "set_id": "uuid",              // the competing-explanations group it belongs to
   "statement": "string",         // e.g. "summit marker"
-  "epistemic_class": "HYPOTHESIS|SPECULATION|EXTRAPOLATION|INSIGHT",
+  "epistemic_class": "HYPOTHESIS|INSIGHT",
   "confidence": 0.35,            // current calibrated probability within the set
   "status": "active|archived|reactivated",
+  "derived_from_explanations": ["explanation_id"],  // the explanations synthesized into this
   "supporting_evidence": ["evidence_id"],
   "contradicting_evidence": ["evidence_id"],
   "confidence_history": [        // append-only; NEVER overwritten
@@ -132,7 +161,8 @@ Hypothesis = {
 HypothesisSet = {
   "set_id": "uuid",
   "question": "string",          // the discriminandum, e.g. "What is the circled structure?"
-  "hypotheses": ["hypothesis_id"],
+  "explanations": ["explanation_id"],   // the competing explanations (tier below)
+  "hypotheses": ["hypothesis_id"],       // synthesized from those explanations
   "normalized": true,            // confidences across active hypotheses sum to <= 1
   "residual_mass": 0.0,          // probability reserved for "none of the above" (UU signal)
   "provenance": Provenance
@@ -147,7 +177,8 @@ Unknown-Unknown indicator.
 
 ## 6. SpeculationItem (Speculative Possibility Engine) — `SPECULATION`
 
-Quarantined, separate confidence model, never auto-promoted.
+Kept separate from conclusions; separate confidence model; never auto-promoted. Distinct from
+the in-flow `Explanation` of type `SPECULATION` (§4b): this is the dedicated engine's output.
 
 ```jsonc
 SpeculationItem = {
@@ -212,7 +243,7 @@ SkepticFinding = {
 }
 ```
 
-A `blocking` finding prevents promotion to `INSIGHT`/`EXTRAPOLATION` until resolved or
+A `blocking` finding prevents promotion of a hypothesis to `INSIGHT` until resolved or
 explicitly accepted-with-caveat (logged).
 
 ## 10. ConfidenceAssessment (Confidence Agent) — explainable, never a bare scalar
@@ -335,7 +366,9 @@ InsightReport = {
   "connective_probability_scores": [
     { "set_id": "uuid", "question": "string",
       "ranked_hypotheses": [ { "hypothesis_id": "uuid", "statement": "string",
-                               "confidence": 0.0, "epistemic_class": "..." } ],
+                               "confidence": 0.0,
+                               "epistemic_class": "HYPOTHESIS|INSIGHT",
+                               "explanation_type": "SPECULATION|EXTRAPOLATION|null" } ],
       "residual_mass": 0.0 }
   ],
   "hypotheses": ["hypothesis_id"],
@@ -356,13 +389,16 @@ InsightReport = {
 ## 16. Validation Invariants (enforced by the runtime, not by convention)
 
 1. Every persisted object has a valid `Provenance` with a real `ledger_event_id`.
-2. `epistemic_class` is present and consistent with the object type and confidence band.
-3. No `INSIGHT` exists whose `reasoning_chain` fails to terminate in `INFORMATION` nodes with
-   non-derived provenance (auditability check).
+2. `epistemic_class` is present and tier-consistent: an `Explanation` is `SPECULATION` or
+   `EXTRAPOLATION`; a `Hypothesis` is `HYPOTHESIS` or `INSIGHT`. The two tiers are never merged
+   (Foundational Separation, doc 00 §3).
+3. No `INSIGHT` exists whose `reasoning_chain` fails to trace (hypothesis → explanation →
+   evidence) down to `INFORMATION` nodes with non-derived provenance (auditability check).
 4. `Hypothesis.confidence_history` is append-only and monotonically ordered by iteration.
 5. `SpeculationItem` confidences never enter hypothesis-set normalization.
 6. A `HypothesisSet` is never reduced below one active member by deletion; archival only.
-7. Any object promoted across epistemic classes has a corresponding ledger promotion event.
+7. Any object promoted across epistemic tiers (e.g. hypothesis → `INSIGHT`) has a
+   corresponding ledger promotion event and has cleared the Skeptic gate.
 
 These invariants are tested as **epistemic invariants** in
 [09-testing-methodology.md](09-testing-methodology.md).

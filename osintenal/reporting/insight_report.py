@@ -26,7 +26,8 @@ def build_insight_report(
         active = sorted(state.active_hypotheses(hs.set_id),
                         key=lambda h: h.confidence, reverse=True)
         ranked = [RankedHypothesis(hypothesis_id=h.hypothesis_id, statement=h.statement,
-                                   confidence=h.confidence, epistemic_class=h.epistemic_class)
+                                   confidence=h.confidence, epistemic_class=h.epistemic_class,
+                                   explanation_type=_backing_explanation_type(state, h))
                   for h in active]
         scores.append(ConnectiveProbabilityScore(set_id=hs.set_id, question=hs.question,
                                                   ranked_hypotheses=ranked,
@@ -37,7 +38,9 @@ def build_insight_report(
     reasoning = _reasoning_chain(state, leaders)
 
     summary_bits = [
-        f"{leader.statement!r} ({leader.confidence:.0%}, {leader.epistemic_class.value})"
+        f"{leader.statement!r} ({leader.confidence:.0%}, {leader.epistemic_class.value}"
+        + (f"/{_backing_explanation_type(state, leader).value}"
+           if _backing_explanation_type(state, leader) else "") + ")"
         for _, leader in leaders
     ]
     exec_summary = (
@@ -94,10 +97,21 @@ def _reasoning_chain(state, leaders) -> list[ReasoningStep]:
         n += 1
     for hs in state.hypothesis_sets.values():
         steps.append(ReasoningStep(
-            step=n, claim=f"Framed competing explanations for {hs.question!r}.",
+            step=n, claim=f"Connected information into competing explanations for "
+                          f"{hs.question!r}.",
             epistemic_class=EpistemicClass.CONNECTION,
-            supports=hs.hypotheses, agent="connections"))
+            supports=hs.explanations, agent="connections"))
         n += 1
+        # the explanation tier (SPECULATION/EXTRAPOLATION) synthesized into hypotheses
+        for ex in state.active_explanations(hs.set_id):
+            steps.append(ReasoningStep(
+                step=n,
+                claim=f"Explanation {ex.statement!r} ({ex.epistemic_class.value.lower()}, "
+                      f"confidence {ex.confidence:.2f}) synthesized into a hypothesis.",
+                epistemic_class=ex.epistemic_class,
+                supports=([ex.hypothesis_id] if ex.hypothesis_id else []) + ex.derived_from,
+                agent="synthesis"))
+            n += 1
     for ev in state.evidence.values():
         steps.append(ReasoningStep(
             step=n, claim=f"Acquired evidence: {ev.summary}", epistemic_class=ev.epistemic_class,
@@ -113,6 +127,15 @@ def _reasoning_chain(state, leaders) -> list[ReasoningStep]:
             agent="synthesis"))
         n += 1
     return steps
+
+
+def _backing_explanation_type(state, hypothesis):
+    """The SPECULATION/EXTRAPOLATION type of the explanation(s) this hypothesis was built from."""
+    for ex_id in hypothesis.derived_from_explanations:
+        ex = state.explanations.get(ex_id)
+        if ex is not None:
+            return ex.epistemic_class
+    return None
 
 
 def _source_appendix(state) -> list[dict]:

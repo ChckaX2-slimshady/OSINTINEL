@@ -1,9 +1,9 @@
-"""OSINETENAL CLI (doc 06 Phase 1).
+"""OSINTENAL CLI (doc 06 Phase 1).
 
 Commands:
-  osinetenal run [--json] [--max-iterations N]   run the bundled demo investigation
-  osinetenal report                              run the demo and print the InsightReport
-  osinetenal verify                              run the demo and verify ledger integrity
+  osintenal run [--json] [--max-iterations N]   run the bundled demo investigation
+  osintenal report                              run the demo and print the InsightReport
+  osintenal verify                              run the demo and verify ledger integrity
 
 Phase 1 runs the deterministic bundled scenario so the full recursive loop is demonstrable
 offline. Custom investigations (file/image inputs) arrive with the adapter framework in
@@ -30,7 +30,7 @@ def _run_demo(max_iterations: int | None):
 
 def _print_human(result) -> None:
     r = result.report
-    print(f"\n=== OSINETENAL Insight Report ===")
+    print(f"\n=== OSINTENAL Insight Report ===")
     print(f"Investigation : {result.investigation.title}")
     print(f"Iterations    : {result.loop.iterations}  "
           f"(terminated: {result.loop.termination.reason})")
@@ -42,7 +42,9 @@ def _print_human(result) -> None:
     for cps in r.connective_probability_scores:
         print(f"  Q: {cps.question}")
         for rh in cps.ranked_hypotheses:
-            print(f"     [{rh.epistemic_class.value:13}] {rh.confidence:5.2f}  {rh.statement}")
+            backing = rh.explanation_type.value.lower() if rh.explanation_type else "-"
+            print(f"     [{rh.epistemic_class.value:10}] {rh.confidence:5.2f}  {rh.statement}"
+                  f"  (explanation: {backing})")
         print(f"     residual 'none of the above' mass: {cps.residual_mass:.2f}")
     print("\n-- Known Unknowns --")
     for ku in r.known_unknowns or []:
@@ -70,7 +72,7 @@ def _print_human(result) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="osinetenal", description="Open Source Intelligence Sentinel")
+    parser = argparse.ArgumentParser(prog="osintenal", description="Open Source Intelligence Sentinel")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_run = sub.add_parser("run", help="run the bundled demo investigation")

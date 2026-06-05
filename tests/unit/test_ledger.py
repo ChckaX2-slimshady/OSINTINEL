@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from osinetenal.ledger import Ledger
-from osinetenal.ledger.ledger import LedgerIntegrityError
+from osintenal.ledger import Ledger
+from osintenal.ledger.ledger import LedgerIntegrityError
 
 
 def test_chain_verifies():

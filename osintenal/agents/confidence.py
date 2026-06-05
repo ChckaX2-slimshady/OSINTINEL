@@ -2,9 +2,15 @@
 
 Confidence is computed in code from six factors and an evidence-weight score, then turned
 into a set-normalized probability. The numbers are reproducible; an LLM (when present) would
-only author the prose explanation. Crucially, this agent honors the Skeptic gate: a
-hypothesis under an unresolved BLOCKING finding is never promoted past HYPOTHESIS, regardless
-of its confidence (doc 03 §16.5).
+only author the prose explanation.
+
+Two epistemic effects per update:
+* It re-types each hypothesis' backing **explanation** as SPECULATION (low confidence) or
+  EXTRAPOLATION (high confidence) — the two explanation types (doc 00 §3).
+* It honors the **Skeptic gate**: a hypothesis is promoted to INSIGHT (the backed conclusion)
+  only when it reaches the confidence threshold AND has no unresolved blocking finding AND
+  has independent corroboration. Otherwise it stays HYPOTHESIS, regardless of confidence
+  (doc 03 §16.5).
 """
 
 from __future__ import annotations
@@ -15,7 +21,6 @@ from ..core.schemas import (
     ConfidenceAssessment,
     ConfidenceFactors,
     EpistemicClass,
-    class_for_confidence,
 )
 from .base import AgentContext
 from .scoring import normalize_with_residual, softmax
@@ -58,7 +63,10 @@ class ConfidenceAgent:
                     f"{len(h.contradicting_evidence)} contradicting evidence (raw score {raw:+.2f})",
                     self.name, ctx.iteration,
                 )
-                h.epistemic_class = self._gated_class(ctx, h.hypothesis_id, conf)
+                h.epistemic_class = self._gated_class(ctx, h, conf)
+                # Re-type the backing explanation(s) by confidence (SPECULATION/EXTRAPOLATION).
+                for ex_id in h.derived_from_explanations:
+                    ctx.state.reclassify_explanation(ex_id, conf, ctx.iteration)
 
                 f = factors_by_h[h.hypothesis_id]
                 assessments.append(
@@ -75,17 +83,22 @@ class ConfidenceAgent:
                 )
         return assessments
 
-    def _gated_class(self, ctx, hypothesis_id, conf) -> EpistemicClass:
-        derived = class_for_confidence(conf)
-        if derived in (EpistemicClass.EXTRAPOLATION, EpistemicClass.INSIGHT):
-            # The Skeptic gate, enforced on any confidence trajectory: promotion requires
-            # both no unresolved blocking finding AND independent corroboration. This closes
-            # the hole where confidence jumps past the floor before the Skeptic has flagged it.
-            blocked = ctx.state.unresolved_blocking_findings(hypothesis_id)
-            independent = len(ctx.state.independent_source_groups(hypothesis_id))
-            if blocked or independent < MIN_INDEPENDENT_SOURCES:
-                return EpistemicClass.HYPOTHESIS  # gate holds promotion
-        return derived
+    def _gated_class(self, ctx, h, conf) -> EpistemicClass:
+        """A hypothesis is HYPOTHESIS, or INSIGHT once it is the gate-cleared conclusion.
+
+        Insight emerges from competing hypotheses: the leader is promoted to INSIGHT only when
+        it reaches the confidence threshold AND clears the Skeptic gate — no unresolved
+        blocking finding AND independent corroboration. The gate is enforced on any confidence
+        trajectory, closing the hole where confidence jumps past the threshold before the
+        Skeptic has flagged a single-source leader.
+        """
+        threshold = ctx.investigation.config.confidence_threshold
+        if conf >= threshold:
+            blocked = ctx.state.unresolved_blocking_findings(h.hypothesis_id)
+            independent = len(ctx.state.independent_source_groups(h.hypothesis_id))
+            if not blocked and independent >= MIN_INDEPENDENT_SOURCES:
+                return EpistemicClass.INSIGHT  # gate cleared: backed conclusion
+        return EpistemicClass.HYPOTHESIS  # gate holds promotion
 
     def _factors(self, ctx, h, evidence) -> ConfidenceFactors:
         support = [e for e in evidence if h.hypothesis_id in e.supports]

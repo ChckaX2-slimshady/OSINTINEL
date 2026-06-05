@@ -1,6 +1,6 @@
 # 04 — Knowledge Graph Schema
 
-OSINETENAL uses **graph-native storage**. The graph is the shared state of the quorum; it is
+OSINTENAL uses **graph-native storage**. The graph is the shared state of the quorum; it is
 a *materialized view* over the append-only Provenance Ledger (doc 03 §13), which guarantees
 replay and tamper-evidence. **Nothing enters the graph without a source.**
 
@@ -21,6 +21,8 @@ Every node carries a common envelope: `node_id` (UUIDv7), `node_type`, `epistemi
 `provenance` (doc 03 §1), `created_event_id`, `attributes` (type-specific), and
 `confidence` where applicable.
 
+Node types (**but not limited to** — the schema is extensible):
+
 | Node type | Represents | Key attributes |
 |-----------|------------|----------------|
 | `Person` | A natural person | names, handles, attributes (all evidence-backed) |
@@ -33,9 +35,10 @@ Every node carries a common envelope: `node_id` (UUIDv7), `node_type`, `epistemi
 | `Event` | Something that happened | time span, place ref, participants |
 | `Observation` | Aggregation output (doc 03 §2) | type, content, modality |
 | `EvidenceObject` | Acquired evidence (doc 03 §3) | kind, summary, structured |
-| `Hypothesis` | A competing explanation (doc 03 §5) | statement, status, confidence_history |
-| `HypothesisSet` | Group of competing explanations | question, residual_mass |
-| `Speculation` | Quarantined possibility (doc 03 §6) | speculative_confidence, limitations |
+| `Explanation` | A competing explanation (doc 03 §4b) | statement, `SPECULATION`/`EXTRAPOLATION`, confidence |
+| `Hypothesis` | Synthesized from explanations (doc 03 §5) | statement, status, confidence_history |
+| `HypothesisSet` | Group of competing explanations/hypotheses | question, residual_mass |
+| `Speculation` | Possibility-engine item (doc 03 §6) | speculative_confidence, limitations |
 | `Investigation` | An investigation root | objective, config, status |
 | `Source` | A distinct origin of data | publisher, independence_group, reputation |
 
@@ -47,6 +50,8 @@ Every node carries a common envelope: `node_id` (UUIDv7), `node_type`, `epistemi
 Every edge carries: `edge_id`, `edge_type`, `from`, `to`, `provenance`, `weight`
 (signed strength where meaningful), `created_event_id`.
 
+Edge types (**but not limited to** — extensible):
+
 | Edge type | Semantics | Typical endpoints |
 |-----------|-----------|-------------------|
 | `owns` | ownership | Person/Org → Domain/Org/IP |
@@ -56,13 +61,15 @@ Every edge carries: `edge_id`, `edge_type`, `from`, `to`, `provenance`, `weight`
 | `observed_in` | datum seen in artifact | Observation → Image/Document/Event |
 | `supports` | evidence raises a hypothesis | EvidenceObject/Observation → Hypothesis (weight>0) |
 | `contradicts` | evidence lowers a hypothesis | EvidenceObject/Observation → Hypothesis (weight<0) |
+| `synthesized_from` | a hypothesis built from its explanations | Hypothesis → Explanation |
 | `derived_from` | provenance/derivation | any derived node → its upstream node(s) |
 
-**Epistemic-ladder enforcement (doc 00 §3):** an `INSIGHT`/`EXTRAPOLATION` node may only
-attach to evidence through the `Hypothesis → supports/contradicts → EvidenceObject →
-derived_from → Observation` chain. A direct `Insight → Source` edge that skips the hypothesis
-layer is rejected by a write-time constraint. This is how "no component may bypass the
-distinctions" becomes a database invariant.
+**Epistemic-ladder enforcement (doc 00 §3):** an `INSIGHT` node (a promoted hypothesis) may
+only attach to evidence through the `Hypothesis → synthesized_from → Explanation →
+supports/contradicts → EvidenceObject → derived_from → Observation` chain. A direct
+`Insight → Source` edge that skips the hypothesis/explanation layers is rejected by a
+write-time constraint. This is how "no component may bypass the distinctions" becomes a
+database invariant.
 
 ## 4. Provenance Binding
 

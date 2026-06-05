@@ -1,8 +1,13 @@
-"""Connections Agent (doc 02 §2) — produces CONNECTION and proposes competing HYPOTHESES.
+"""Connections Agent (doc 02 §2) — produces CONNECTIONs and competing EXPLANATIONS.
 
-Hard requirements from the spec: preserve multiple hypotheses, resist premature
-convergence, maintain alternatives. This agent therefore always seeds a set with >= 2
-competing explanations and reserves residual mass for "none of the above".
+Information is used to make connections; verifiable connections logically sequenced are
+possible *explanations*. This agent frames a question and emits >= 2 competing explanations
+for it, reserving residual mass for "none of the above" (resist premature convergence).
+
+Per the Foundational Separation Principle each explanation is one of the two explanation
+types — SPECULATION (low confidence) or EXTRAPOLATION (high confidence) — derived from its
+confidence. The Synthesis Agent later synthesizes these competing explanations *into*
+hypotheses; this agent never creates hypotheses directly.
 """
 
 from __future__ import annotations
@@ -10,8 +15,7 @@ from __future__ import annotations
 from ..core.schemas import (
     AcquisitionMethod,
     AgentName,
-    EpistemicClass,
-    Hypothesis,
+    Explanation,
     HypothesisSet,
 )
 from .base import AgentContext
@@ -23,7 +27,7 @@ class ConnectionsAgent:
     name = AgentName.CONNECTIONS
 
     def run(self, ctx: AgentContext) -> list[HypothesisSet]:
-        # Phase 1: seed competing-hypothesis sets from the investigation's questions once.
+        # Phase 1: frame each question once and seed its competing explanations.
         if ctx.state.hypothesis_sets:
             return list(ctx.state.hypothesis_sets.values())
 
@@ -44,19 +48,15 @@ class ConnectionsAgent:
             usable = max(1.0 - INITIAL_RESIDUAL_MASS, 0.0)
             prior = usable / len(candidates)
             for statement in candidates:
-                hp = ctx.provenance(self.name, method=AcquisitionMethod.DERIVED, confidence=0.5)
-                h = Hypothesis(
+                ep = ctx.provenance(self.name, method=AcquisitionMethod.DERIVED, confidence=0.5)
+                explanation = Explanation(
                     set_id=hs.set_id,
                     statement=statement,
                     confidence=prior,
-                    epistemic_class=EpistemicClass.HYPOTHESIS,
-                    origin="connections",
-                    provenance=hp,
+                    derived_from=list(ctx.state.observations.keys()),
+                    provenance=ep,
                 )
-                ctx.state.add_hypothesis(h, ctx.iteration)
-                ctx.state.update_confidence(
-                    h.hypothesis_id, prior, "initial uniform prior over competing explanations",
-                    self.name, ctx.iteration,
-                )
+                explanation.classify()  # low prior => SPECULATION initially
+                ctx.state.add_explanation(explanation, ctx.iteration)
             created.append(hs)
         return created

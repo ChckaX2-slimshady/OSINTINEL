@@ -22,4 +22,4 @@ jobs:
       - name: Run test suite
         run: pytest -q
       - name: Smoke-run the demo investigation
-        run: osinetenal verify
+        run: osintenal verify

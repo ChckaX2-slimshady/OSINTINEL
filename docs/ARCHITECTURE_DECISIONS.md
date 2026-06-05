@@ -1,6 +1,6 @@
 # Architecture Decisions (Condensed)
 
-A decision-oriented digest of the OSINETENAL architecture. Each entry: **decision →
+A decision-oriented digest of the OSINTENAL architecture. Each entry: **decision →
 rationale → consequence**. Full detail in the numbered docs.
 
 ## AD-1 · Deterministic runtime owns control flow; agents only emit typed evidence
@@ -13,10 +13,14 @@ persists their results as ledger events. (doc 01 §3)
 **Consequence:** hash-chained events → tamper-evidence, exact replay, corruption recovery by
 rebuild. (doc 03 §13, doc 04)
 
-## AD-3 · Foundational Separation enforced by distinct schemas + graph write constraints
-**Why:** the five categories must never merge; convention is not enough. **Consequence:**
-ladder-skipping edges are rejected at write time; epistemic class is a required field
-everywhere. (doc 00 §3–4, doc 04 §3/§7)
+## AD-3 · Foundational Separation: Explanation is a distinct tier between Connection and Hypothesis
+**Why:** Speculation and Extrapolation are the *two types of explanation* (low/high
+confidence), and **both synthesize into hypotheses** — they are not bands of a hypothesis.
+The five categories must never merge; convention is not enough. **Consequence:** a distinct
+`Explanation` object (class always `SPECULATION`/`EXTRAPOLATION`); hypotheses are always
+`HYPOTHESIS`/`INSIGHT`; the ladder `INFORMATION → CONNECTION → EXPLANATION → HYPOTHESIS →
+INSIGHT` is enforced by a tier invariant + ladder-skipping edge rejection at write time.
+(doc 00 §3–4, doc 03 §4b/§5, doc 04 §3/§7)
 
 ## AD-4 · Hypotheses are preserved, never deleted; confidence_history is append-only
 **Why:** resist premature convergence; allow reactivation on new evidence. **Consequence:**
@@ -25,16 +29,18 @@ doc 04 §5)
 
 ## AD-5 · Skeptic is a hard gate, not advice
 **Why:** "no major conclusion bypasses Skeptic review." **Consequence:** a `blocking` finding
-mechanically prevents promotion to INSIGHT/EXTRAPOLATION until resolved. (doc 02 §7, doc 09 §3.5)
+(and a missing independent-corroboration requirement) mechanically prevents promotion of a
+hypothesis to INSIGHT until resolved. (doc 02 §7, doc 09 §3.5)
 
 ## AD-6 · Confidence is explainable and (mostly) deterministic
 **Why:** "confidence must be explainable." **Consequence:** factors are computed in code; the
 LLM only authors the explanation; model version recorded for calibration. (doc 02 §8, doc 03 §10)
 
-## AD-7 · Speculation is quarantined with a separate confidence model
-**Why:** speculation expands the possibility space, it does not establish truth.
-**Consequence:** speculative items never enter set normalization or flow into insights
-unre-derived. (doc 02 §10, doc 03 §6)
+## AD-7 · The Speculative Possibility Engine is kept separate from conclusions
+**Why:** speculation expands the possibility space, it does not establish truth. (Distinct
+from the in-flow `SPECULATION` explanation type, which *does* feed hypotheses.)
+**Consequence:** possibility-engine items use a separate confidence model, never enter set
+normalization, and never flow into insights un-re-derived. (doc 02 §10, doc 03 §6)
 
 ## AD-8 · Planner optimizes information-gain-per-cost (discriminate, don't accumulate)
 **Why:** fewer, sharper iterations → integrity *and* cost control. **Consequence:** the

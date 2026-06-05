@@ -5,13 +5,13 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from osinetenal.core.schemas import (
+from osintenal.core.schemas import (
     AcquisitionMethod,
     AgentName,
     EpistemicClass,
     Observation,
     Provenance,
-    class_for_confidence,
+    explanation_type_for_confidence,
 )
 
 
@@ -44,9 +44,12 @@ def test_extra_fields_forbidden():
 
 @pytest.mark.parametrize(
     "conf,expected",
+    # The two explanation types, split by confidence (doc 00 §3): high => EXTRAPOLATION,
+    # low => SPECULATION. This classifies *explanations*, never hypotheses.
     [(0.95, EpistemicClass.EXTRAPOLATION),
-     (0.50, EpistemicClass.HYPOTHESIS),
+     (0.50, EpistemicClass.EXTRAPOLATION),
+     (0.49, EpistemicClass.SPECULATION),
      (0.10, EpistemicClass.SPECULATION)],
 )
-def test_class_for_confidence(conf, expected):
-    assert class_for_confidence(conf) is expected
+def test_explanation_type_for_confidence(conf, expected):
+    assert explanation_type_for_confidence(conf) is expected

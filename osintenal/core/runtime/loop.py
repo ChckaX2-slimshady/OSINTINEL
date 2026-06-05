@@ -69,9 +69,11 @@ class RecursiveLoopEngine:
             investigation.current_iteration = iteration
             ctx = AgentContext(investigation, state, iteration, governor, self.registry)
 
-            # OBSERVE → HYPOTHESIZE
+            # OBSERVE → HYPOTHESIZE (connections frame competing EXPLANATIONS;
+            # synthesis then synthesizes those explanations INTO hypotheses — doc 00 §3)
             self.aggregation.run(ctx)
             self.connections.run(ctx)
+            self.synthesis.synthesize_hypotheses(ctx)
 
             # PLAN → INVESTIGATE
             requests = self.planning.run(ctx)

@@ -42,10 +42,13 @@ encode the Foundational Separation and the brief's non-negotiables. Each maps to
 4. **No premature collapse:** a `HypothesisSet` always retains ≥1 active member and, while
    uncertainty remains, residual_mass + alternatives persist; convergence requires the Skeptic
    gate to have run.
-5. **Skeptic gate:** no promotion to `INSIGHT`/`EXTRAPOLATION` while an unresolved `blocking`
-   finding targets it (inject a blocking finding → assert promotion refused).
-6. **Class separation:** speculation confidences never enter set normalization; ladder-skipping
-   edges are rejected.
+5. **Skeptic gate:** no promotion of a hypothesis to `INSIGHT` while an unresolved `blocking`
+   finding targets it, or without independent corroboration (inject a blocking finding →
+   assert promotion refused).
+6. **Foundational Separation (tier integrity):** an `Explanation` is `SPECULATION`/
+   `EXTRAPOLATION`; a `Hypothesis` is `HYPOTHESIS`/`INSIGHT`; the two tiers are never merged.
+   Speculation-engine confidences never enter set normalization; ladder-skipping edges are
+   rejected.
 7. **Explainable confidence:** every confidence value has a factor breakdown + method version;
    bare scalars are rejected.
 8. **History immutability:** ledger events and confidence history cannot be mutated; hash chain
@@ -100,5 +103,5 @@ and excluded from default CI (opt-in job). Calibration harness runs on a schedul
 ## 8. What "Passing" Means
 A green build proves the *machinery and the epistemic guarantees* hold. Investigative *quality*
 is tracked separately and continuously via the calibration harness, because — consistent with
-the Prime Directive — success is measured by integrity, preserved uncertainty, self-challenge,
-and auditability, not by producing a confident answer.
+the Prime Directive — success is measured by **logical coherence integrity**, preserved
+uncertainty, self-challenge, and auditability, not by producing a confident answer.

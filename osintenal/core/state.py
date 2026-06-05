@@ -19,6 +19,7 @@ from .schemas import (
     AgentName,
     ConfidenceHistoryEntry,
     EvidenceObject,
+    Explanation,
     Hypothesis,
     HypothesisSet,
     KnowledgeStateSnapshot,
@@ -39,6 +40,7 @@ class InvestigationState:
         self.observations: dict[str, Observation] = {}
         self.evidence: dict[str, EvidenceObject] = {}
         self.hypothesis_sets: dict[str, HypothesisSet] = {}
+        self.explanations: dict[str, Explanation] = {}
         self.hypotheses: dict[str, Hypothesis] = {}
         self.speculations: dict[str, SpeculationItem] = {}
         self.findings: dict[str, SkepticFinding] = {}
@@ -84,14 +86,42 @@ class InvestigationState:
         hs.provenance.ledger_event_id = eid
         self.hypothesis_sets[hs.set_id] = hs
 
+    def add_explanation(self, ex: Explanation, iteration: int) -> None:
+        """Persist a competing explanation (the SPECULATION/EXTRAPOLATION tier)."""
+        eid = self._record(iteration, "node_add", ex.provenance.agent_responsible.value,
+                            {"node_type": "Explanation", "id": ex.explanation_id,
+                             "set_id": ex.set_id, "type": ex.epistemic_class.value,
+                             "statement": ex.statement})
+        ex.provenance.ledger_event_id = eid
+        self.explanations[ex.explanation_id] = ex
+        if ex.explanation_id not in self.hypothesis_sets[ex.set_id].explanations:
+            self.hypothesis_sets[ex.set_id].explanations.append(ex.explanation_id)
+
     def add_hypothesis(self, h: Hypothesis, iteration: int) -> None:
         eid = self._record(iteration, "node_add", h.provenance.agent_responsible.value,
                             {"node_type": "Hypothesis", "id": h.hypothesis_id,
-                             "set_id": h.set_id, "statement": h.statement})
+                             "set_id": h.set_id, "statement": h.statement,
+                             "derived_from_explanations": h.derived_from_explanations})
         h.provenance.ledger_event_id = eid
         self.hypotheses[h.hypothesis_id] = h
         if h.hypothesis_id not in self.hypothesis_sets[h.set_id].hypotheses:
             self.hypothesis_sets[h.set_id].hypotheses.append(h.hypothesis_id)
+        # Link the synthesized hypothesis back to its explanation(s).
+        for ex_id in h.derived_from_explanations:
+            if ex_id in self.explanations:
+                self.explanations[ex_id].hypothesis_id = h.hypothesis_id
+
+    def reclassify_explanation(self, explanation_id: str, confidence: float,
+                               iteration: int) -> None:
+        """Mirror a hypothesis' confidence onto its backing explanation and re-type it."""
+        ex = self.explanations[explanation_id]
+        ex.confidence = confidence
+        before = ex.epistemic_class
+        after = ex.classify()
+        if before is not after:
+            self._record(iteration, "explanation_reclassify", AgentName.CONFIDENCE.value,
+                         {"explanation_id": explanation_id, "from": before.value,
+                          "to": after.value, "confidence": confidence})
 
     def update_confidence(
         self, hypothesis_id: str, confidence: float, reason: str,
@@ -160,6 +190,14 @@ class InvestigationState:
     def active_hypotheses(self, set_id: str) -> list[Hypothesis]:
         return [self.hypotheses[hid] for hid in self.hypothesis_sets[set_id].hypotheses
                 if self.hypotheses[hid].status != "archived"]
+
+    def active_explanations(self, set_id: str) -> list[Explanation]:
+        return [self.explanations[eid] for eid in self.hypothesis_sets[set_id].explanations
+                if self.explanations[eid].status != "archived"]
+
+    def unsynthesized_explanations(self, set_id: str) -> list[Explanation]:
+        """Explanations not yet synthesized into a hypothesis (Synthesis Agent input)."""
+        return [ex for ex in self.active_explanations(set_id) if ex.hypothesis_id is None]
 
     def evidence_for(self, hypothesis_id: str) -> list[EvidenceObject]:
         return [e for e in self.evidence.values()

@@ -53,25 +53,29 @@ Agent's job (Foundational Separation).
 
 ---
 
-## 2. Connections Agent — *produces `CONNECTION` + proposes `HYPOTHESIS`*
+## 2. Connections Agent — *produces `CONNECTION` + competing `EXPLANATION`s*
 
-**Mission:** generate **competing explanations** and verifiable connections. Information makes
-connections; verifiable connections logically sequenced are possible explanations.
+**Mission:** generate **competing explanations** and verifiable connections. Information is
+used to make connections; verifiable connections logically sequenced are possible
+*explanations*. Each explanation is one of the two types — `SPECULATION` (low-confidence) or
+`EXTRAPOLATION` (high-confidence) — derived from its confidence (doc 00 §3).
 
 **Hard requirements (from the prime spec):** preserve multiple hypotheses; resist premature
 convergence; maintain alternative explanations.
 
 - **Input:** current `Observation`s / `EvidenceObject`s + existing `HypothesisSet`s.
 - **Process:** (a) propose `Connection`s between graph nodes with a `verification` status;
-  (b) for each open question, propose/extend a `HypothesisSet` of *competing* explanations.
-  It must propose **≥2** alternatives whenever it proposes any, and is penalized by the
-  Skeptic for monoculture.
-- **Output:** `list[Connection]`, `list[Hypothesis]` (set-grouped).
+  (b) for each open question, propose/extend a set of *competing* `Explanation`s (initially
+  low-confidence, hence `SPECULATION`). It must propose **≥2** alternatives whenever it
+  proposes any, and is penalized by the Skeptic for monoculture. The Synthesis Agent then
+  synthesizes these competing explanations *into* hypotheses (§6).
+- **Output:** `list[Connection]`, `list[Explanation]` (set-grouped). It does **not** create
+  hypotheses directly — that is the synthesis step.
 - **Anti-convergence mechanism:** the agent is prompted and post-checked to keep
   `residual_mass > 0` and to surface a deliberately different "left-field" alternative each
   time a set's leader exceeds a confidence band, forcing the Skeptic/planner to test it.
-- **Example output:** competing `summit marker (0.35)` / `communications structure (0.28)` /
-  `image artifact (0.17)` with residual mass `0.20`.
+- **Example output:** competing explanations `summit marker (0.35)` /
+  `communications structure (0.28)` / `image artifact (0.17)` with residual mass `0.20`.
 - **Model tier:** `large` (this is core reasoning).
 
 ---
@@ -113,7 +117,7 @@ according to evidence requirements; tools remain interchangeable.
 
 ---
 
-## 5. Evidence Acquisition Agent — *produces `EvidenceObject` (`INFORMATION`)*
+## 5. Information Acquisition Agent — *produces `EvidenceObject` (`INFORMATION`)*
 
 **Mission:** execute `ToolPlan`s and collect structured evidence: maps, images, satellite
 imagery, public records, infrastructure data, historical archives, documents, public
@@ -132,19 +136,23 @@ datasets, open-source references.
 
 ---
 
-## 6. Synthesis Agent — *produces `HYPOTHESIS`/`EXTRAPOLATION`/`INSIGHT`*
+## 6. Synthesis Agent — *synthesizes `EXPLANATION`s into `HYPOTHESIS`/`INSIGHT`*
 
-**Mission:** merge evidence, update confidence inputs, preserve provenance, generate
-findings. **Never fabricate missing evidence.**
+**Mission:** synthesize competing explanations into hypotheses, merge evidence, update
+confidence inputs, preserve provenance, generate findings. **Never fabricate missing
+evidence.**
 
-- **Input:** new `EvidenceObject`s + current `HypothesisSet`s + prior `SkepticFinding`s.
-- **Process:** attach evidence to hypotheses (`supports`/`contradicts`), recompute the
-  hypothesis-set structure, and draft findings. It does **not** finalize confidence — it
-  requests a `ConfidenceAssessment` from the Confidence Agent and must pass the Skeptic before
-  any promotion to `EXTRAPOLATION`/`INSIGHT`. Missing evidence becomes a Known Unknown, never
-  a guess. At termination it composes the `InsightReport`.
-- **Output:** updated `Hypothesis` objects, draft findings, and (on termination)
-  `InsightReport`.
+- **Input:** competing `Explanation`s + new `EvidenceObject`s + current `HypothesisSet`s +
+  prior `SkepticFinding`s.
+- **Process:** (a) **synthesize** the competing explanations framed by the Connections Agent
+  *into* `Hypothesis` objects (both `SPECULATION` and `EXTRAPOLATION` explanations feed this,
+  per doc 00 §3), each carrying a `derived_from_explanations` back-reference; (b) attach
+  evidence to hypotheses (`supports`/`contradicts`) and recompute set structure. It does
+  **not** finalize confidence — it requests a `ConfidenceAssessment` from the Confidence Agent
+  and must pass the Skeptic before any promotion to `INSIGHT`. Missing evidence becomes a
+  Known Unknown, never a guess. At termination it composes the `InsightReport`.
+- **Output:** `Hypothesis` objects (synthesized from explanations), draft findings, and (on
+  termination) `InsightReport`.
 - **Model tier:** `large`.
 
 ---
@@ -163,7 +171,7 @@ weaknesses · generate alternative explanations · challenge emerging consensus.
   / overfit). May inject a brand-new `Hypothesis` into the set (origin=`skeptic`) and may
   reactivate an archived one. A `blocking` finding halts promotion until resolved.
 - **Output:** `list[SkepticFinding]`, optional new/reactivated `Hypothesis`.
-- **Gate:** the runtime will not let Synthesis promote to `INSIGHT`/`EXTRAPOLATION` while an
+- **Gate:** the runtime will not let a hypothesis be promoted to `INSIGHT` while an
   unresolved `blocking` finding targets it. This makes the Skeptic a true gate, not advice.
 - **Model tier:** `large`, run with an adversarial system prompt and (optionally) a different
   model than Synthesis to decorrelate errors (doc 08 §model diversity).
@@ -187,9 +195,9 @@ source independence · temporal relevance.
 - **Output:** `ConfidenceAssessment` per hypothesis; updated set normalization (writes a
   `confidence_change` ledger event with `delta_reason`).
 - **Calibration:** the model version is recorded so calibration accuracy can be measured and
-  improved by Memory (doc 09 calibration harness). The `epistemic_class` of a hypothesis is
-  derived here from its confidence band (low → `SPECULATION`-adjacent caution; high →
-  `EXTRAPOLATION`).
+  improved by Memory (doc 09 calibration harness). This agent also **re-types each hypothesis'
+  backing explanation** by confidence — `SPECULATION` (low) or `EXTRAPOLATION` (high) — and
+  promotes the gate-cleared, threshold-meeting leader to `INSIGHT`.
 - **Model tier:** `small` + deterministic code; `large` only to author the explanation.
 
 ---
@@ -214,12 +222,14 @@ spots · preserve uncertainty visibility.
 
 ---
 
-## 10. Speculative Possibility Engine — *produces `SPECULATION` (quarantined)*
+## 10. Speculative Possibility Engine — *produces `SPECULATION` (kept separate from conclusions)*
 
 Not part of the mandatory per-iteration quorum; invoked on demand (e.g., when the planner
-runs dry, or to expand the possibility space, or on operator request).
+runs dry, or to expand the possibility space, or on operator request). Distinct from the
+in-flow `SPECULATION` explanation type: this engine deliberately generates *separate*,
+clearly-labeled low-confidence probabilities that are kept out of conclusions.
 
-**Mission:** generate low-confidence possibilities to expand the investigative space —
+**Mission:** generate low-confidence probabilities to expand the investigative space —
 **not to establish truth.**
 
 - **Requirements:** every item clearly labeled `SPECULATION`; separate confidence model;
@@ -234,13 +244,14 @@ runs dry, or to expand the possibility space, or on operator request).
 
 ```
 runtime ─task→ Aggregation ─Observations→ runtime
-runtime ─task→ Connections ─Connections+HypothesisSets→ runtime
+runtime ─task→ Connections ─Connections+competing Explanations→ runtime
+runtime ─task→ Synthesis(synthesize) ─Hypotheses from Explanations→ runtime
 runtime ─task→ EvidencePlanning ─ranked EvidenceRequests→ runtime
 runtime ─task→ ToolSelection ─ToolPlans→ runtime
-runtime ─task→ Acquisition ─EvidenceObjects→ runtime          (fan-out, concurrent)
-runtime ─task→ Synthesis ─draft Hypotheses/findings→ runtime
+runtime ─task→ InformationAcquisition ─EvidenceObjects→ runtime   (fan-out, concurrent)
+runtime ─task→ Synthesis(merge) ─evidence linked to hypotheses→ runtime
 runtime ─challenge→ Skeptic ─SkepticFindings(+new Hypo)→ runtime   (GATE)
-runtime ─task→ Confidence ─ConfidenceAssessments→ runtime          (explainable)
+runtime ─task→ Confidence ─ConfidenceAssessments(+explanation re-typing)→ runtime  (explainable)
 runtime ─task→ Epistemology ─KnowledgeStateSnapshot→ runtime
 runtime: Termination Evaluator → continue | emit InsightReport
 ```
@@ -251,7 +262,7 @@ replayable, and auditable (doc 01 §3).
 ## Per-Agent Prompt Discipline (LLM agents)
 
 Each LLM agent ships with a system prompt that encodes its contract and, critically, the
-**universal rules** above. Prompts are versioned in `osinetenal/agents/<name>/prompt.md`,
+**universal rules** above. Prompts are versioned in `osintenal/agents/<name>/prompt.md`,
 hashed into the ledger on every call (doc 01 §7), and covered by golden tests (doc 09). The
 Skeptic and Connections prompts in particular hardcode the anti-premature-convergence and
 no-fabrication constraints so they survive model changes.

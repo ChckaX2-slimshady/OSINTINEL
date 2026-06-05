@@ -2,7 +2,7 @@
 
 ## 1. Architectural Overview
 
-OSINETENAL is a **quorum of cooperating specialist agents** coordinated by a deterministic
+OSINTENAL is a **quorum of cooperating specialist agents** coordinated by a deterministic
 **Orchestration Runtime**, reading and writing a single shared **Knowledge Graph** that is
 backed by an append-only **Provenance Ledger**. Tools reach the outside world only through
 the **Adapter Framework**. **Investigation Memory** observes runs and informs strategy
@@ -26,7 +26,7 @@ without ever mutating evidence.
 │        AGENT QUORUM           │                   │   ADAPTER FRAMEWORK        │
 │  Aggregation · Connections    │   Tool Selection  │  Registry · Capability map │
 │  Evidence Planning · Tool Sel.│◀─── requests ────▶│  search/lookup/collect/    │
-│  Acquisition · Synthesis      │      tools        │  parse/normalize           │
+│  Info Acquisition · Synthesis │      tools        │  parse/normalize           │
 │  Skeptic · Confidence · Epist.│                   │  Geo · Infra · Identity ·  │
 └───────┬───────────────────────┘                   │  Archive · Doc · Media     │
         │ all reads/writes are provenance-bound      └─────────────┬──────────────┘
@@ -111,9 +111,11 @@ advisory side-channels.
             │                                                                  │
   ┌─────────▼─────────┐   ┌───────────────┐   ┌───────────────┐   ┌──────────▼─────────┐
   │     OBSERVE        │   │  HYPOTHESIZE  │   │     PLAN       │   │    INVESTIGATE      │
-  │ Aggregation Agent  │──▶│ Connections   │──▶│ Evidence Plan  │──▶│ Tool Selection +    │
+  │ Aggregation Agent  │──▶│ Connections → │──▶│ Evidence Plan  │──▶│ Tool Select + Info  │
   │ ingest+normalize   │   │ competing     │   │ + Tool Select  │   │ Acquisition Agents  │
-  │ → Observations     │   │ explanations  │   │ (max info-gain)│   │ → Evidence objects  │
+  │ → Observations     │   │ explanations →│   │ (max info-gain)│   │ → Evidence objects  │
+  │                    │   │ Synthesis →   │   │                │   │                     │
+  │                    │   │ hypotheses    │   │                │   │                     │
   └────────────────────┘   └───────────────┘   └───────────────┘   └──────────┬─────────┘
                                                                                │
   ┌────────────────────┐   ┌───────────────┐   ┌───────────────┐   ┌──────────▼─────────┐
@@ -129,9 +131,11 @@ advisory side-channels.
 **Per-stage gating:**
 - **Synthesize never fabricates.** If evidence is missing, it records a Known Unknown, not a
   guess.
-- **Challenge is mandatory.** No major conclusion is promoted to `INSIGHT` or `EXTRAPOLATION`
-  without passing through the Skeptic Agent. The Skeptic can spawn new hypotheses and force
-  another iteration.
+- **Hypothesize is two moves.** Connections frames competing *explanations*
+  (`SPECULATION`/`EXTRAPOLATION` by confidence); Synthesis then synthesizes them *into*
+  hypotheses (doc 00 §3) before planning operates on the hypotheses.
+- **Challenge is mandatory.** No hypothesis is promoted to `INSIGHT` without passing through
+  the Skeptic Agent. The Skeptic can spawn new hypotheses and force another iteration.
 - **Confidence must be explainable.** The Confidence Agent returns a factor breakdown, not a
   scalar; the runtime rejects unexplained confidence.
 - **Knowledge-state update closes the loop** by turning residual uncertainty into the next

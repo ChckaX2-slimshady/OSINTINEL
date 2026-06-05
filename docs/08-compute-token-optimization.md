@@ -1,6 +1,6 @@
 # 08 — Compute & Token Optimization Plan
 
-A recursive multi-agent loop is intrinsically token-hungry. This plan keeps OSINETENAL
+A recursive multi-agent loop is intrinsically token-hungry. This plan keeps OSINTENAL
 *affordable and fast* without compromising the epistemic guarantees. The governing idea:
 **spend tokens where reasoning quality changes the outcome; spend deterministic code
 everywhere else.**

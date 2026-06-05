@@ -1,17 +1,18 @@
-# OSINETENAL
+# OSINTENAL
 
-**Open Source Intelligence Sentinel** — an Autonomous Evidence Intelligence Operating System.
+**Open Source Intelligence Sentinel** — *Autonomous Aggregation :: Insight via Intelligence
+:: Evolution via Recursive Improvement.*
 
-OSINETENAL is a modular, multi-agent intelligence layer that transforms nuanced data
-aggregated from expert sources and methodology into auditable, uncertainty-aware insights
-through recursive investigation, adaptive planning, provenance tracking, structured
-skepticism, and epistemic scrutiny.
+OSINTENAL is a modular, multi-agent intelligence layer that transforms nuanced data
+aggregated from expert methodology into auditable, uncertainty-aware insights through
+investigation, adaptive planning, provenance tracking, structured skepticism, epistemic
+scrutinizing, and recursive evaluation.
 
 > **Prime Directive** — Use expert methodology to gather niche data through multi-agent
 > orchestration, data structuring, and recursive critical analysis.
 
 > **Success is measured** not by answer generation, but by the system's ability to maintain
-> evidence integrity, preserve uncertainty, challenge itself, and produce auditable
+> logical coherence integrity, preserve uncertainty, challenge itself, and produce auditable
 > intelligence insights.
 
 ---
@@ -31,33 +32,36 @@ deterministic, offline, replayable demo investigation. See
 ```bash
 pip install -e ".[dev]"        # Python 3.11+; only dependency is pydantic v2
 
-osinetenal run                 # run the bundled demo investigation (human-readable report)
-osinetenal run --json          # same, as a schema-valid InsightReport JSON
-osinetenal verify              # run it and verify the provenance ledger hash chain
+osintenal run                 # run the bundled demo investigation (human-readable report)
+osintenal run --json          # same, as a schema-valid InsightReport JSON
+osintenal verify              # run it and verify the provenance ledger hash chain
 
 pytest -q                      # unit + epistemic-invariant + replayed scenario tests
 ```
 
-The demo (the "circled structure" case) shows the system framing **competing hypotheses**,
-the **Skeptic gate** holding promotion at `HYPOTHESIS` while a leader rests on a single
-source, and promotion to `EXTRAPOLATION` only once an *independent* source corroborates it —
-with every object carrying provenance and the full reasoning chain reported. No network or
-model API key is required; Phase 1 is deterministic by design (docs 08–09).
+The demo (the "circled structure" case) shows the full epistemic ladder — **information →
+connection → explanation{speculation | extrapolation} → hypothesis → insight** — with the
+system framing **competing explanations**, synthesizing them into competing **hypotheses**,
+and the **Skeptic gate** holding promotion at `HYPOTHESIS` while a leader rests on a single
+source. The leader is promoted to `INSIGHT` (the backed conclusion) only once an *independent*
+source corroborates it — even though its backing explanation is already the high-confidence
+type (`EXTRAPOLATION`). Every object carries provenance and the full reasoning chain is
+reported. No network or model API key is required; Phase 1 is deterministic by design (docs 08–09).
 
 ### Implemented module map (Phase 1)
 
 | Area | Package | Doc |
 |------|---------|-----|
-| Canonical schemas | `osinetenal/core/schemas/` | [03](docs/03-data-schemas.md) |
-| Recursive loop, termination, controller | `osinetenal/core/runtime/` | [01](docs/01-architecture.md) |
-| Budget governor | `osinetenal/core/budget/` | [08](docs/08-compute-token-optimization.md) |
-| Epistemic invariants | `osinetenal/core/invariants.py` | [09](docs/09-testing-methodology.md) |
-| Append-only provenance ledger | `osinetenal/ledger/` | [04](docs/04-knowledge-graph.md) |
-| Investigation state (graph stand-in) | `osinetenal/core/state.py` | [04](docs/04-knowledge-graph.md) |
-| Nine-agent quorum + Speculation Engine | `osinetenal/agents/` | [02](docs/02-agents.md) |
-| Adapter framework + deterministic stub | `osinetenal/adapters/` | [05](docs/05-adapters.md) |
-| Insight report builder | `osinetenal/reporting/` | [03](docs/03-data-schemas.md) |
-| CLI | `osinetenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
+| Canonical schemas | `osintenal/core/schemas/` | [03](docs/03-data-schemas.md) |
+| Recursive loop, termination, controller | `osintenal/core/runtime/` | [01](docs/01-architecture.md) |
+| Budget governor | `osintenal/core/budget/` | [08](docs/08-compute-token-optimization.md) |
+| Epistemic invariants | `osintenal/core/invariants.py` | [09](docs/09-testing-methodology.md) |
+| Append-only provenance ledger | `osintenal/ledger/` | [04](docs/04-knowledge-graph.md) |
+| Investigation state (graph stand-in) | `osintenal/core/state.py` | [04](docs/04-knowledge-graph.md) |
+| Nine-agent quorum + Speculation Engine | `osintenal/agents/` | [02](docs/02-agents.md) |
+| Adapter framework + deterministic stub | `osintenal/adapters/` | [05](docs/05-adapters.md) |
+| Insight report builder | `osintenal/reporting/` | [03](docs/03-data-schemas.md) |
+| CLI | `osintenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
 
 Phase 2 replaces the in-memory state store with the graph-native backend behind the same
 contract; the ledger, schemas, and agent contracts are already the Phase-2 interface.
@@ -98,7 +102,7 @@ A condensed, decision-oriented summary lives in
 
 ## Safety
 
-OSINETENAL is designed exclusively for **lawful open-source intelligence gathering** on
+OSINTENAL is designed exclusively for **lawful open-source intelligence gathering** on
 **publicly available information**. Credential theft, malware, unauthorized access,
 authentication bypass, exploitation, and active intrusion are out of scope and explicitly
 prohibited. See [`docs/07-risk-analysis.md`](docs/07-risk-analysis.md).

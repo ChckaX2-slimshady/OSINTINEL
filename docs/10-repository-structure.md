@@ -6,7 +6,7 @@ framework, **memory**, **interfaces**, and **docs/tests**. The boundaries here a
 ports described in docs 01–05, so each top-level package can be built and tested in isolation.
 
 ```
-OSINETENAL/
+OSINTENAL/
 ├── README.md
 ├── pyproject.toml                 # packaging, deps, tool config (ruff/pyright/pytest)
 ├── LICENSE
@@ -15,14 +15,16 @@ OSINETENAL/
 │   ├── 00-overview.md … 10-repository-structure.md
 │   └── ARCHITECTURE_DECISIONS.md
 │
-├── osinetenal/                    # the package
+├── osintenal/                    # the package
 │   ├── __init__.py
 │   ├── config.py                  # budgets, thresholds, model-tier → model id map
 │   │
 │   ├── core/                      # deterministic spine (NO LLM calls here)
 │   │   ├── schemas/               # doc 03 — Pydantic models (the contract)
+│   │   │   ├── enums.py           # EpistemicClass, explanation_type_for_confidence
 │   │   │   ├── provenance.py
 │   │   │   ├── observation.py     # Observation, EvidenceObject
+│   │   │   ├── explanation.py     # Explanation (SPECULATION/EXTRAPOLATION tier, doc 03 §4b)
 │   │   │   ├── hypothesis.py      # Hypothesis, HypothesisSet, SpeculationItem
 │   │   │   ├── planning.py        # EvidenceRequest, ToolPlan
 │   │   │   ├── findings.py        # SkepticFinding, ConfidenceAssessment
@@ -59,15 +61,15 @@ OSINETENAL/
 │   │   ├── base.py                # Agent protocol, AgentContext, AgentResult
 │   │   ├── llm.py                 # model-tier client, prompt caching, replay hook (doc 08)
 │   │   ├── aggregation/           # each: agent.py + prompt.md (versioned, hashed)
-│   │   ├── connections/
+│   │   ├── connections/           # frames competing EXPLANATIONS
 │   │   ├── evidence_planning/
 │   │   ├── tool_selection/
-│   │   ├── acquisition/
-│   │   ├── synthesis/
+│   │   ├── acquisition/           # Information Acquisition Agent
+│   │   ├── synthesis/             # synthesizes explanations -> hypotheses; merges evidence
 │   │   ├── skeptic/
-│   │   ├── confidence/            # deterministic factors + LLM explanation
+│   │   ├── confidence/            # factors + explanation re-typing + INSIGHT promotion
 │   │   ├── epistemology/
-│   │   └── speculation/           # Speculative Possibility Engine (quarantined)
+│   │   └── speculation/           # Speculative Possibility Engine (separate from conclusions)
 │   │
 │   ├── adapters/                  # doc 05 — tool framework
 │   │   ├── base.py                # Adapter protocol (search/lookup/collect/parse/normalize)
@@ -99,7 +101,7 @@ OSINETENAL/
 │   │   └── README.md
 │   │
 │   └── interfaces/
-│       ├── cli/                   # `osinetenal run|replay|report|graph` (Phase 1)
+│       ├── cli/                   # `osintenal run|replay|report|graph` (Phase 1)
 │       ├── api/                   # FastAPI REST (Phase 7)
 │       └── dashboard/             # web UI: graph/timeline/replay/evolution (Phase 7)
 │

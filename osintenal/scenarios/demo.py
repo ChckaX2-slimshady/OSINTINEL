@@ -1,10 +1,12 @@
 """A deterministic demonstration investigation (the "circled structure" case, doc 02 §2).
 
-Three competing explanations for a circled structure on a ridgeline. The replayable world
-is arranged so the leader ("communications structure") first rises on a single source
-(OpenStreetMap) — at which point the Skeptic raises a BLOCKING source-dependency finding that
-holds promotion at HYPOTHESIS despite high confidence — and is only promoted to EXTRAPOLATION
-once an independent source (Wikidata) corroborates it. This exercises the full quorum, the
+Three competing explanations for a circled structure on a ridgeline. The replayable world is
+arranged so the leader ("communications structure") first rises *past the confidence
+threshold on a single source* (OpenStreetMap) — at which point the Skeptic raises a BLOCKING
+source-dependency finding that holds it at HYPOTHESIS despite the high confidence. Its backing
+explanation is re-typed SPECULATION -> EXTRAPOLATION as confidence climbs, but the hypothesis
+is promoted to INSIGHT (the backed conclusion) only once an independent source (Wikidata)
+corroborates it and the gate clears. This exercises the full quorum, the explanation tier, the
 hypothesis-preservation rule, and the Skeptic gate, with no network or model dependency.
 """
 
@@ -34,13 +36,13 @@ def build_demo_investigation() -> tuple[Investigation, AdapterRegistry]:
          "source": "OpenStreetMap", "independence_group": "osm", "kind": "map",
          "license_note": "ODbL",
          "summary": "OSM feature at the coordinates tagged man_made=mast / tower.",
-         "weights": {"communications structure": 0.6, "summit marker": -0.1,
+         "weights": {"communications structure": 0.8, "summit marker": -0.1,
                      "image artifact": -0.2}},
         {"id": "e2", "set_tag": QUESTION, "capabilities": ["stub.evidence"],
          "source": "OpenStreetMap", "independence_group": "osm", "kind": "map",
          "license_note": "ODbL",
          "summary": "Adjacent OSM way tagged as an access track to a telecom installation.",
-         "weights": {"communications structure": 0.4, "summit marker": -0.1}},
+         "weights": {"communications structure": 0.6, "summit marker": -0.1}},
         {"id": "e3", "set_tag": QUESTION, "capabilities": ["stub.evidence"],
          "source": "Wikidata", "independence_group": "wikidata", "kind": "reference",
          "license_note": "CC0",

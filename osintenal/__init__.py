@@ -1,4 +1,4 @@
-"""OSINETENAL — Open Source Intelligence Sentinel.
+"""OSINTENAL — Open Source Intelligence Sentinel.
 
 An Autonomous Evidence Intelligence Operating System. This package implements the
 Phase 1 core orchestration framework described in ``docs/``: canonical schemas, the

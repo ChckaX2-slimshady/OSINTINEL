@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from .enums import (
-    EXTRAPOLATION_FLOOR,
-    SPECULATION_CEILING,
+    EXPLANATION_CLASSES,
+    EXPLANATION_CONFIDENCE_SPLIT,
+    HYPOTHESIS_CLASSES,
     AcquisitionMethod,
     AgentName,
     EpistemicClass,
     KnowledgeState,
-    class_for_confidence,
+    explanation_type_for_confidence,
 )
 from .epistemics import (
     Known,
@@ -17,6 +18,7 @@ from .epistemics import (
     KnownUnknown,
     UnknownUnknownIndicator,
 )
+from .explanation import Explanation
 from .findings import ConfidenceAssessment, ConfidenceFactors, SkepticFinding
 from .hypothesis import (
     ConfidenceHistoryEntry,
@@ -50,7 +52,10 @@ __all__ = [
     "EpistemicClass",
     "EvidenceObject",
     "EvidenceRequest",
-    "EXTRAPOLATION_FLOOR",
+    "Explanation",
+    "EXPLANATION_CLASSES",
+    "EXPLANATION_CONFIDENCE_SPLIT",
+    "HYPOTHESIS_CLASSES",
     "Hypothesis",
     "HypothesisSet",
     "InsightReport",
@@ -66,10 +71,9 @@ __all__ = [
     "RankedHypothesis",
     "ReasoningStep",
     "SkepticFinding",
-    "SPECULATION_CEILING",
     "SpeculationItem",
     "ToolPlan",
     "UnknownUnknownIndicator",
-    "class_for_confidence",
+    "explanation_type_for_confidence",
     "utcnow",
 ]

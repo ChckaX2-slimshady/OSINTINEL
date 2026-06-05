@@ -23,7 +23,7 @@ backed where required, deterministic where possible) · CLI to start an investig
 Observe→…→Repeat loop and emit an `InsightReport` with ranked competing hypotheses, Known
 Unknowns, and a reasoning chain."
 **Exit criteria:**
-- `osinetenal run` executes end-to-end and emits a schema-valid `InsightReport`.
+- `osintenal run` executes end-to-end and emits a schema-valid `InsightReport`.
 - Loop honors all termination conditions (doc 01 §5).
 - Skeptic gate provably blocks promotion on a `blocking` finding (tested).
 - Competing hypotheses preserved; `confidence_history` append-only (epistemic-invariant tests

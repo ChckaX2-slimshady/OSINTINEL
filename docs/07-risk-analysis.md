@@ -2,8 +2,9 @@
 
 Risks are grouped into **epistemic**, **operational**, **legal/ethical & safety**, and
 **security** classes. Each lists likelihood × impact, the mitigation, and where in the
-architecture the mitigation lives. The system's *raison d'être* is evidence integrity and
-preserved uncertainty, so epistemic risks are treated as first-class, not afterthoughts.
+architecture the mitigation lives. The system's *raison d'être* is logical coherence
+integrity and preserved uncertainty, so epistemic risks are treated as first-class, not
+afterthoughts.
 
 ## 1. Epistemic Risks (highest priority)
 
@@ -31,7 +32,7 @@ preserved uncertainty, so epistemic risks are treated as first-class, not aftert
 
 ## 3. Legal, Ethical & Safety Risks
 
-**Safety constraint (binding):** OSINETENAL is designed **exclusively for lawful open-source
+**Safety constraint (binding):** OSINTENAL is designed **exclusively for lawful open-source
 intelligence gathering on publicly available information.**
 
 **Prohibited and out of scope by design:** credential theft · malware deployment ·

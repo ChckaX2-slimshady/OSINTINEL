@@ -9,7 +9,12 @@ silently degrading an epistemic class.
 
 from __future__ import annotations
 
-from .schemas import EpistemicClass, InsightReport
+from .schemas import (
+    EXPLANATION_CLASSES,
+    HYPOTHESIS_CLASSES,
+    EpistemicClass,
+    InsightReport,
+)
 from .state import InvestigationState
 
 
@@ -54,11 +59,26 @@ def check_state(state: InvestigationState) -> None:
                 f"set probability mass exceeds 1.0 ({total:.3f}): {hs.set_id}"
             )
 
-    # (5) Speculation quarantine: speculative items never carry hypothesis-set edges.
+    # (5) Speculation quarantine: Speculative Possibility Engine items never carry
+    # hypothesis-set edges (distinct from the in-flow SPECULATION explanation type).
     spec_ids = set(state.speculations)
     for h in state.hypotheses.values():
         if h.hypothesis_id in spec_ids:
             raise InvariantViolation("speculation leaked into hypothesis set")
+
+    # (Foundational Separation) The two tiers must not be merged (doc 00 §3):
+    #   explanations are SPECULATION or EXTRAPOLATION; hypotheses are HYPOTHESIS or INSIGHT.
+    for ex in state.explanations.values():
+        if ex.epistemic_class not in EXPLANATION_CLASSES:
+            raise InvariantViolation(
+                f"explanation {ex.explanation_id} has non-explanation class "
+                f"{ex.epistemic_class}"
+            )
+    for h in state.hypotheses.values():
+        if h.epistemic_class not in HYPOTHESIS_CLASSES:
+            raise InvariantViolation(
+                f"hypothesis {h.hypothesis_id} has non-hypothesis class {h.epistemic_class}"
+            )
 
 
 def check_skeptic_gate(state: InvestigationState, hypothesis_id: str) -> None:

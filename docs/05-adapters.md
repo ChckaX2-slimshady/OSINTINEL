@@ -1,6 +1,6 @@
 # 05 — Adapter Specifications
 
-OSINETENAL reaches the outside world **only** through adapters. We implement *adapters rather
+OSINTENAL reaches the outside world **only** through adapters. We implement *adapters rather
 than direct integrations* so tools stay interchangeable and investigative paths are never
 hardcoded. The Tool Selection Agent chooses adapters dynamically by capability (doc 02 §4).
 
@@ -68,12 +68,11 @@ independence** from already-used sources for the same hypothesis (doc 02 §4). E
 result records the originating `ToolPlan` and a raw-response `LedgerEvent` so the run is
 replayable without re-hitting the network (doc 01 §7).
 
-## 4. Adapter Catalogue (recommended)
+## 4. Basic Adapter Framework
 
 Adapters are **lawful, public-source only** (doc 07). Anything requiring intrusion,
-authentication bypass, or non-public access is out of scope. Commercial tools listed in the
-brief are integrated *only* via their official APIs where the operator holds a valid license;
-they are optional and disabled by default.
+authentication bypass, or non-public access is out of scope. This is the default catalogue;
+the licensed/commercial tools are in the **Supplemental Adapter Framework** (§4b).
 
 ### Geospatial — `geo.*`
 - OpenStreetMap / **Overpass API** (`geo.features`), **Nominatim** (`geo.geocode`,
@@ -102,10 +101,15 @@ they are optional and disabled by default.
 - Encyclopedic & open datasets (`reference.encyclopedic`, `dataset.open`), Wolfram-style
   symbolic compute (`compute.symbolic`) for shadow/sun-angle, distance, and timeline math.
 
-### Optional commercial (license-gated, off by default)
-The brief's optional resources — Social Links, ShadowDragon, Maltego, Pipl, PimEyes,
-Recorded Future, Intel471, etc. — are modeled as **license-gated adapters** behind the same
-interface. They are never enabled implicitly; the operator must supply credentials and
+## 4b. Supplemental Adapter Framework (license-gated, off by default)
+
+The brief's supplemental resources — across Social Media (Skopenow, Social Links,
+ShadowDragon), Dark Web (DarkBlue, DarkOwl Vision, NexVision), Due Diligence (Neotas,
+Factiva, Videris), Link Analysis (Analyst's Notebook, Siren, Recorded Future), Web
+Intelligence (Silobreaker, Media Sonar, Cobwebs), People ID (Maltego, Pipl), Risk & Crisis
+(VoxCroft, Logically, Talkwalker), Images (PimEyes, CHAPSVISION, CameraForensics), and Threat
+Intel (KELA, Intel471 Titan, CYWARE) — are modeled as **license-gated adapters** behind the
+same interface. They are never enabled implicitly; the operator must supply credentials and
 attest to authorized use. Provenance records which licensed source was used.
 
 ## 5. Adapter Authoring Rules
