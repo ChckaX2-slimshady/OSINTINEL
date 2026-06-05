@@ -1,36 +1,39 @@
-"""OSINTENAL CLI (doc 06 Phase 1).
+"""OSINTENAL CLI (doc 06 Phase 1–2).
 
 Commands:
   osintenal run [--json] [--max-iterations N]   run the bundled demo investigation
   osintenal report                              run the demo and print the InsightReport
-  osintenal verify                              run the demo and verify ledger integrity
+  osintenal verify [--ledger PATH]              run, persist the ledger, reload & replay it,
+                                                and prove a byte-identical graph + hash chain
+  osintenal audit                               print the full evidence chain for the leading
+                                                insight (terminating in sourced INFORMATION)
 
-Phase 1 runs the deterministic bundled scenario so the full recursive loop is demonstrable
-offline. Custom investigations (file/image inputs) arrive with the adapter framework in
-Phase 3.
+The deterministic bundled scenario makes the full recursive loop demonstrable offline. Custom
+investigations (file/image inputs) arrive with the adapter framework in Phase 3.
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 
 from ...core.runtime import InvestigationController
+from ...graph import build_graph, chain_terminates_in_information, evidence_chain
+from ...ledger import Ledger, replay_state
 from ...scenarios import build_demo_investigation
 
 
-def _run_demo(max_iterations: int | None):
+def _run_demo(max_iterations: int | None, ledger_path=None):
     investigation, registry = build_demo_investigation()
     if max_iterations is not None:
         investigation.config.max_iterations = max_iterations
-    controller = InvestigationController(registry)
+    controller = InvestigationController(registry, ledger_path=ledger_path)
     return controller.run(investigation)
 
 
 def _print_human(result) -> None:
     r = result.report
-    print(f"\n=== OSINTENAL Insight Report ===")
+    print("\n=== OSINTENAL Insight Report ===")
     print(f"Investigation : {result.investigation.title}")
     print(f"Iterations    : {result.loop.iterations}  "
           f"(terminated: {result.loop.termination.reason})")
@@ -80,7 +83,10 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("--max-iterations", type=int, default=None)
 
     sub.add_parser("report", help="run the demo and print the insight report")
-    sub.add_parser("verify", help="run the demo and verify ledger integrity")
+    p_verify = sub.add_parser("verify", help="persist, reload & replay the ledger; verify integrity")
+    p_verify.add_argument("--ledger", default=None,
+                          help="path to write the durable JSONL ledger (default: temp file)")
+    sub.add_parser("audit", help="print the evidence chain for the leading insight")
 
     args = parser.parse_args(argv)
 
@@ -93,12 +99,55 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "verify":
-        result = _run_demo(None)
-        ok = result.ledger.verify()
-        print(f"ledger chain verified: {ok} ({len(result.ledger)} events)")
-        return 0 if ok else 1
+        return _verify(args.ledger)
+
+    if args.command == "audit":
+        return _audit()
 
     return 1
+
+
+def _verify(ledger_path: str | None) -> int:
+    """Run, persist the ledger to disk, reload it, replay → graph, and check every guarantee."""
+    import os
+    import tempfile
+
+    tmp = ledger_path or os.path.join(tempfile.mkdtemp(), "ledger.jsonl")
+    result = _run_demo(None, ledger_path=tmp)
+
+    chain_ok = result.ledger.verify()
+    reloaded = Ledger.load(tmp)                      # re-verifies the hash chain on load
+    replayed = replay_state(reloaded)                # rebuild state from the event log alone
+    identical = result.state.snapshot() == replayed.snapshot()
+    graph_ok = build_graph(replayed).summary() == build_graph(result.state).summary()
+
+    print(f"ledger written      : {tmp} ({len(result.ledger)} events)")
+    print(f"hash chain verified : {chain_ok and reloaded.verify()}")
+    print(f"replay byte-identical: {identical}")
+    print(f"graph reconstructed : {graph_ok}")
+    ok = chain_ok and identical and graph_ok
+    print(f"\nPhase 2 guarantees: {'ALL PASS' if ok else 'FAILED'}")
+    return 0 if ok else 1
+
+
+def _audit() -> int:
+    """Materialize the graph and walk the evidence chain beneath the leading insight."""
+    result = _run_demo(None)
+    store = build_graph(result.state)
+    cps = result.report.connective_probability_scores[0]
+    leader = cps.ranked_hypotheses[0]
+
+    print("\n=== OSINTENAL Evidence Chain (audit) ===")
+    print(f"Insight: {leader.statement!r}  "
+          f"[{leader.epistemic_class.value} / {leader.explanation_type.value.lower()}]  "
+          f"confidence {leader.confidence:.2f}\n")
+    for n in evidence_chain(store, leader.hypothesis_id):
+        cls = f" ({n.epistemic_class.value})" if n.epistemic_class else ""
+        print(f"  - {n.node_type}{cls}: {n.label}")
+    ok = chain_terminates_in_information(store, leader.hypothesis_id)
+    print(f"\nChain terminates in sourced INFORMATION: {ok}  "
+          f"(auditability guarantee, doc 03 §16.3)")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

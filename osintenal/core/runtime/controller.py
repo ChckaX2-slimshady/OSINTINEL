@@ -27,12 +27,14 @@ class InvestigationResult:
 
 
 class InvestigationController:
-    def __init__(self, registry: AdapterRegistry) -> None:
+    def __init__(self, registry: AdapterRegistry, *, ledger_path=None) -> None:
         self.registry = registry
         self.engine = RecursiveLoopEngine(registry)
+        # When set, the run's ledger is streamed to a durable JSONL file (doc 06 Phase 2).
+        self.ledger_path = ledger_path
 
     def run(self, investigation: Investigation) -> InvestigationResult:
-        ledger = Ledger()
+        ledger = Ledger(self.ledger_path)
         state = InvestigationState(investigation.investigation_id, ledger)
         governor = BudgetGovernor(investigation.config.budgets)
 

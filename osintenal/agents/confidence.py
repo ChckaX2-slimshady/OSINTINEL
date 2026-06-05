@@ -53,7 +53,7 @@ class ConfidenceAgent:
             total_evidence = sum(len(ctx.state.evidence_for(h.hypothesis_id)) for h in active)
             residual = max(0.05, INITIAL_RESIDUAL_MASS * (0.6 ** total_evidence))
             probs = normalize_with_residual(probs, residual)
-            hs.residual_mass = round(residual, 4)
+            ctx.state.set_residual_mass(hs.set_id, round(residual, 4), ctx.iteration)
 
             for h, p, raw in zip(active, probs, scores):
                 conf = round(p, 4)
@@ -63,7 +63,10 @@ class ConfidenceAgent:
                     f"{len(h.contradicting_evidence)} contradicting evidence (raw score {raw:+.2f})",
                     self.name, ctx.iteration,
                 )
-                h.epistemic_class = self._gated_class(ctx, h, conf)
+                # Record the gated tier (HYPOTHESIS or INSIGHT) as a ledger event so the
+                # promotion is auditable and replayable (doc 03 §16.7).
+                ctx.state.set_epistemic_class(
+                    h.hypothesis_id, self._gated_class(ctx, h, conf), ctx.iteration, self.name)
                 # Re-type the backing explanation(s) by confidence (SPECULATION/EXTRAPOLATION).
                 for ex_id in h.derived_from_explanations:
                     ctx.state.reclassify_explanation(ex_id, conf, ctx.iteration)

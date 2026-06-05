@@ -48,14 +48,9 @@ class SynthesisAgent:
         return created
 
     def run(self, ctx: AgentContext) -> None:
-        """Attach accumulated evidence to the hypotheses it supports/contradicts."""
-        for h in ctx.state.hypotheses.values():
-            supporting: list[str] = []
-            contradicting: list[str] = []
-            for ev in ctx.state.evidence.values():
-                if h.hypothesis_id in ev.supports:
-                    supporting.append(ev.evidence_id)
-                if h.hypothesis_id in ev.contradicts:
-                    contradicting.append(ev.evidence_id)
-            h.supporting_evidence = supporting
-            h.contradicting_evidence = contradicting
+        """Attach accumulated evidence to the hypotheses it supports/contradicts.
+
+        Delegates to ``state.relink_evidence`` — a pure projection over recorded evidence —
+        so a live run and a ledger replay produce byte-identical state (doc 04 §8).
+        """
+        ctx.state.relink_evidence()

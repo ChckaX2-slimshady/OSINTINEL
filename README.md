@@ -24,7 +24,14 @@ scrutinizing, and recursive evaluation.
 **Phase 1 — Core orchestration framework: implemented & runnable.** The nine-agent quorum,
 the recursive investigation loop, budget governance, an append-only hash-chained provenance
 ledger, the epistemic-invariant guards, and a CLI are all in place and exercised by a
-deterministic, offline, replayable demo investigation. See
+deterministic, offline, replayable demo investigation.
+
+**Phase 2 — Knowledge graph & provenance engine: implemented.** The ledger is now durable
+(append-only JSONL) and is the complete source of truth: every object is reconstructable from
+the event log, so an investigation can be killed, reloaded from disk, and **replayed
+byte-for-byte**. A `GraphStore` port with an embedded backend, write-time integrity
+constraints (ladder, provenance-required, speculation-quarantine), and the doc-04 audit
+queries materialize the knowledge graph as a view over the ledger. See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) for what each phase delivers.
 
 ### Quickstart
@@ -34,7 +41,10 @@ pip install -e ".[dev]"        # Python 3.11+; only dependency is pydantic v2
 
 osintenal run                 # run the bundled demo investigation (human-readable report)
 osintenal run --json          # same, as a schema-valid InsightReport JSON
-osintenal verify              # run it and verify the provenance ledger hash chain
+osintenal verify              # run → persist ledger → reload → replay; prove byte-identical
+                              #   graph + hash chain (Phase 2 durability guarantees)
+osintenal audit               # print the evidence chain for the leading insight,
+                              #   terminating in sourced INFORMATION nodes
 
 pytest -q                      # unit + epistemic-invariant + replayed scenario tests
 ```
@@ -48,7 +58,7 @@ source corroborates it — even though its backing explanation is already the hi
 type (`EXTRAPOLATION`). Every object carries provenance and the full reasoning chain is
 reported. No network or model API key is required; Phase 1 is deterministic by design (docs 08–09).
 
-### Implemented module map (Phase 1)
+### Implemented module map (Phases 1–2)
 
 | Area | Package | Doc |
 |------|---------|-----|
@@ -56,15 +66,17 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | Recursive loop, termination, controller | `osintenal/core/runtime/` | [01](docs/01-architecture.md) |
 | Budget governor | `osintenal/core/budget/` | [08](docs/08-compute-token-optimization.md) |
 | Epistemic invariants | `osintenal/core/invariants.py` | [09](docs/09-testing-methodology.md) |
-| Append-only provenance ledger | `osintenal/ledger/` | [04](docs/04-knowledge-graph.md) |
-| Investigation state (graph stand-in) | `osintenal/core/state.py` | [04](docs/04-knowledge-graph.md) |
+| Durable hash-chained ledger + replay | `osintenal/ledger/` | [04](docs/04-knowledge-graph.md) |
+| Investigation state (records → ledger) | `osintenal/core/state.py` | [04](docs/04-knowledge-graph.md) |
+| **Knowledge graph: port, backend, constraints, queries** | `osintenal/graph/` | [04](docs/04-knowledge-graph.md) |
 | Nine-agent quorum + Speculation Engine | `osintenal/agents/` | [02](docs/02-agents.md) |
 | Adapter framework + deterministic stub | `osintenal/adapters/` | [05](docs/05-adapters.md) |
 | Insight report builder | `osintenal/reporting/` | [03](docs/03-data-schemas.md) |
 | CLI | `osintenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
 
-Phase 2 replaces the in-memory state store with the graph-native backend behind the same
-contract; the ledger, schemas, and agent contracts are already the Phase-2 interface.
+A later phase can swap the embedded `GraphStore` for a graph-native backend (SQLite/Neo4j)
+behind the same port; the ledger, schemas, constraints, and agent contracts are already the
+stable interface.
 
 ## Architecture Documents
 

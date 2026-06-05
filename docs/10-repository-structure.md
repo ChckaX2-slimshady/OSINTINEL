@@ -44,18 +44,19 @@ OSINTENAL/
 │   │   ├── invariants.py          # epistemic invariants enforced at runtime (doc 03 §16)
 │   │   └── ids.py                 # UUIDv7, content hashing
 │   │
-│   ├── graph/                     # doc 04
-│   │   ├── store.py               # GraphStore port (interface)
-│   │   ├── view.py                # read-only GraphView + summarized projections (doc 08 §3)
-│   │   ├── constraints.py         # write-time integrity (ladder, provenance, append-only)
-│   │   ├── backends/
-│   │   │   ├── embedded_sqlite.py # Phase 1 default
-│   │   │   └── neo4j.py           # Phase 3+ (optional)
-│   │   └── queries.py             # independence/monoculture/contradiction/evidence-chain
+│   ├── graph/                     # doc 04 — materialized view over the ledger (Phase 2)
+│   │   ├── store.py               # GraphStore port + Node/Edge value types
+│   │   ├── builder.py             # build_graph(state): project state into the graph
+│   │   ├── view.py                # read-only GraphView exposing the doc-04 §6 queries
+│   │   ├── constraints.py         # write-time integrity (ladder, provenance, quarantine)
+│   │   ├── queries.py             # evidence-chain/independence/monoculture/contradiction
+│   │   └── backends/
+│   │       ├── memory.py          # embedded in-memory store (Phase 2 default)
+│   │       └── neo4j.py           # graph-native backend (later phase, same port)
 │   │
-│   ├── ledger/                    # doc 03 §13, doc 04 §1
-│   │   ├── ledger.py              # append-only event log + hash chain
-│   │   └── replay.py              # rebuild graph from events; replay external/LLM calls
+│   ├── ledger/                    # doc 03 §13, doc 04 §1 — durable, append-only (Phase 2)
+│   │   ├── ledger.py              # hash-chained event log + JSONL save/load
+│   │   └── replay.py              # rebuild byte-identical state/graph from the event log
 │   │
 │   ├── agents/                    # doc 02 — stateless specialists
 │   │   ├── base.py                # Agent protocol, AgentContext, AgentResult

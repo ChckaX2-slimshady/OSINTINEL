@@ -30,18 +30,27 @@ Unknowns, and a reasoning chain."
   green, doc 09).
 - Every emitted object carries valid provenance.
 
-## Phase 2 — Knowledge Graph & Provenance Engine
+## Phase 2 — Knowledge Graph & Provenance Engine ✅
 **Goal:** durable, auditable state.
 **Scope:** `GraphStore` port + embedded backend (doc 04) · append-only Provenance Ledger with
 hash chain · materialized-view rebuild/replay · write-time integrity constraints (ladder,
 provenance-required, append-only).
 **Vertical slice:** "Run an investigation, kill the process, reload from the ledger, and get a
-byte-identical graph; produce a full evidence chain for any insight."
+byte-identical graph; produce a full evidence chain for any insight." — delivered as
+`osintenal verify` (persist → reload → replay → byte-identical graph) and `osintenal audit`.
 **Exit criteria:**
-- Graph fully reconstructable from the ledger (replay test).
-- Ladder & provenance constraints reject malformed writes (tests).
+- Graph fully reconstructable from the ledger (replay test). ✅ `tests/graph/test_replay.py`
+- Ladder & provenance constraints reject malformed writes. ✅ `tests/graph/test_constraints.py`
 - Audit query returns a complete evidence chain terminating in sourced `INFORMATION` nodes.
-- Hash-chain integrity check passes in CI.
+  ✅ `tests/graph/test_audit.py`
+- Hash-chain integrity check passes in CI (verified on every load). ✅
+  `tests/graph/test_ledger_persistence.py`
+
+**Implementation note:** the ledger is now the complete source of truth — each event's payload
+carries a full object snapshot, so `replay_state()` reconstructs an `InvestigationState`
+byte-for-byte (timestamps and confidence history included), and `build_graph()` projects it
+into the constraint-checked property graph. The durable store is append-only JSONL (zero new
+dependencies); a SQLite/Neo4j backend can replace the embedded one behind the same port.
 
 ## Phase 3 — Tool Adapter Framework
 **Goal:** real, interchangeable data sources.

@@ -1,15 +1,14 @@
-"""In-memory investigation state (Phase 1 stand-in for the knowledge graph).
+"""Investigation state — the working knowledge graph, mirrored to the provenance ledger.
 
-Every mutation is mediated here and mirrored to the append-only ledger, so the working
-state and the evidentiary history stay consistent. This module enforces the structural
-guarantees that doc 04 §7 assigns to graph write-time constraints:
+Every mutation is mediated here and recorded as an append-only ledger event whose payload
+carries enough to **reconstruct the object byte-for-byte**. The ledger is therefore the
+single source of truth; this in-memory state is a *materialized view* over it (doc 04 §8).
+``osintenal.ledger.replay`` rebuilds an identical ``InvestigationState`` from the events alone.
 
-* provenance-or-nothing (objects carry a Provenance with a ledger_event_id),
-* hypothesis preservation (no deletion; confidence_history is append-only),
-* set minimum (a HypothesisSet never drops below one active member),
-* speculation quarantine (speculations never enter set normalization).
-
-Phase 2 replaces this with a graph-native ``GraphStore`` honoring the same contract.
+This module enforces the structural guarantees doc 04 §7 assigns to graph write-time
+constraints: provenance-or-nothing, hypothesis preservation (append-only confidence history,
+no deletion), set-minimum (a HypothesisSet never drops below one active member), and
+speculation quarantine. The graph projection (``osintenal.graph``) is built from this state.
 """
 
 from __future__ import annotations
@@ -18,6 +17,7 @@ from ..ledger import Ledger
 from .schemas import (
     AgentName,
     ConfidenceHistoryEntry,
+    EpistemicClass,
     EvidenceObject,
     Explanation,
     Hypothesis,
@@ -26,6 +26,7 @@ from .schemas import (
     Observation,
     SkepticFinding,
     SpeculationItem,
+    explanation_type_for_confidence,
 )
 
 
@@ -49,29 +50,41 @@ class InvestigationState:
         self.sources: dict[str, str] = {}  # source name -> independence_group
 
     # -- generic persistence ------------------------------------------------
-    def _record(self, iteration: int, type_: str, actor: str, payload: dict) -> str:
-        event = self.ledger.append(
+    def _record(self, iteration: int, type_: str, actor: str, payload: dict):
+        return self.ledger.append(
             investigation_id=self.investigation_id,
             iteration=iteration,
             type=type_,
             actor=actor,
             payload=payload,
         )
-        return event.event_id
 
-    # -- observations & evidence -------------------------------------------
+    def _record_id(self, iteration: int, type_: str, actor: str, payload: dict) -> str:
+        return self._record(iteration, type_, actor, payload).event_id
+
+    @staticmethod
+    def _node_payload(node_type: str, node_id: str, obj) -> dict:
+        # The full object dump makes the ledger a complete, replayable source of truth.
+        return {"node_type": node_type, "id": node_id, "object": obj.model_dump(mode="json")}
+
+    # -- observations & evidence (record → index) --------------------------
     def add_observation(self, obs: Observation, iteration: int) -> None:
-        eid = self._record(iteration, "node_add", obs.provenance.agent_responsible.value,
-                            {"node_type": "Observation", "id": obs.observation_id})
+        eid = self._record_id(iteration, "node_add", obs.provenance.agent_responsible.value,
+                           self._node_payload("Observation", obs.observation_id, obs))
         obs.provenance.ledger_event_id = eid
+        self._index_observation(obs)
+
+    def _index_observation(self, obs: Observation) -> None:
         self.observations[obs.observation_id] = obs
         self._register_source(obs.source)
 
     def add_evidence(self, ev: EvidenceObject, iteration: int) -> None:
-        eid = self._record(iteration, "node_add", ev.provenance.agent_responsible.value,
-                            {"node_type": "EvidenceObject", "id": ev.evidence_id,
-                             "supports": ev.supports, "contradicts": ev.contradicts})
+        eid = self._record_id(iteration, "node_add", ev.provenance.agent_responsible.value,
+                           self._node_payload("EvidenceObject", ev.evidence_id, ev))
         ev.provenance.ledger_event_id = eid
+        self._index_evidence(ev)
+
+    def _index_evidence(self, ev: EvidenceObject) -> None:
         self.evidence[ev.evidence_id] = ev
         self._register_source(ev.provenance.source, ev.structured.get("independence_group"))
 
@@ -79,30 +92,35 @@ class InvestigationState:
         if name not in self.sources:
             self.sources[name] = group or name
 
-    # -- hypothesis sets & hypotheses --------------------------------------
+    # -- hypothesis sets, explanations & hypotheses ------------------------
     def add_set(self, hs: HypothesisSet, iteration: int) -> None:
-        eid = self._record(iteration, "node_add", AgentName.CONNECTIONS.value,
-                            {"node_type": "HypothesisSet", "id": hs.set_id})
+        eid = self._record_id(iteration, "node_add", AgentName.CONNECTIONS.value,
+                           self._node_payload("HypothesisSet", hs.set_id, hs))
         hs.provenance.ledger_event_id = eid
+        self._index_set(hs)
+
+    def _index_set(self, hs: HypothesisSet) -> None:
         self.hypothesis_sets[hs.set_id] = hs
 
     def add_explanation(self, ex: Explanation, iteration: int) -> None:
         """Persist a competing explanation (the SPECULATION/EXTRAPOLATION tier)."""
-        eid = self._record(iteration, "node_add", ex.provenance.agent_responsible.value,
-                            {"node_type": "Explanation", "id": ex.explanation_id,
-                             "set_id": ex.set_id, "type": ex.epistemic_class.value,
-                             "statement": ex.statement})
+        eid = self._record_id(iteration, "node_add", ex.provenance.agent_responsible.value,
+                           self._node_payload("Explanation", ex.explanation_id, ex))
         ex.provenance.ledger_event_id = eid
+        self._index_explanation(ex)
+
+    def _index_explanation(self, ex: Explanation) -> None:
         self.explanations[ex.explanation_id] = ex
         if ex.explanation_id not in self.hypothesis_sets[ex.set_id].explanations:
             self.hypothesis_sets[ex.set_id].explanations.append(ex.explanation_id)
 
     def add_hypothesis(self, h: Hypothesis, iteration: int) -> None:
-        eid = self._record(iteration, "node_add", h.provenance.agent_responsible.value,
-                            {"node_type": "Hypothesis", "id": h.hypothesis_id,
-                             "set_id": h.set_id, "statement": h.statement,
-                             "derived_from_explanations": h.derived_from_explanations})
+        eid = self._record_id(iteration, "node_add", h.provenance.agent_responsible.value,
+                           self._node_payload("Hypothesis", h.hypothesis_id, h))
         h.provenance.ledger_event_id = eid
+        self._index_hypothesis(h)
+
+    def _index_hypothesis(self, h: Hypothesis) -> None:
         self.hypotheses[h.hypothesis_id] = h
         if h.hypothesis_id not in self.hypothesis_sets[h.set_id].hypotheses:
             self.hypothesis_sets[h.set_id].hypotheses.append(h.hypothesis_id)
@@ -113,15 +131,24 @@ class InvestigationState:
 
     def reclassify_explanation(self, explanation_id: str, confidence: float,
                                iteration: int) -> None:
-        """Mirror a hypothesis' confidence onto its backing explanation and re-type it."""
+        """Mirror a hypothesis' confidence onto its backing explanation and re-type it.
+
+        Recorded whenever the confidence (and hence possibly the SPECULATION/EXTRAPOLATION
+        type) changes, so the explanation tier is faithfully replayable.
+        """
+        ex = self.explanations[explanation_id]
+        if ex.confidence == confidence:
+            return
+        before, after = ex.epistemic_class, explanation_type_for_confidence(confidence)
+        self._record(iteration, "explanation_reclassify", AgentName.CONFIDENCE.value,
+                     {"explanation_id": explanation_id, "from": before.value,
+                      "to": after.value, "confidence": confidence})
+        self._apply_reclassify(explanation_id, confidence)
+
+    def _apply_reclassify(self, explanation_id: str, confidence: float) -> None:
         ex = self.explanations[explanation_id]
         ex.confidence = confidence
-        before = ex.epistemic_class
-        after = ex.classify()
-        if before is not after:
-            self._record(iteration, "explanation_reclassify", AgentName.CONFIDENCE.value,
-                         {"explanation_id": explanation_id, "from": before.value,
-                          "to": after.value, "confidence": confidence})
+        ex.classify()
 
     def update_confidence(
         self, hypothesis_id: str, confidence: float, reason: str,
@@ -129,15 +156,46 @@ class InvestigationState:
     ) -> None:
         """Append-only confidence update — the Hypothesis Preservation Rule."""
         h = self.hypotheses[hypothesis_id]
-        eid = self._record(iteration, "confidence_change", by_agent.value,
-                            {"hypothesis_id": hypothesis_id, "from": h.confidence,
-                             "to": confidence, "reason": reason})
+        event = self._record(iteration, "confidence_change", by_agent.value,
+                             {"hypothesis_id": hypothesis_id, "from": h.confidence,
+                              "to": confidence, "reason": reason})
+        # Bind the history entry's timestamp to its ledger event so replay is byte-identical.
+        self._apply_confidence(hypothesis_id, confidence, reason, by_agent, iteration,
+                               event.event_id, event.timestamp)
+
+    def _apply_confidence(self, hypothesis_id: str, confidence: float, reason: str,
+                          by_agent: AgentName, iteration: int, eid: str, timestamp) -> None:
+        h = self.hypotheses[hypothesis_id]
         h.confidence_history.append(
             ConfidenceHistoryEntry(iteration=iteration, confidence=confidence,
                                    delta_reason=reason, by_agent=by_agent,
-                                   ledger_event_id=eid)
+                                   timestamp=timestamp, ledger_event_id=eid)
         )
         h.confidence = confidence
+
+    def set_epistemic_class(self, hypothesis_id: str, new_class: EpistemicClass,
+                            iteration: int, by_agent: AgentName) -> None:
+        """Record a hypothesis tier change (e.g. promotion to INSIGHT) as a ledger event.
+
+        Satisfies doc 03 §16.7 ("promotion across tiers has a ledger event") and keeps the
+        class replayable rather than an out-of-band in-memory write.
+        """
+        h = self.hypotheses[hypothesis_id]
+        if h.epistemic_class is new_class:
+            return
+        self._record(iteration, "hypothesis_promote", by_agent.value,
+                     {"hypothesis_id": hypothesis_id, "from": h.epistemic_class.value,
+                      "to": new_class.value})
+        h.epistemic_class = new_class
+
+    def set_residual_mass(self, set_id: str, value: float, iteration: int) -> None:
+        """Record a set's residual ('none of the above') mass change as a ledger event."""
+        hs = self.hypothesis_sets[set_id]
+        if hs.residual_mass == value:
+            return
+        self._record(iteration, "residual_mass_change", AgentName.CONFIDENCE.value,
+                     {"set_id": set_id, "from": hs.residual_mass, "to": value})
+        hs.residual_mass = value
 
     def archive_hypothesis(self, hypothesis_id: str, iteration: int) -> None:
         """Archive (never delete). A set must keep >=1 active member (doc 04 §7.4)."""
@@ -160,31 +218,49 @@ class InvestigationState:
 
     # -- findings, speculation, snapshots ----------------------------------
     def add_finding(self, f: SkepticFinding, iteration: int) -> None:
-        eid = self._record(iteration, "node_add", AgentName.SKEPTIC.value,
-                            {"node_type": "SkepticFinding", "id": f.finding_id,
-                             "severity": f.severity, "target": f.target_ref})
+        eid = self._record_id(iteration, "node_add", AgentName.SKEPTIC.value,
+                           self._node_payload("SkepticFinding", f.finding_id, f))
         f.provenance.ledger_event_id = eid
+        self._index_finding(f)
+
+    def _index_finding(self, f: SkepticFinding) -> None:
         self.findings[f.finding_id] = f
         if f.target_ref in self.hypotheses:
             self.hypotheses[f.target_ref].skeptic_findings.append(f.finding_id)
 
     def resolve_finding(self, finding_id: str, reason: str, iteration: int) -> None:
-        f = self.findings[finding_id]
         self._record(iteration, "finding_resolved", AgentName.SKEPTIC.value,
                      {"finding_id": finding_id, "reason": reason})
-        f.resolved = True
+        self.findings[finding_id].resolved = True
 
     def add_speculation(self, sp: SpeculationItem, iteration: int) -> None:
-        eid = self._record(iteration, "node_add", AgentName.SPECULATION.value,
-                            {"node_type": "Speculation", "id": sp.speculation_id})
+        eid = self._record_id(iteration, "node_add", AgentName.SPECULATION.value,
+                           self._node_payload("Speculation", sp.speculation_id, sp))
         sp.provenance.ledger_event_id = eid
+        self._index_speculation(sp)
+
+    def _index_speculation(self, sp: SpeculationItem) -> None:
         self.speculations[sp.speculation_id] = sp
 
     def add_snapshot(self, snap: KnowledgeStateSnapshot) -> None:
-        eid = self._record(snap.iteration, "node_add", AgentName.EPISTEMOLOGY.value,
-                           {"node_type": "KnowledgeStateSnapshot", "id": snap.snapshot_id})
+        eid = self._record_id(snap.iteration, "node_add", AgentName.EPISTEMOLOGY.value,
+                           self._node_payload("KnowledgeStateSnapshot", snap.snapshot_id, snap))
         snap.provenance.ledger_event_id = eid
+        self._index_snapshot(snap)
+
+    def _index_snapshot(self, snap: KnowledgeStateSnapshot) -> None:
         self.snapshots.append(snap)
+
+    # -- evidence relinking (pure projection over recorded evidence) -------
+    def relink_evidence(self) -> None:
+        """Recompute each hypothesis' supporting/contradicting evidence from the evidence
+        graph. A pure function of recorded ``EvidenceObject.supports/contradicts`` — used by
+        both the Synthesis Agent and ledger replay so the two produce identical state."""
+        for h in self.hypotheses.values():
+            h.supporting_evidence = [e.evidence_id for e in self.evidence.values()
+                                     if h.hypothesis_id in e.supports]
+            h.contradicting_evidence = [e.evidence_id for e in self.evidence.values()
+                                        if h.hypothesis_id in e.contradicts]
 
     # -- queries -----------------------------------------------------------
     def active_hypotheses(self, set_id: str) -> list[Hypothesis]:
@@ -212,3 +288,21 @@ class InvestigationState:
     def unresolved_blocking_findings(self, target_ref: str) -> list[SkepticFinding]:
         return [f for f in self.findings.values()
                 if f.target_ref == target_ref and f.severity == "blocking" and not f.resolved]
+
+    # -- byte-identical comparison (replay verification, doc 06 Phase 2) ---
+    def snapshot(self) -> dict:
+        """A canonical, order-stable dump of all state for byte-identical comparison."""
+        def dump_map(m: dict) -> dict:
+            return {k: m[k].model_dump(mode="json") for k in sorted(m)}
+        return {
+            "investigation_id": self.investigation_id,
+            "observations": dump_map(self.observations),
+            "evidence": dump_map(self.evidence),
+            "hypothesis_sets": dump_map(self.hypothesis_sets),
+            "explanations": dump_map(self.explanations),
+            "hypotheses": dump_map(self.hypotheses),
+            "speculations": dump_map(self.speculations),
+            "findings": dump_map(self.findings),
+            "snapshots": [s.model_dump(mode="json") for s in self.snapshots],
+            "sources": dict(sorted(self.sources.items())),
+        }
