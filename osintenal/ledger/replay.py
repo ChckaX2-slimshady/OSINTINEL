@@ -13,6 +13,8 @@ hypothesis' evidence links, so a final ``relink_evidence`` pass reproduces them 
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from ..core.schemas import (
     AgentName,
     EpistemicClass,
@@ -25,8 +27,10 @@ from ..core.schemas import (
     SkepticFinding,
     SpeculationItem,
 )
-from ..core.state import InvestigationState
 from .ledger import Ledger
+
+if TYPE_CHECKING:
+    from ..core.state import InvestigationState
 
 # node_type (in the ledger payload) -> (schema model, state indexer method name)
 _NODE_KINDS = {
@@ -41,8 +45,11 @@ _NODE_KINDS = {
 }
 
 
-def replay_state(ledger: Ledger, investigation_id: str | None = None) -> InvestigationState:
+def replay_state(ledger: Ledger, investigation_id: str | None = None) -> "InvestigationState":
     """Reconstruct an ``InvestigationState`` from a ledger's events."""
+    # Imported lazily to avoid a ledger <-> core.state import cycle (state mirrors to the ledger).
+    from ..core.state import InvestigationState
+
     events = ledger.events()
     if investigation_id is None:
         investigation_id = events[0].investigation_id if events else ""

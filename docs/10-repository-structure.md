@@ -73,18 +73,18 @@ OSINTENAL/
 │   │   └── speculation/           # Speculative Possibility Engine (separate from conclusions)
 │   │
 │   ├── adapters/                  # doc 05 — tool framework
-│   │   ├── base.py                # Adapter protocol (search/lookup/collect/parse/normalize)
+│   │   ├── base.py                # Adapter protocol + ReferenceAdapter base, RawArtifact
 │   │   ├── registry.py            # capability → adapters, cost/effectiveness priors
-│   │   ├── capabilities.py        # CapabilityTag enum
-│   │   ├── cassettes.py           # record/replay external calls (VCR-style)
-│   │   ├── geospatial/            # nominatim, overpass, mapillary, satellite…
-│   │   ├── infrastructure/        # dns, ct, asn, amass, subfinder
-│   │   ├── identity/              # sherlock, profile discovery
-│   │   ├── archives/              # wayback, archive_today, wikimedia, wikidata
-│   │   ├── documents/             # ocr, metadata, pdf
-│   │   ├── media/                 # exiftool, reverse_image, similarity
-│   │   ├── reference/             # encyclopedic, open datasets, symbolic compute
-│   │   └── commercial/            # license-gated, off by default (doc 05 §4)
+│   │   ├── capabilities.py        # capability tag set
+│   │   ├── transport.py           # cassette HttpClient: replay-by-default, opt-in record
+│   │   ├── storage.py             # content-addressed store (heavy bytes off the ledger)
+│   │   ├── stub.py                # Phase 1 deterministic stub adapter
+│   │   ├── _cassettes/            # committed VCR recordings + build_demo.py
+│   │   ├── geospatial/            # nominatim, overpass  (+ mapillary, satellite later)
+│   │   ├── infrastructure/        # cert_transparency  (+ dns, asn, amass later)
+│   │   ├── archives/              # wayback, wikidata  (+ archive_today, wikimedia later)
+│   │   ├── identity/ media/ documents/   # later phases (sherlock, exiftool, ocr…)
+│   │   └── commercial/            # license-gated supplemental (Maltego…), off by default
 │   │
 │   ├── pipelines/                 # domain verticals built on the core loop
 │   │   ├── image_investigation.py # doc 06 Phase 5 (EXIF→…→geo hypotheses)

@@ -1,0 +1,10 @@
+{
+  "8e9d32cd62383de7761775c50d149806278fb3abb25d0b03e19150840b8c03e4": {
+    "text": "<html><head><title>WindReach Telecom \u2014 Mast Hosting &amp; Backhaul</title></head><body><h1>WindReach Telecom</h1><p>Operator of the Bullington communications mast (grid ref SU 483 414). Services: radio relay, microwave backhaul, colocation.</p><footer>Captured 2018.</footer></body></html>",
+    "url": "https://web.archive.org/web/20180512093000id_/http://windreach.example/"
+  },
+  "f245857c6d96c4c473e9f375640eb2f4aee66a3257726853d85435360a0c1b8e": {
+    "text": "[[\"timestamp\", \"original\", \"digest\", \"statuscode\"], [\"20180512093000\", \"http://windreach.example/\", \"ABCD1234\", \"200\"], [\"20200101000000\", \"http://windreach.example/about\", \"EFGH5678\", \"200\"]]",
+    "url": "http://web.archive.org/cdx/search/cdx"
+  }
+}

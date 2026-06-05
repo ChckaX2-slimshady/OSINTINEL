@@ -1,0 +1,10 @@
+{
+  "36fbbeace80b58205c688cff127c24e6c18572c89766861bddff9983bbe32788": {
+    "text": "{\"place_id\": 456, \"osm_type\": \"node\", \"osm_id\": 1001, \"lat\": \"51.0153\", \"lon\": \"-1.3253\", \"display_name\": \"Bullington, Hampshire, England\", \"category\": \"place\", \"type\": \"hamlet\"}",
+    "url": "https://nominatim.openstreetmap.org/reverse"
+  },
+  "6c6f18ecc846b4cdd445c977c0808e73c3cf90ab1c80f7891de969c6bcf0f9b1": {
+    "text": "[{\"place_id\": 123, \"osm_type\": \"node\", \"osm_id\": 1001, \"lat\": \"51.01530\", \"lon\": \"-1.32530\", \"display_name\": \"Telecom mast, Bullington, Hampshire, England\", \"category\": \"man_made\", \"type\": \"mast\", \"importance\": 0.21}]",
+    "url": "https://nominatim.openstreetmap.org/search"
+  }
+}

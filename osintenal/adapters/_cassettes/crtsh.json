@@ -1,0 +1,6 @@
+{
+  "a4724195af3909b8487d4d67d09f970363bacc7037fb337b07a5229ce98fe9a4": {
+    "text": "[{\"id\": 1, \"name_value\": \"windreach.example\\nmail.windreach.example\", \"issuer_name\": \"C=US, O=Let's Encrypt\", \"not_before\": \"2019-03-01T00:00:00\"}, {\"id\": 2, \"name_value\": \"*.windreach.example\", \"issuer_name\": \"C=US, O=Let's Encrypt\", \"not_before\": \"2020-06-15T00:00:00\"}]",
+    "url": "https://crt.sh/"
+  }
+}

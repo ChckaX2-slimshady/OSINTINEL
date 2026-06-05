@@ -23,3 +23,5 @@ jobs:
         run: pytest -q
       - name: Smoke-run the demo investigation
         run: osintenal verify
+      - name: Smoke-run the adapter slice (offline, from cassettes)
+        run: osintenal slice

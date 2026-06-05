@@ -87,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
     p_verify.add_argument("--ledger", default=None,
                           help="path to write the durable JSONL ledger (default: temp file)")
     sub.add_parser("audit", help="print the evidence chain for the leading insight")
+    sub.add_parser("adapters", help="list registered reference + license-gated adapters")
+    sub.add_parser("slice", help="run the Phase 3 adapter vertical slice (offline, from cassettes)")
 
     args = parser.parse_args(argv)
 
@@ -103,6 +105,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "audit":
         return _audit()
+
+    if args.command == "adapters":
+        return _adapters()
+
+    if args.command == "slice":
+        return _slice()
 
     return 1
 
@@ -148,6 +156,55 @@ def _audit() -> int:
     print(f"\nChain terminates in sourced INFORMATION: {ok}  "
           f"(auditability guarantee, doc 03 §16.3)")
     return 0 if ok else 1
+
+
+def _adapters() -> int:
+    """List the registered lawful adapters and the license-gated supplemental catalogue."""
+    from ...adapters import ContentAddressedStore
+    from ...adapters.commercial import MaltegoAdapter
+    from ...scenarios.archive_slice import build_registry
+
+    import tempfile
+    registry = build_registry(ContentAddressedStore(tempfile.mkdtemp()))
+    print("\n=== Reference adapters (lawful, public-source; enabled) ===")
+    for a in sorted(registry.all(), key=lambda x: x.id):
+        print(f"  {a.id:20} eff={registry.effectiveness(a.id):.2f}  "
+              f"caps: {', '.join(a.capabilities)}")
+    print("\n=== Supplemental adapters (license-gated; OFF by default) ===")
+    m = MaltegoAdapter.__new__(MaltegoAdapter)
+    print(f"  {m.id:20} vendor={m.vendor}  caps: {', '.join(m.capabilities)}")
+    print(f"  (enable with credentials in {MaltegoAdapter.auth_env} + "
+          f"OSINTENAL_ATTEST_AUTHORIZED=1)")
+    return 0
+
+
+def _slice() -> int:
+    """Run the Phase 3 vertical slice and show selection-by-capability + the storage split."""
+    from ...scenarios.archive_slice import run_archive_slice
+
+    result = run_archive_slice()
+    mast = result.state.hypotheses[result.mast_hypothesis_id]
+    raws = [e for e in result.ledger.events() if e.type == "raw_response"]
+
+    print("\n=== OSINTENAL Phase 3 — adapter vertical slice (offline, from cassettes) ===")
+    print(f"Tool Selection chose by capability: {', '.join(result.selected_adapters)}")
+    print(f"\nLeading hypothesis: {mast.statement!r}")
+    print(f"  confidence {mast.confidence:.2f}  ->  {mast.epistemic_class.value}  "
+          f"(independent groups: "
+          f"{sorted(result.state.independent_source_groups(result.mast_hypothesis_id))})")
+    print("\nStorage split (the integral decision):")
+    for e in raws:
+        ch = e.payload["content_hash"]
+        in_cas = result.cas.has(ch)
+        size = len(result.cas.get(ch)) if in_cas else 0
+        print(f"  {e.payload['adapter']:18} bytes={e.payload['bytes'] or 0:>5}  "
+              f"cas={'yes' if in_cas else 'inline':5} ({size} B)  hash={ch[:12]}…")
+    largest = max(len(e.model_dump_json()) for e in result.ledger.events())
+    print(f"\nLedger stays lean: largest event {largest} B; raw bytes never enter the ledger.")
+    from ...ledger import replay_state
+    identical = replay_state(result.ledger).snapshot() == result.state.snapshot()
+    print(f"Replayable offline: byte-identical state from the ledger = {identical}")
+    return 0 if identical else 1
 
 
 if __name__ == "__main__":

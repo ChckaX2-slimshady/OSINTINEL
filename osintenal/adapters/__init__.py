@@ -1,7 +1,34 @@
-"""Tool adapter framework (doc 05). Tools reach the world only through adapters."""
+"""Tool adapter framework (doc 05). Tools reach the world only through adapters.
 
-from .base import Adapter, RawHit
+Phase 3 adds lawful, public-source reference adapters behind the same Protocol, a
+cassette-backed transport for offline replay, and a content-addressed store so heavy artifacts
+never enter the ledger. Supplemental commercial sources live in ``commercial/``, license-gated
+and off by default.
+"""
+
+from .archives import WaybackAdapter, WikidataAdapter
+from .base import Adapter, AdapterError, RawArtifact, RawHit, ReferenceAdapter
+from .geospatial import NominatimAdapter, OverpassAdapter
+from .infrastructure import CertTransparencyAdapter
 from .registry import AdapterRegistry
+from .storage import ContentAddressedStore
 from .stub import StubEvidenceAdapter
+from .transport import Cassette, HttpClient
 
-__all__ = ["Adapter", "RawHit", "AdapterRegistry", "StubEvidenceAdapter"]
+__all__ = [
+    "Adapter",
+    "AdapterError",
+    "AdapterRegistry",
+    "Cassette",
+    "CertTransparencyAdapter",
+    "ContentAddressedStore",
+    "HttpClient",
+    "NominatimAdapter",
+    "OverpassAdapter",
+    "RawArtifact",
+    "RawHit",
+    "ReferenceAdapter",
+    "StubEvidenceAdapter",
+    "WaybackAdapter",
+    "WikidataAdapter",
+]

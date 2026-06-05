@@ -18,6 +18,8 @@ CAPABILITIES = {
     "media.exif", "media.reverse_image", "media.similarity",
     # reference / compute
     "record.public", "dataset.open", "reference.encyclopedic", "compute.symbolic",
+    # link analysis (supplemental, license-gated)
+    "link.analysis",
     # phase 1 deterministic stub
     "stub.evidence",
 }

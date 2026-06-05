@@ -52,17 +52,31 @@ byte-for-byte (timestamps and confidence history included), and `build_graph()` 
 into the constraint-checked property graph. The durable store is append-only JSONL (zero new
 dependencies); a SQLite/Neo4j backend can replace the embedded one behind the same port.
 
-## Phase 3 — Tool Adapter Framework
+## Phase 3 — Tool Adapter Framework ✅
 **Goal:** real, interchangeable data sources.
-**Scope:** Adapter interface + Registry + capability map (doc 05) · 4–6 reference adapters
-(Wayback, Nominatim/Overpass, ExifTool/metadata, Wikidata, DNS/CT) · VCR cassette recording
-for replay · live smoke tests (network-gated).
-**Vertical slice:** "Tool Selection picks an archive adapter by capability, Acquisition
-fetches a real snapshot, evidence updates a hypothesis — all replayable from cassettes."
+**Scope:** Adapter interface + Registry + capability map (doc 05) · 5 reference adapters
+(Wayback[timemap+snapshot], Nominatim, Overpass, Wikidata, crt.sh/CT) · cassette transport for
+record/replay · content-addressed artifact store · license-gated supplemental framework ·
+live smoke tests (network-gated, opt-in via `OSINTENAL_RECORD=1`).
+**Vertical slice:** "Tool Selection picks an archive adapter by capability, Acquisition fetches
+a real snapshot, evidence updates a hypothesis — all replayable from cassettes." — delivered as
+`osintenal slice` (and `osintenal adapters`).
 **Exit criteria:**
 - ≥4 adapters pass contract + parse/normalize tests; outputs schema-valid with provenance.
+  ✅ 5 adapters, `tests/adapters/test_reference_adapters.py`
 - Tool Selection chooses by capability with no hardcoded path; fallbacks work.
+  ✅ `tests/adapters/test_archive_slice.py`
 - A run is fully replayable offline from recorded cassettes.
+  ✅ `tests/adapters/` + the slice replays byte-identically from the ledger.
+
+**The integral storage decision (versatility vs. data volume).** Phase 2 made every ledger
+event a byte-for-byte object snapshot; left unchecked, heavy adapter payloads would bloat the
+log and slow replay. Resolution: heavy bytes go to a **content-addressed store** (deduped by
+SHA-256) and the ledger records only a lean `raw_response` event holding the content hash — the
+bytes never enter the ledger, so state/graph still replay byte-identically no matter how large
+the artifact. This lets the catalogue favour **broad, light, structured adapters** for
+versatility at ~zero storage cost while the heavy path (Wayback page snapshot) is proven once
+through the CAS. EXIF/image-binary is deliberately deferred to Phase 5 (image investigation).
 
 ## Phase 4 — Investigation Memory
 **Goal:** learn strategy without contaminating evidence.

@@ -1,0 +1,6 @@
+{
+  "4637e5ac0dc7f9a4a3fe0a293c4909becac3869643e1499854a6ee950ed4313c": {
+    "text": "{\"entities\": {\"Q12345\": {\"labels\": {\"en\": {\"value\": \"Bullington radio mast\"}}, \"descriptions\": {\"en\": {\"value\": \"telecommunications mast in Hampshire, England\"}}, \"claims\": {\"P625\": [{\"mainsnak\": {\"datavalue\": {\"value\": {\"latitude\": 51.0153, \"longitude\": -1.3253}}}}]}}}}",
+    "url": "https://www.wikidata.org/wiki/Special:EntityData/Q12345.json"
+  }
+}

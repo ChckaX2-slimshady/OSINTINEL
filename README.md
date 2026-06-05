@@ -31,7 +31,18 @@ deterministic, offline, replayable demo investigation.
 the event log, so an investigation can be killed, reloaded from disk, and **replayed
 byte-for-byte**. A `GraphStore` port with an embedded backend, write-time integrity
 constraints (ladder, provenance-required, speculation-quarantine), and the doc-04 audit
-queries materialize the knowledge graph as a view over the ledger. See
+queries materialize the knowledge graph as a view over the ledger.
+
+**Phase 3 — Tool adapter framework: implemented.** Lawful, public-source reference adapters
+(Nominatim, Overpass, Wayback, Wikidata, crt.sh) reach the world behind one Protocol, chosen
+**by capability** (never a hardcoded path) with fallbacks. Every external call goes through a
+**cassette transport** (replay-by-default), so a whole investigation runs offline and in CI;
+live recording is opt-in (`OSINTENAL_RECORD=1`). The *integral storage decision* keeps the
+ledger lean: heavy artifacts (e.g. a Wayback page snapshot) are written to a **content-addressed
+store** and the ledger holds only a `raw_response` hash/ref — bytes never enter the event log,
+so replay stays byte-identical regardless of data volume. Supplemental commercial sources
+(Maltego, Pipl, PimEyes, Recorded Future, …) are modeled as **license-gated** adapters, off
+unless the operator supplies credentials *and* attests to authorized use. See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) for what each phase delivers.
 
 ### Quickstart
@@ -45,8 +56,11 @@ osintenal verify              # run → persist ledger → reload → replay; pr
                               #   graph + hash chain (Phase 2 durability guarantees)
 osintenal audit               # print the evidence chain for the leading insight,
                               #   terminating in sourced INFORMATION nodes
+osintenal adapters            # list lawful reference + license-gated supplemental adapters
+osintenal slice               # Phase 3: capability-based selection + real (cassette) evidence
+                              #   updating a hypothesis; shows the ledger/CAS storage split
 
-pytest -q                      # unit + epistemic-invariant + replayed scenario tests
+pytest -q                      # unit + epistemic-invariant + adapter + replayed scenario tests
 ```
 
 The demo (the "circled structure" case) shows the full epistemic ladder — **information →
@@ -58,7 +72,7 @@ source corroborates it — even though its backing explanation is already the hi
 type (`EXTRAPOLATION`). Every object carries provenance and the full reasoning chain is
 reported. No network or model API key is required; Phase 1 is deterministic by design (docs 08–09).
 
-### Implemented module map (Phases 1–2)
+### Implemented module map (Phases 1–3)
 
 | Area | Package | Doc |
 |------|---------|-----|
@@ -68,9 +82,9 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | Epistemic invariants | `osintenal/core/invariants.py` | [09](docs/09-testing-methodology.md) |
 | Durable hash-chained ledger + replay | `osintenal/ledger/` | [04](docs/04-knowledge-graph.md) |
 | Investigation state (records → ledger) | `osintenal/core/state.py` | [04](docs/04-knowledge-graph.md) |
-| **Knowledge graph: port, backend, constraints, queries** | `osintenal/graph/` | [04](docs/04-knowledge-graph.md) |
+| Knowledge graph: port, backend, constraints, queries | `osintenal/graph/` | [04](docs/04-knowledge-graph.md) |
 | Nine-agent quorum + Speculation Engine | `osintenal/agents/` | [02](docs/02-agents.md) |
-| Adapter framework + deterministic stub | `osintenal/adapters/` | [05](docs/05-adapters.md) |
+| **Adapters: cassette transport, content-addressed store, reference + license-gated adapters** | `osintenal/adapters/` | [05](docs/05-adapters.md) |
 | Insight report builder | `osintenal/reporting/` | [03](docs/03-data-schemas.md) |
 | CLI | `osintenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
 

@@ -242,6 +242,19 @@ class InvestigationState:
     def _index_speculation(self, sp: SpeculationItem) -> None:
         self.speculations[sp.speculation_id] = sp
 
+    def record_raw_response(self, iteration: int, *, adapter_id: str, capability: str,
+                            content_hash: str, source: str, url: str | None = None,
+                            bytes_len: int | None = None) -> str:
+        """Record an external fetch as a lean ledger event (doc 05 §5.7).
+
+        The payload carries only references — adapter, capability, content hash, source, size —
+        never the fetched bytes themselves. Heavy artifacts live in the content-addressed store
+        keyed by ``content_hash``; the ledger (and thus replay) stays small (doc 05 §5.6). This
+        event introduces no graph node, so it is a pure provenance breadcrumb on replay."""
+        return self._record_id(iteration, "raw_response", adapter_id, {
+            "adapter": adapter_id, "capability": capability, "content_hash": content_hash,
+            "source": source, "url": url, "bytes": bytes_len})
+
     def add_snapshot(self, snap: KnowledgeStateSnapshot) -> None:
         eid = self._record_id(snap.iteration, "node_add", AgentName.EPISTEMOLOGY.value,
                            self._node_payload("KnowledgeStateSnapshot", snap.snapshot_id, snap))
