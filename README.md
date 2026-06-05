@@ -18,10 +18,49 @@ skepticism, and epistemic scrutiny.
 
 ## Status
 
-**Phase 0 — Architecture.** This repository currently contains the *complete architecture
-design*. Per the Prime Directive, no implementation code is written until the architecture is
-complete and internally consistent. See [`docs/`](docs/) for the full design corpus and
-[`docs/06-roadmap.md`](docs/06-roadmap.md) for the path to a runnable Phase 1.
+**Phase 0 — Architecture: complete.** The full design corpus lives in [`docs/`](docs/).
+
+**Phase 1 — Core orchestration framework: implemented & runnable.** The nine-agent quorum,
+the recursive investigation loop, budget governance, an append-only hash-chained provenance
+ledger, the epistemic-invariant guards, and a CLI are all in place and exercised by a
+deterministic, offline, replayable demo investigation. See
+[`docs/06-roadmap.md`](docs/06-roadmap.md) for what each phase delivers.
+
+### Quickstart
+
+```bash
+pip install -e ".[dev]"        # Python 3.11+; only dependency is pydantic v2
+
+osinetenal run                 # run the bundled demo investigation (human-readable report)
+osinetenal run --json          # same, as a schema-valid InsightReport JSON
+osinetenal verify              # run it and verify the provenance ledger hash chain
+
+pytest -q                      # unit + epistemic-invariant + replayed scenario tests
+```
+
+The demo (the "circled structure" case) shows the system framing **competing hypotheses**,
+the **Skeptic gate** holding promotion at `HYPOTHESIS` while a leader rests on a single
+source, and promotion to `EXTRAPOLATION` only once an *independent* source corroborates it —
+with every object carrying provenance and the full reasoning chain reported. No network or
+model API key is required; Phase 1 is deterministic by design (docs 08–09).
+
+### Implemented module map (Phase 1)
+
+| Area | Package | Doc |
+|------|---------|-----|
+| Canonical schemas | `osinetenal/core/schemas/` | [03](docs/03-data-schemas.md) |
+| Recursive loop, termination, controller | `osinetenal/core/runtime/` | [01](docs/01-architecture.md) |
+| Budget governor | `osinetenal/core/budget/` | [08](docs/08-compute-token-optimization.md) |
+| Epistemic invariants | `osinetenal/core/invariants.py` | [09](docs/09-testing-methodology.md) |
+| Append-only provenance ledger | `osinetenal/ledger/` | [04](docs/04-knowledge-graph.md) |
+| Investigation state (graph stand-in) | `osinetenal/core/state.py` | [04](docs/04-knowledge-graph.md) |
+| Nine-agent quorum + Speculation Engine | `osinetenal/agents/` | [02](docs/02-agents.md) |
+| Adapter framework + deterministic stub | `osinetenal/adapters/` | [05](docs/05-adapters.md) |
+| Insight report builder | `osinetenal/reporting/` | [03](docs/03-data-schemas.md) |
+| CLI | `osinetenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
+
+Phase 2 replaces the in-memory state store with the graph-native backend behind the same
+contract; the ledger, schemas, and agent contracts are already the Phase-2 interface.
 
 ## Architecture Documents
 
