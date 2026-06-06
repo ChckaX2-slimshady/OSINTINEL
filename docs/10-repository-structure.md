@@ -90,7 +90,7 @@ OSINTENAL/
 │   │
 │   ├── pipelines/                 # domain verticals built on the core loop
 │   │   ├── image_investigation.py # doc 06 Phase 5 — EXIF→shadow→…→ranked geolocation ✅
-│   │   └── geospatial_reasoning.py# doc 06 Phase 6
+│   │   └── geospatial_reasoning.py# doc 06 Phase 6 — multi-constraint narrowing + radius ✅
 │   │
 │   ├── memory/                    # doc 06 Phase 4 — strategy only, evidence firewall
 │   │   ├── store.py               # RunDigest + InvestigationMemory (effectiveness, calibration)

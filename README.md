@@ -59,7 +59,15 @@ location hypotheses with explicit supporting *and* contradicting evidence**, con
 concrete next steps. A dependency-free EXIF codec round-trips real JPEG bytes (image → CAS),
 and a NOAA solar-position calculation (`compute.symbolic`) predicts each candidate's shadow to
 support or refute it. The Skeptic holds the leading location at HYPOTHESIS while it rests on a
-single source and promotes it to INSIGHT only once independent groups corroborate it. See
+single source and promotes it to INSIGHT only once independent groups corroborate it.
+
+**Phase 6 — Geospatial Reasoning: implemented.** Beyond ranking discrete candidates, the system
+narrows a location *continuously* by intersecting independent spatial constraints — sun
+elevation, ground elevation, landmark bearing/distance, biome band — into a centroid with an
+honest **uncertainty radius** and a calibrated confidence. On a global golden suite each case
+narrows from ~1,500 km (one constraint) to ~10 km (five), the truth lands inside the radius
+every time, and confidence collapses when constraints conflict. The result is a `Location` node
+with a confidence radius (doc 04 §2). See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) for what each phase delivers.
 
 ### Quickstart
@@ -80,8 +88,10 @@ osintenal memory              # Phase 4: learning benchmark — cost to solve th
                               #   as Investigation Memory learns which adapter actually works
 osintenal image               # Phase 5: geolocate a sample image — ranked location hypotheses
                               #   with supporting AND contradicting evidence + next steps
+osintenal geo                 # Phase 6: narrow a location across ≥3 independent geospatial
+                              #   constraints — centroid + uncertainty radius, calibrated
 
-pytest -q                      # unit + epistemic-invariant + adapter + memory + image + scenario
+pytest -q                      # unit + epistemic-invariant + adapter + memory + geo + scenario
 ```
 
 The demo (the "circled structure" case) shows the full epistemic ladder — **information →
@@ -93,7 +103,7 @@ source corroborates it — even though its backing explanation is already the hi
 type (`EXTRAPOLATION`). Every object carries provenance and the full reasoning chain is
 reported. No network or model API key is required; Phase 1 is deterministic by design (docs 08–09).
 
-### Implemented module map (Phases 1–5)
+### Implemented module map (Phases 1–6)
 
 | Area | Package | Doc |
 |------|---------|-----|
@@ -107,7 +117,8 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | Nine-agent quorum + Speculation Engine | `osintenal/agents/` | [02](docs/02-agents.md) |
 | Adapters: cassette transport, content-addressed store, reference + license-gated adapters | `osintenal/adapters/` | [05](docs/05-adapters.md) |
 | Investigation Memory: run digests, learned priors, evidence firewall | `osintenal/memory/` | [01](docs/01-architecture.md) |
-| **Image Investigation pipeline (EXIF codec, solar geometry, ranked geolocation)** | `osintenal/pipelines/`, `adapters/media`, `adapters/compute` | [06](docs/06-roadmap.md) |
+| Image Investigation pipeline (EXIF codec, solar geometry, ranked geolocation) | `osintenal/pipelines/image_investigation.py`, `adapters/media`, `adapters/compute` | [06](docs/06-roadmap.md) |
+| **Geospatial reasoning (multi-constraint narrowing, confidence radius)** | `osintenal/pipelines/geospatial_reasoning.py` | [06](docs/06-roadmap.md) |
 | Insight report builder | `osintenal/reporting/` | [03](docs/03-data-schemas.md) |
 | CLI | `osintenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
 

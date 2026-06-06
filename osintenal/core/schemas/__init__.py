@@ -27,6 +27,7 @@ from .hypothesis import (
     SpeculationItem,
 )
 from .investigation import Budgets, Investigation, InvestigationConfig
+from .location import Location
 from .messages import AgentMessage, BudgetSnapshot, LedgerEvent
 from .observation import EvidenceObject, Observation
 from .planning import CostEstimate, EvidenceRequest, ToolPlan
@@ -63,6 +64,7 @@ __all__ = [
     "InvestigationConfig",
     "Known",
     "KnowledgeState",
+    "Location",
     "KnowledgeStateSnapshot",
     "KnownUnknown",
     "LedgerEvent",

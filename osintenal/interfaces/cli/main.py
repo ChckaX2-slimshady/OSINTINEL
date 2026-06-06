@@ -92,6 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     p_mem = sub.add_parser("memory", help="run the Phase 4 learning benchmark (cost falls as Memory learns)")
     p_mem.add_argument("--rounds", type=int, default=5)
     sub.add_parser("image", help="run the Phase 5 image-geolocation pipeline on a sample image")
+    sub.add_parser("geo", help="run the Phase 6 geospatial constraint-narrowing golden suite")
 
     args = parser.parse_args(argv)
 
@@ -121,7 +122,45 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "image":
         return _image()
 
+    if args.command == "geo":
+        return _geo()
+
     return 1
+
+
+def _geo() -> int:
+    """Run the geospatial golden suite: narrow each case across ≥3 independent constraints."""
+    from ...scenarios.geospatial_demo import (
+        CONFLICT_CASE,
+        GOLDEN_CASES,
+        narrowing_curve,
+        run_geospatial_demo,
+        solve_case,
+    )
+
+    print("\n=== OSINTENAL Phase 6 — Geospatial constraint narrowing ===")
+    print(f"{'golden case':24} {'groups':>6} {'radius':>9} {'conf':>6} {'error':>8}  truth-in-radius")
+    results = run_geospatial_demo()
+    covered = 0
+    for r in results:
+        e = r.estimate
+        covered += int(r.within_radius)
+        print(f"{r.case.name:24} {e.n_independent:>6} {e.radius_km:>7.1f}km {e.confidence:>6.2f} "
+              f"{r.error_km:>6.1f}km  {'yes' if r.within_radius else 'NO'}")
+    print(f"\nCoverage (truth within stated radius): {covered}/{len(results)} golden cases.")
+
+    curve = narrowing_curve(GOLDEN_CASES[1])
+    print("\nLocation narrows as independent constraints intersect (Valais alps):")
+    for groups, radius in curve:
+        bar = "#" * max(1, int(40 * radius / curve[0][1]))
+        print(f"  {groups} independent constraint group(s): {radius:8.1f} km  {bar}")
+
+    conflict = solve_case(CONFLICT_CASE)
+    print(f"\nCalibration check — conflicting constraints: confidence "
+          f"{conflict.estimate.confidence:.2f} (low, as it should be), radius "
+          f"{conflict.estimate.radius_km:.0f} km.")
+    ok = covered == len(results) and conflict.estimate.confidence < 0.3
+    return 0 if ok else 1
 
 
 def _image() -> int:

@@ -131,13 +131,28 @@ evidence. `compute.symbolic` solar geometry turns capture time + an observed sha
 support/contradiction per candidate. Evidence→hypothesis linking remains a deterministic
 relevance rule standing in for a vision/LLM model (the loop stays model-free through Phase 5).
 
-## Phase 6 — Geospatial Reasoning
+## Phase 6 — Geospatial Reasoning ✅
 **Goal:** deepen spatial inference quality.
 **Scope:** terrain/vegetation/architecture cross-referencing · satellite vs. ground
 comparison · multi-constraint location narrowing · confidence radii on `Location` nodes.
+**Vertical slice:** a golden suite where independent constraints (sun elevation, ground
+elevation, landmark bearing/distance, biome band) intersect to a centroid + radius — delivered
+as `osintenal geo` and `pipelines/geospatial_reasoning.py`.
 **Exit criteria:**
 - Demonstrated location-narrowing across ≥3 independent geospatial constraints on golden
-  cases, with calibrated confidence and uncertainty radius.
+  cases, with calibrated confidence and uncertainty radius. ✅
+  `tests/pipelines/test_geospatial.py` — four global golden cases each narrow from ~1,500 km
+  (one constraint) to ~10 km (five), the truth lands inside the radius in every case (100%
+  coverage), confidence is ~0.96 when constraints agree and collapses to ~0.06 when they
+  conflict, and the result maps to a `Location` node carrying `confidence_radius_km`.
+
+**Design.** A deterministic, dependency-free hierarchical grid solver: each constraint is a
+likelihood field over the surface; their product is the posterior. A coarse global pass finds
+the basin, a descent re-centres on the MAP, and an adaptive pass sized to hold ~95% of the mass
+yields the centroid, the 95%-mass radius (floored at grid resolution — no sub-grid overclaim),
+and a confidence equal to constraint *agreement* × an independence factor. "Independent" is
+counted by distinct source groups, so the sun's elevation and azimuth count once. Reuses the
+Phase 5 `compute.symbolic` solar model; a `SyntheticDEM` stands in for a real elevation adapter.
 
 ## Phase 7 — Dashboard & Visualization
 **Goal:** make the investigation legible and replayable.
