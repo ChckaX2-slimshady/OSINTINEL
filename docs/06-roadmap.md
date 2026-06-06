@@ -105,19 +105,31 @@ investigates while remaining structurally unable to rewrite evidentiary history.
 credited only when it supported the leader of a **resolved** run (reached the confidence
 threshold / a gate-cleared insight), so weak or single-source feeds decay out of preference.
 
-## Phase 5 — Image Investigation Pipeline
+## Phase 5 — Image Investigation Pipeline ✅
 **Goal:** the flagship vertical (doc references "Image Investigation Mode").
 **Scope:** pipeline: metadata → EXIF → landmark → terrain → vegetation → architecture →
 atmospheric → shadow → historical retrieval → satellite comparison → geospatial hypothesis
 generation. Output: ranked location hypotheses with supporting + contradicting evidence,
 confidence scores, recommended next steps.
 **Vertical slice:** "Upload an image; receive ranked geolocation hypotheses with an explicit
-contradicting-evidence section and recommended next investigations."
+contradicting-evidence section and recommended next investigations." — delivered as
+`osintenal image` and `pipelines/image_investigation.py`.
 **Exit criteria:**
-- Image mode produces ranked location hypotheses with supporting AND contradicting evidence.
+- Image mode produces ranked location hypotheses with supporting AND contradicting evidence. ✅
+  `tests/pipelines/test_image_pipeline.py`
 - Shadow/sun-angle and terrain reasoning use the `compute.symbolic`/geo adapters with
-  provenance.
-- Skeptic actively challenges the leading location; no single-source conclusions promoted.
+  provenance. ✅ a real NOAA solar-position calc (`adapters/compute/solar.py`) predicts each
+  candidate's shadow and supports/contradicts it; geo corroboration via Overpass/Wikidata.
+- Skeptic actively challenges the leading location; no single-source conclusions promoted. ✅
+  the leader is held at HYPOTHESIS under a blocking source-dependency finding while it rests on
+  EXIF alone, and promoted to INSIGHT only once independent groups corroborate it.
+
+**New capabilities.** `media.exif` is the image-binary path deferred from Phase 3: a
+dependency-free TIFF/EXIF codec (`adapters/media/exif.py`) round-trips real JPEG bytes, which
+are stored in the content-addressed store while only the small GPS/timestamp structure becomes
+evidence. `compute.symbolic` solar geometry turns capture time + an observed shadow into
+support/contradiction per candidate. Evidence→hypothesis linking remains a deterministic
+relevance rule standing in for a vision/LLM model (the loop stays model-free through Phase 5).
 
 ## Phase 6 — Geospatial Reasoning
 **Goal:** deepen spatial inference quality.

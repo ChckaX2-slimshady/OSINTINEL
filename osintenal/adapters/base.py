@@ -101,7 +101,8 @@ class ReferenceAdapter:
     license_note: str = "public source; respect provider ToS and rate limits"
     default_cost = CostEstimate(tokens=150, money_usd=0.0, seconds=0.4, requests=1)
 
-    def __init__(self, client: HttpClient, cas: ContentAddressedStore | None = None) -> None:
+    def __init__(self, client: HttpClient | None = None,
+                 cas: ContentAddressedStore | None = None) -> None:
         self.client = client
         self.cas = cas
         self.last_artifact: RawArtifact | None = None

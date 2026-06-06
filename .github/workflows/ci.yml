@@ -27,3 +27,5 @@ jobs:
         run: osintenal slice
       - name: Smoke-run the memory learning benchmark
         run: osintenal memory
+      - name: Smoke-run the image investigation pipeline
+        run: osintenal image

@@ -8,8 +8,10 @@ and off by default.
 
 from .archives import WaybackAdapter, WikidataAdapter
 from .base import Adapter, AdapterError, RawArtifact, RawHit, ReferenceAdapter
+from .compute import SolarGeometryAdapter
 from .geospatial import NominatimAdapter, OverpassAdapter
 from .infrastructure import CertTransparencyAdapter
+from .media import ExifAdapter
 from .registry import AdapterRegistry
 from .storage import ContentAddressedStore
 from .stub import StubEvidenceAdapter
@@ -22,12 +24,14 @@ __all__ = [
     "Cassette",
     "CertTransparencyAdapter",
     "ContentAddressedStore",
+    "ExifAdapter",
     "HttpClient",
     "NominatimAdapter",
     "OverpassAdapter",
     "RawArtifact",
     "RawHit",
     "ReferenceAdapter",
+    "SolarGeometryAdapter",
     "StubEvidenceAdapter",
     "WaybackAdapter",
     "WikidataAdapter",

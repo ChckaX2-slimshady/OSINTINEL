@@ -83,11 +83,13 @@ OSINTENAL/
 │   │   ├── geospatial/            # nominatim, overpass  (+ mapillary, satellite later)
 │   │   ├── infrastructure/        # cert_transparency  (+ dns, asn, amass later)
 │   │   ├── archives/              # wayback, wikidata  (+ archive_today, wikimedia later)
-│   │   ├── identity/ media/ documents/   # later phases (sherlock, exiftool, ocr…)
+│   │   ├── media/                 # exif codec + ExifAdapter (media.exif)
+│   │   ├── compute/               # solar geometry (compute.symbolic)
+│   │   ├── identity/ documents/   # later phases (sherlock, ocr…)
 │   │   └── commercial/            # license-gated supplemental (Maltego…), off by default
 │   │
 │   ├── pipelines/                 # domain verticals built on the core loop
-│   │   ├── image_investigation.py # doc 06 Phase 5 (EXIF→…→geo hypotheses)
+│   │   ├── image_investigation.py # doc 06 Phase 5 — EXIF→shadow→…→ranked geolocation ✅
 │   │   └── geospatial_reasoning.py# doc 06 Phase 6
 │   │
 │   ├── memory/                    # doc 06 Phase 4 — strategy only, evidence firewall

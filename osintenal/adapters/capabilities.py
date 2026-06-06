@@ -15,7 +15,7 @@ CAPABILITIES = {
     # documents
     "doc.ocr", "doc.metadata", "doc.pdf",
     # media
-    "media.exif", "media.reverse_image", "media.similarity",
+    "media.exif", "media.metadata", "media.reverse_image", "media.similarity",
     # reference / compute
     "record.public", "dataset.open", "reference.encyclopedic", "compute.symbolic",
     # link analysis (supplemental, license-gated)

@@ -91,6 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("slice", help="run the Phase 3 adapter vertical slice (offline, from cassettes)")
     p_mem = sub.add_parser("memory", help="run the Phase 4 learning benchmark (cost falls as Memory learns)")
     p_mem.add_argument("--rounds", type=int, default=5)
+    sub.add_parser("image", help="run the Phase 5 image-geolocation pipeline on a sample image")
 
     args = parser.parse_args(argv)
 
@@ -117,7 +118,41 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "memory":
         return _memory(args.rounds)
 
+    if args.command == "image":
+        return _image()
+
     return 1
+
+
+def _image() -> int:
+    """Run the image-investigation pipeline and print ranked geolocation hypotheses."""
+    from ...scenarios.image_demo import run_image_demo
+
+    r = run_image_demo()
+    print("\n=== OSINTENAL Phase 5 — Image Investigation (geolocation) ===")
+    print("Question: Where was this image taken?\n")
+    print("Ranked location hypotheses:")
+    for i, f in enumerate(r.ranked):
+        print(f"  {i + 1}. {f.name:32} {f.confidence:5.2f}  [{f.epistemic_class}]  "
+              f"(+{len(f.supporting)} supporting / -{len(f.contradicting)} contradicting)")
+    leader = r.leader
+    print(f"\nLeading location: {leader.name}  [{leader.epistemic_class}]")
+    print("  Supporting evidence:")
+    for s in leader.supporting:
+        print(f"    + {s}")
+    print("  Contradicting evidence (surfaced, not hidden):")
+    for s in leader.contradicting:
+        print(f"    - {s}")
+    print(f"\nSkeptic gate: challenged single-source leader = "
+          f"{r.leader_challenged_single_source}; held at "
+          f"{r.leader_class_when_single_source} until independent corroboration "
+          f"(now {leader.epistemic_class}).")
+    print("\nRecommended next investigations:")
+    for s in r.next_steps():
+        print(f"  - {s}")
+    ok = (leader.epistemic_class == "INSIGHT" and bool(leader.contradicting)
+          and r.leader_challenged_single_source)
+    return 0 if ok else 1
 
 
 def _memory(rounds: int) -> int:

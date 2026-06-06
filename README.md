@@ -50,7 +50,16 @@ to the planner and tool selector, so rerunning a solved case is measurably cheap
 benchmark falls from 13,200 to 1,700 tokens, ~87%, once Memory corrects a misleading default).
 Learning is held behind a strict **evidence/strategy firewall**: Memory ingests only a
 whitelisted `RunDigest` of metrics (never evidence content) and is handed to agents as a
-read-only priors port with no path to read or rewrite evidentiary history. See
+read-only priors port with no path to read or rewrite evidentiary history.
+
+**Phase 5 — Image Investigation Pipeline: implemented.** The flagship vertical geolocates an
+uploaded image through the full stage sequence (EXIF → landmark → terrain → vegetation →
+architecture → shadow → historical → satellite → hypothesis generation) and returns **ranked
+location hypotheses with explicit supporting *and* contradicting evidence**, confidence, and
+concrete next steps. A dependency-free EXIF codec round-trips real JPEG bytes (image → CAS),
+and a NOAA solar-position calculation (`compute.symbolic`) predicts each candidate's shadow to
+support or refute it. The Skeptic holds the leading location at HYPOTHESIS while it rests on a
+single source and promotes it to INSIGHT only once independent groups corroborate it. See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) for what each phase delivers.
 
 ### Quickstart
@@ -69,8 +78,10 @@ osintenal slice               # Phase 3: capability-based selection + real (cass
                               #   updating a hypothesis; shows the ledger/CAS storage split
 osintenal memory              # Phase 4: learning benchmark — cost to solve the same case falls
                               #   as Investigation Memory learns which adapter actually works
+osintenal image               # Phase 5: geolocate a sample image — ranked location hypotheses
+                              #   with supporting AND contradicting evidence + next steps
 
-pytest -q                      # unit + epistemic-invariant + adapter + memory + scenario tests
+pytest -q                      # unit + epistemic-invariant + adapter + memory + image + scenario
 ```
 
 The demo (the "circled structure" case) shows the full epistemic ladder — **information →
@@ -82,7 +93,7 @@ source corroborates it — even though its backing explanation is already the hi
 type (`EXTRAPOLATION`). Every object carries provenance and the full reasoning chain is
 reported. No network or model API key is required; Phase 1 is deterministic by design (docs 08–09).
 
-### Implemented module map (Phases 1–4)
+### Implemented module map (Phases 1–5)
 
 | Area | Package | Doc |
 |------|---------|-----|
@@ -95,7 +106,8 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | Knowledge graph: port, backend, constraints, queries | `osintenal/graph/` | [04](docs/04-knowledge-graph.md) |
 | Nine-agent quorum + Speculation Engine | `osintenal/agents/` | [02](docs/02-agents.md) |
 | Adapters: cassette transport, content-addressed store, reference + license-gated adapters | `osintenal/adapters/` | [05](docs/05-adapters.md) |
-| **Investigation Memory: run digests, learned priors, evidence firewall** | `osintenal/memory/` | [01](docs/01-architecture.md) |
+| Investigation Memory: run digests, learned priors, evidence firewall | `osintenal/memory/` | [01](docs/01-architecture.md) |
+| **Image Investigation pipeline (EXIF codec, solar geometry, ranked geolocation)** | `osintenal/pipelines/`, `adapters/media`, `adapters/compute` | [06](docs/06-roadmap.md) |
 | Insight report builder | `osintenal/reporting/` | [03](docs/03-data-schemas.md) |
 | CLI | `osintenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
 
