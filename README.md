@@ -67,7 +67,15 @@ elevation, ground elevation, landmark bearing/distance, biome band — into a ce
 honest **uncertainty radius** and a calibrated confidence. On a global golden suite each case
 narrows from ~1,500 km (one constraint) to ~10 km (five), the truth lands inside the radius
 every time, and confidence collapses when constraints conflict. The result is a `Location` node
-with a confidence radius (doc 04 §2). See
+with a confidence radius (doc 04 §2).
+
+**Phase 7 — Dashboard & Visualization: implemented.** `osintenal dashboard` renders any run into
+a single **self-contained HTML console** — inline CSS/SVG/vanilla-JS, **no external scripts,
+fonts, or network** — so it works air-gapped and is testable without a browser. It shows the
+knowledge graph (layered by epistemic tier), the per-iteration timeline, investigation replay
+(any past iteration reconstructed from the ledger), hypothesis & confidence evolution
+(sparklines from `confidence_history`), a source explorer, and agent activity. A read-only JSON
+service layer (`interfaces/api`) is the REST contract a FastAPI app would serve. See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) for what each phase delivers.
 
 ### Quickstart
@@ -90,8 +98,9 @@ osintenal image               # Phase 5: geolocate a sample image — ranked loc
                               #   with supporting AND contradicting evidence + next steps
 osintenal geo                 # Phase 6: narrow a location across ≥3 independent geospatial
                               #   constraints — centroid + uncertainty radius, calibrated
+osintenal dashboard --out d.html   # Phase 7: render the self-contained HTML console (offline)
 
-pytest -q                      # unit + epistemic-invariant + adapter + memory + geo + scenario
+pytest -q                      # unit + invariant + adapter + memory + geo + dashboard + scenario
 ```
 
 The demo (the "circled structure" case) shows the full epistemic ladder — **information →
@@ -103,7 +112,7 @@ source corroborates it — even though its backing explanation is already the hi
 type (`EXTRAPOLATION`). Every object carries provenance and the full reasoning chain is
 reported. No network or model API key is required; Phase 1 is deterministic by design (docs 08–09).
 
-### Implemented module map (Phases 1–6)
+### Implemented module map (Phases 1–7)
 
 | Area | Package | Doc |
 |------|---------|-----|
@@ -120,6 +129,7 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | Image Investigation pipeline (EXIF codec, solar geometry, ranked geolocation) | `osintenal/pipelines/image_investigation.py`, `adapters/media`, `adapters/compute` | [06](docs/06-roadmap.md) |
 | **Geospatial reasoning (multi-constraint narrowing, confidence radius)** | `osintenal/pipelines/geospatial_reasoning.py` | [06](docs/06-roadmap.md) |
 | Insight report builder | `osintenal/reporting/` | [03](docs/03-data-schemas.md) |
+| **Dashboard service + self-contained HTML console** | `osintenal/interfaces/api`, `osintenal/interfaces/dashboard` | [06](docs/06-roadmap.md) |
 | CLI | `osintenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
 
 A later phase can swap the embedded `GraphStore` for a graph-native backend (SQLite/Neo4j)

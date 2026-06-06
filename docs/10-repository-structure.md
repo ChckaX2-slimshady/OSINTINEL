@@ -105,9 +105,9 @@ OSINTENAL/
 │   │   └── README.md
 │   │
 │   └── interfaces/
-│       ├── cli/                   # `osintenal run|replay|report|graph` (Phase 1)
-│       ├── api/                   # FastAPI REST (Phase 7)
-│       └── dashboard/             # web UI: graph/timeline/replay/evolution (Phase 7)
+│       ├── cli/                   # `osintenal run|verify|audit|slice|memory|image|geo|dashboard`
+│       ├── api/                   # read-only service: build_dashboard_data → JSON (REST contract) ✅
+│       └── dashboard/             # self-contained offline HTML console (SVG graph/timeline/evolution) ✅
 │
 ├── tests/                         # doc 09
 │   ├── unit/                      # schemas, adapters, confidence math, graph/ledger

@@ -11,3 +11,7 @@ venv/
 *.db
 dist/
 build/
+
+# Phase 7 dashboard default output
+osintenal-dashboard.html
+*.dashboard.html

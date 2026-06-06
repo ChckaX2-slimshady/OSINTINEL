@@ -154,15 +154,30 @@ and a confidence equal to constraint *agreement* × an independence factor. "Ind
 counted by distinct source groups, so the sun's elevation and azimuth count once. Reuses the
 Phase 5 `compute.symbolic` solar model; a `SyntheticDEM` stands in for a real elevation adapter.
 
-## Phase 7 — Dashboard & Visualization
+## Phase 7 — Dashboard & Visualization ✅
 **Goal:** make the investigation legible and replayable.
 **Scope (REST API + Web Dashboard):** Knowledge Graph visualization · Timeline · Investigation
 Replay · Hypothesis Evolution tracking · Confidence Evolution tracking · Source Explorer ·
 Agent Activity Monitoring.
+**Vertical slice:** `osintenal dashboard` renders a run into one self-contained HTML console;
+the JSON service payload (`interfaces/api`) is the REST contract.
 **Exit criteria:**
-- Live and historical investigations render as an explorable graph + timeline.
-- Replay reconstructs any past iteration from the ledger.
-- Hypothesis & confidence evolution are visualized from `confidence_history`.
+- Live and historical investigations render as an explorable graph + timeline. ✅
+  `interfaces/dashboard` renders a layered SVG knowledge graph + per-iteration timeline.
+- Replay reconstructs any past iteration from the ledger. ✅ `replay_state(…, until_iteration=k)`
+  / `replay_iteration`, covered by `tests/interfaces/test_dashboard.py`.
+- Hypothesis & confidence evolution are visualized from `confidence_history`. ✅ SVG sparklines
+  per hypothesis, leader highlighted.
+
+**Design.** To stay air-gapped, deterministic, and testable without a browser (the discipline
+held since Phase 1), Phase 7 is a **static-site generator** rather than a live SPA: a read-only
+service layer (`interfaces/api/service.py`) projects a run into a JSON-serializable
+`DashboardData` (the REST contract — a FastAPI app would just return it), and a renderer
+(`interfaces/dashboard/render.py`) emits one HTML document with **inline** CSS/SVG/vanilla-JS and
+**zero external resources** (no CDNs, web fonts, or network). The colour language *is* the
+epistemic ladder, so the visuals encode the Foundational Separation rather than decorate it.
+Tests assert the offline guarantee (no `http(s)://`, `src=`, `<link>`, `@import`) and that the
+graph/timeline/evolution sections are present and replayable.
 
 ## Phase 8 — Self-Improvement Systems
 **Goal:** recursively improve investigative strategy — **without rewriting evidentiary

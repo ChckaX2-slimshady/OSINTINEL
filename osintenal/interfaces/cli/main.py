@@ -93,6 +93,9 @@ def main(argv: list[str] | None = None) -> int:
     p_mem.add_argument("--rounds", type=int, default=5)
     sub.add_parser("image", help="run the Phase 5 image-geolocation pipeline on a sample image")
     sub.add_parser("geo", help="run the Phase 6 geospatial constraint-narrowing golden suite")
+    p_dash = sub.add_parser("dashboard", help="render the Phase 7 self-contained HTML console")
+    p_dash.add_argument("--out", default="osintenal-dashboard.html",
+                        help="output HTML path (default: ./osintenal-dashboard.html)")
 
     args = parser.parse_args(argv)
 
@@ -125,7 +128,32 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "geo":
         return _geo()
 
+    if args.command == "dashboard":
+        return _dashboard(args.out)
+
     return 1
+
+
+def _dashboard(out: str) -> int:
+    """Run the demo investigation and render the self-contained HTML console."""
+    from ...interfaces.api import build_dashboard_data
+    from ...interfaces.dashboard import render_dashboard
+
+    result = _run_demo(None)
+    data = build_dashboard_data(result)
+    html = render_dashboard(data)
+    from pathlib import Path
+    path = Path(out)
+    path.write_text(html, encoding="utf-8")
+
+    print("\n=== OSINTENAL Phase 7 — Investigation Console ===")
+    print(f"Rendered self-contained dashboard → {path}  ({len(html) // 1024} KB)")
+    print(f"  graph: {len(data.nodes)} nodes / {len(data.edges)} edges")
+    print(f"  timeline: {len(data.timeline)} iterations, {len(data.events)} ledger events")
+    print(f"  confidence tracks: {len(data.hypothesis_tracks)}  "
+          f"| sources: {len(data.sources)}  | agents: {len(data.agent_activity)}")
+    print("  offline & self-contained: no external scripts, styles, fonts, or network calls.")
+    return 0
 
 
 def _geo() -> int:

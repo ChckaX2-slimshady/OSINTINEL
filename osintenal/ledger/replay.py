@@ -45,12 +45,19 @@ _NODE_KINDS = {
 }
 
 
-def replay_state(ledger: Ledger, investigation_id: str | None = None) -> "InvestigationState":
-    """Reconstruct an ``InvestigationState`` from a ledger's events."""
+def replay_state(ledger: Ledger, investigation_id: str | None = None, *,
+                 until_iteration: int | None = None) -> "InvestigationState":
+    """Reconstruct an ``InvestigationState`` from a ledger's events.
+
+    ``until_iteration`` reconstructs the graph *as of* a past iteration (events with a higher
+    iteration are not applied) — the basis for dashboard Investigation Replay (doc 06 Phase 7).
+    """
     # Imported lazily to avoid a ledger <-> core.state import cycle (state mirrors to the ledger).
     from ..core.state import InvestigationState
 
     events = ledger.events()
+    if until_iteration is not None:
+        events = [e for e in events if e.iteration <= until_iteration]
     if investigation_id is None:
         investigation_id = events[0].investigation_id if events else ""
 

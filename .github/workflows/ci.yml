@@ -31,3 +31,5 @@ jobs:
         run: osintenal image
       - name: Smoke-run the geospatial narrowing suite
         run: osintenal geo
+      - name: Smoke-render the dashboard console
+        run: osintenal dashboard --out /tmp/osintenal-dashboard.html
