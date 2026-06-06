@@ -7,6 +7,12 @@ completeness — *working intelligence is preferable to perfect architecture.*
 Each phase below lists: goal, scope, the vertical slice that proves it, and **exit criteria**
 (must all pass to advance). Phases map to the brief's Phase 1–8.
 
+> **Paradigm correction (post-Phase 7).** OSINTENAL is **online and model-driven**: it depends on
+> live open-source data and a tiered model ensemble (doc 11). The deterministic, no-network,
+> no-key behavior built through Phases 1–7 is retained **as the test/replay mode**, not the
+> product's operating mode. Model integration is tracked as **Phase M** (below), slotted before
+> Phase 8 (Self-Improvement), which depends on it.
+
 ---
 
 ## Phase 0 — Architecture (this corpus) ✅
@@ -177,7 +183,27 @@ service layer (`interfaces/api/service.py`) projects a run into a JSON-serializa
 **zero external resources** (no CDNs, web fonts, or network). The colour language *is* the
 epistemic ladder, so the visuals encode the Foundational Separation rather than decorate it.
 Tests assert the offline guarantee (no `http(s)://`, `src=`, `<link>`, `@import`) and that the
-graph/timeline/evolution sections are present and replayable.
+graph/timeline/evolution sections are present and replayable. Navigation is **CSS-only (no
+JavaScript)** so tabs work even where scripts are stripped.
+
+## Phase M — Model Integration (cross-cutting; before Phase 8) — gateway ◑
+**Goal:** make OSINTENAL model-driven over live data (doc 11), with auditable, replayable,
+cost-accounted model calls.
+**Scope:** `InferenceGateway` + `Embedder` ports · tier→model routing (`embed`=HF, `task/nano/
+small`=HF specialized, `reason/large`=Anthropic) · providers over the cassette transport
+(record/replay) · cost into the Budget Governor · lean `model_call` ledger events · graceful
+degradation (live → replay → deterministic).
+**Vertical slice:** `osintenal models` shows the routing and exercises the gateway; live runs
+record model I/O and replay offline.
+**Milestones / exit criteria:**
+- ✅ **Gateway foundation** — ports, providers (deterministic + Anthropic + Hugging Face),
+  record/replay, cost accounting, `model_call` events, `osintenal models`, credentials never in
+  cassettes. `tests/inference/test_gateway.py`.
+- ◻ **Wire agents tier-by-tier** — `task` (relevance linking, extraction, query formulation),
+  then `embed` (Memory/dedup/true source-independence), then `reason` (Connections, Synthesis,
+  Skeptic, Epistemology) — each behind the gateway, each recorded for replay.
+- ◻ **Online-first defaults** — adapters live by default; cassettes become the recorded test
+  corpus; golden runs recorded once and replayed in CI.
 
 ## Phase 8 — Self-Improvement Systems
 **Goal:** recursively improve investigative strategy — **without rewriting evidentiary

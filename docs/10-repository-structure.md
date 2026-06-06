@@ -92,6 +92,12 @@ OSINTENAL/
 │   │   ├── image_investigation.py # doc 06 Phase 5 — EXIF→shadow→…→ranked geolocation ✅
 │   │   └── geospatial_reasoning.py# doc 06 Phase 6 — multi-constraint narrowing + radius ✅
 │   │
+│   ├── inference/                 # doc 11 — model & inference layer (Phase M)
+│   │   ├── gateway.py             # TieredGateway: tier→provider routing, cost, ledger record
+│   │   ├── config.py              # tier→model map, prices, build_gateway (live/replay/det.)
+│   │   ├── types.py               # ChatRequest/ModelResponse/EmbeddingResult/Usage
+│   │   └── providers/             # anthropic (flagship) · huggingface (embed+small) · deterministic
+│   │
 │   ├── memory/                    # doc 06 Phase 4 — strategy only, evidence firewall
 │   │   ├── store.py               # RunDigest + InvestigationMemory (effectiveness, calibration)
 │   │   ├── digest.py              # build_run_digest: the sole, firewalled bridge from a run

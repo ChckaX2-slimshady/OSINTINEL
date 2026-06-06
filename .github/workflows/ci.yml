@@ -33,3 +33,5 @@ jobs:
         run: osintenal geo
       - name: Smoke-render the dashboard console
         run: osintenal dashboard --out /tmp/osintenal-dashboard.html
+      - name: Smoke-run the inference gateway (deterministic, offline)
+        run: osintenal models

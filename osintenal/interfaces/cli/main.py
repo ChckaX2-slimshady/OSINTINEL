@@ -96,6 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     p_dash = sub.add_parser("dashboard", help="render the Phase 7 self-contained HTML console")
     p_dash.add_argument("--out", default="osintenal-dashboard.html",
                         help="output HTML path (default: ./osintenal-dashboard.html)")
+    sub.add_parser("models", help="show the model-tier config and exercise the inference gateway")
 
     args = parser.parse_args(argv)
 
@@ -131,7 +132,52 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "dashboard":
         return _dashboard(args.out)
 
+    if args.command == "models":
+        return _models()
+
     return 1
+
+
+def _models() -> int:
+    """Show the tier→model routing, provider availability, and exercise the gateway."""
+    from ...core.budget import BudgetGovernor
+    from ...core.schemas import Budgets
+    from ...inference import build_gateway, gateway_status
+    from ...ledger import Ledger
+
+    st = gateway_status()
+    print("\n=== OSINTENAL — Model & Inference layer (doc 11) ===")
+    print("Tier → model:")
+    for tier, model in st["tier_models"].items():
+        print(f"  {tier:7} → {model}")
+    print(f"  embed   → {st['embed_model']}")
+    print("\nProvider availability:")
+    print(f"  Anthropic flagship (ANTHROPIC_API_KEY/AUTH_TOKEN): "
+          f"{'ready' if st['anthropic_key'] else 'NOT configured'}")
+    print(f"  Hugging Face (HF_TOKEN): {'ready' if st['huggingface_token'] else 'NOT configured'}")
+    mode = ("live (recording)" if st["record_mode"] else
+            "deterministic offline (no keys / not recording)")
+    print(f"  Active mode: {mode}")
+
+    gov = BudgetGovernor(Budgets())
+    ledger = Ledger()
+    gw = build_gateway(governor=gov, ledger=ledger, investigation_id="models-demo")
+    gw.complete(tier="reason", role="connections",
+                payload={"system": "Frame competing explanations.", "prompt": "ridge structure"})
+    gw.complete(tier="task", role="tool_selection", payload={"prompt": "pick an adapter"})
+    vecs = gw.embed(["a telecom mast", "a telecom mast", "a wind turbine"])
+
+    def cos(a, b):
+        return sum(x * y for x, y in zip(a, b))
+    print("\nGateway exercise (deterministic):")
+    print(f"  embedding similarity — duplicate {cos(vecs[0], vecs[1]):.2f} vs "
+          f"different {cos(vecs[0], vecs[2]):.2f}")
+    print(f"  cost summary: {gw.cost_summary()}")
+    print(f"  model_call ledger events: {sum(1 for e in ledger.events() if e.type == 'model_call')}"
+          f" (lean: hashes + token counts only — no prompt/response bytes)")
+    print("\nGo live: open egress to the provider, set ANTHROPIC_API_KEY + HF_TOKEN, and run with "
+          "OSINTENAL_RECORD=1 to record (then replay offline). See docs/11.")
+    return 0
 
 
 def _dashboard(out: str) -> int:

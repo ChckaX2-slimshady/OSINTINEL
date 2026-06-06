@@ -1,8 +1,9 @@
 """Static dashboard renderer (doc 06 Phase 7) — one self-contained, offline HTML document.
 
-Renders a :class:`DashboardData` into a single HTML string with **inline** CSS, SVG, and vanilla
-JS — no external fonts, scripts, styles, or network calls — so it works air-gapped, is fully
-deterministic, and is testable without a browser. The aesthetic is an "intelligence console":
+Renders a :class:`DashboardData` into a single HTML string with **inline** CSS and SVG and
+**no JavaScript at all** — navigation is pure CSS (hidden radios + `:checked` selectors), so it
+works air-gapped, in sandboxed previews that strip scripts, and without a browser for tests.
+No external fonts, scripts, styles, or network calls. The aesthetic is an "intelligence console":
 a dark theme whose colour language *is* the epistemic ladder (information → connection →
 explanation{speculation|extrapolation} → hypothesis → insight), so the visuals encode the
 foundational separation rather than merely decorating it.
@@ -79,7 +80,7 @@ def _overview(data: DashboardData) -> str:
         return f'<div class="panel {cls}"><h3>{_e(title)}</h3><ul>{lis}</ul></div>'
 
     return f"""
-    <section data-tab="overview" class="tab active">
+    <section id="sec-overview" class="tab">
       <div class="panel"><h3>Executive summary</h3><p>{_e(data.executive_summary)}</p></div>
       <div class="panel"><h3>Competing hypotheses (preserved)</h3>{ranked_tbl}</div>
       <div class="grid2">
@@ -129,7 +130,7 @@ def _graph_svg(data: DashboardData) -> str:
         for k, c in _EDGE_COLORS.items() if k in ("supports", "contradicts", "synthesized_from",
                                                   "derived_from"))
     return f"""
-    <section data-tab="graph" class="tab">
+    <section id="sec-graph" class="tab">
       <div class="panel">
         <h3>Knowledge graph <span class="muted">— layered by epistemic tier (left → right)</span></h3>
         <div class="legendbar">{legend}</div>
@@ -156,7 +157,7 @@ def _timeline(data: DashboardData) -> str:
         f'<td><code>{_e(ev.type)}</code></td><td>{_e(ev.summary)}</td></tr>'
         for ev in data.events)
     return f"""
-    <section data-tab="timeline" class="tab">
+    <section id="sec-timeline" class="tab">
       <div class="panel"><h3>Timeline <span class="muted">— events per iteration</span></h3>
         <div class="timeline">{"".join(cols)}</div>
         <p class="muted">Investigation replay: every iteration is reconstructable from the
@@ -193,7 +194,7 @@ def _confidence(data: DashboardData) -> str:
             f'<tr><td>{_e(t.statement)}{star}</td><td>{_class_chip(t.final_class)}</td>'
             f'<td class="mono">{t.final_confidence:.0%}</td><td>{spark}</td></tr>')
     return f"""
-    <section data-tab="confidence" class="tab">
+    <section id="sec-confidence" class="tab">
       <div class="panel">
         <h3>Hypothesis &amp; confidence evolution <span class="muted">— from confidence_history
         (append-only; competing hypotheses preserved)</span></h3>
@@ -214,7 +215,7 @@ def _sources(data: DashboardData) -> str:
     groups = sorted({s.independence_group for s in data.sources})
     chips = "".join(f'<span class="tag">{_e(g)}</span>' for g in groups)
     return f"""
-    <section data-tab="sources" class="tab">
+    <section id="sec-sources" class="tab">
       <div class="panel"><h3>Source explorer
         <span class="muted">— {len(groups)} independent group(s)</span></h3>
         <div class="legendbar">{chips}</div>
@@ -236,7 +237,7 @@ def _agents(data: DashboardData) -> str:
             f'<span>{a.event_count}</span></div>'
             f'<div class="muted atypes">{_e(types)}</div></div>')
     return f"""
-    <section data-tab="agents" class="tab">
+    <section id="sec-agents" class="tab">
       <div class="panel"><h3>Agent activity <span class="muted">— ledger events by actor</span></h3>
         {"".join(rows)}
       </div>
@@ -254,9 +255,14 @@ def _ladder_bar() -> str:
 
 
 def render_dashboard(data: DashboardData) -> str:
+    # CSS-only tabs: hidden radios drive section visibility via :checked sibling selectors —
+    # so navigation works with ZERO JavaScript (and even in sandboxed previews that strip it).
+    radios = "".join(
+        f'<input type="radio" name="tab" id="tab-{tid}" class="tabradio"'
+        f'{" checked" if i == 0 else ""}>'
+        for i, (tid, _label) in enumerate(_TABS))
     nav = "".join(
-        f'<button class="navbtn{" active" if i == 0 else ""}" data-go="{tid}">{label}</button>'
-        for i, (tid, label) in enumerate(_TABS))
+        f'<label class="navbtn" for="tab-{tid}">{label}</label>' for tid, label in _TABS)
     body = (_overview(data) + _graph_svg(data) + _timeline(data) + _confidence(data)
             + _sources(data) + _agents(data))
     return f"""<!doctype html>
@@ -273,11 +279,11 @@ def render_dashboard(data: DashboardData) -> str:
 </header>
 {_ladder_bar()}
 {_kpi_cards(data)}
+{radios}
 <nav class="nav">{nav}</nav>
 <main>{body}</main>
 <footer class="foot">Generated {_e(data.generated_at)} · self-contained, offline, replayable
 from the append-only ledger · competing hypotheses preserved, uncertainty surfaced.</footer>
-<script>{_JS}</script>
 </body></html>"""
 
 
@@ -294,19 +300,38 @@ border-bottom:1px solid var(--line);background:rgba(10,13,22,.6);backdrop-filter
 .logo{color:var(--accent);margin-right:6px}
 .meta{color:var(--mut);font-size:12.5px}
 .muted{color:var(--mut);font-weight:400}
-.ladder{display:flex;margin:0;font-size:10.5px;letter-spacing:.4px;text-transform:uppercase}
-.ladder span{flex:1;text-align:center;padding:4px 0;color:#06121f;font-weight:700;opacity:.92}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;padding:18px 24px}
+/* epistemic ladder — given room to breathe, with arrows between rungs */
+.ladder{display:flex;gap:6px;margin:0;padding:10px 24px;font-size:11px;letter-spacing:.5px;
+text-transform:uppercase;flex-wrap:wrap;border-bottom:1px solid var(--line);
+background:rgba(10,13,22,.4)}
+.ladder span{flex:1 1 120px;text-align:center;padding:8px 10px;color:#06121f;font-weight:700;
+border-radius:6px;opacity:.95;min-width:96px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;padding:18px 24px}
 .kpi{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--line);
 border-radius:12px;padding:14px 16px}
 .kpi-val{font-size:24px;font-weight:700}
 .kpi-lbl{color:var(--mut);font-size:12px;margin-top:2px}
-.nav{display:flex;gap:6px;padding:0 24px;flex-wrap:wrap}
-.navbtn{background:transparent;border:1px solid var(--line);color:var(--mut);padding:8px 14px;
-border-radius:8px 8px 0 0;cursor:pointer;font-size:13px}
-.navbtn.active{background:var(--panel);color:var(--ink);border-bottom-color:var(--panel)}
+/* CSS-only tabs: radios are hidden; labels are the buttons; :checked drives the panels */
+.tabradio{position:absolute;opacity:0;pointer-events:none}
+.nav{display:flex;gap:8px;padding:8px 24px 0;flex-wrap:wrap}
+.navbtn{background:transparent;border:1px solid var(--line);color:var(--mut);padding:9px 16px;
+border-radius:9px 9px 0 0;cursor:pointer;font-size:13px;user-select:none;white-space:nowrap}
+.navbtn:hover{color:var(--ink);border-color:#33405c}
 main{padding:18px 24px 40px}
-.tab{display:none}.tab.active{display:block}
+.tab{display:none}
+#tab-overview:checked~main #sec-overview,
+#tab-graph:checked~main #sec-graph,
+#tab-timeline:checked~main #sec-timeline,
+#tab-confidence:checked~main #sec-confidence,
+#tab-sources:checked~main #sec-sources,
+#tab-agents:checked~main #sec-agents{display:block}
+#tab-overview:checked~nav label[for=tab-overview],
+#tab-graph:checked~nav label[for=tab-graph],
+#tab-timeline:checked~nav label[for=tab-timeline],
+#tab-confidence:checked~nav label[for=tab-confidence],
+#tab-sources:checked~nav label[for=tab-sources],
+#tab-agents:checked~nav label[for=tab-agents]{background:var(--panel);color:var(--ink);
+border-color:var(--line);border-bottom-color:var(--panel)}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;
 margin-bottom:16px}
 .panel h3{margin:0 0 12px;font-size:14.5px}
@@ -344,17 +369,4 @@ ul{margin:6px 0 0;padding-left:18px}li{margin:3px 0}
 .abar-fill{height:100%;background:linear-gradient(90deg,#4aa3df,#3ddc84);border-radius:6px}
 .abar span{position:absolute;right:8px;top:0;line-height:20px;font-size:11px}
 .foot{color:var(--mut);font-size:12px;padding:16px 24px;border-top:1px solid var(--line)}
-"""
-
-_JS = """
-document.querySelectorAll('.navbtn').forEach(function(b){
-  b.addEventListener('click',function(){
-    var go=b.getAttribute('data-go');
-    document.querySelectorAll('.navbtn').forEach(function(x){x.classList.remove('active')});
-    b.classList.add('active');
-    document.querySelectorAll('.tab').forEach(function(s){
-      s.classList.toggle('active', s.getAttribute('data-tab')===go);
-    });
-  });
-});
 """

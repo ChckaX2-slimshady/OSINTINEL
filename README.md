@@ -19,6 +19,13 @@ scrutinizing, and recursive evaluation.
 
 ## Status
 
+> **Paradigm: online and model-driven.** OSINTENAL depends on live open-source data (the
+> adapters) and a tiered model ensemble — embeddings + small specialized models (Hugging Face)
+> for per-task work, and a flagship reasoning model (Anthropic Claude, via API key or OAuth) for
+> open-ended reasoning. The fully-deterministic, no-network, no-key path is retained **as the
+> test/replay mode** (record live once → replay in CI), *not* as the product's operating mode.
+> Model & inference architecture: [`docs/11`](docs/11-model-inference-architecture.md).
+
 **Phase 0 — Architecture: complete.** The full design corpus lives in [`docs/`](docs/).
 
 **Phase 1 — Core orchestration framework: implemented & runnable.** The nine-agent quorum,
@@ -70,18 +77,32 @@ every time, and confidence collapses when constraints conflict. The result is a 
 with a confidence radius (doc 04 §2).
 
 **Phase 7 — Dashboard & Visualization: implemented.** `osintenal dashboard` renders any run into
-a single **self-contained HTML console** — inline CSS/SVG/vanilla-JS, **no external scripts,
-fonts, or network** — so it works air-gapped and is testable without a browser. It shows the
-knowledge graph (layered by epistemic tier), the per-iteration timeline, investigation replay
-(any past iteration reconstructed from the ledger), hypothesis & confidence evolution
-(sparklines from `confidence_history`), a source explorer, and agent activity. A read-only JSON
-service layer (`interfaces/api`) is the REST contract a FastAPI app would serve. See
-[`docs/06-roadmap.md`](docs/06-roadmap.md) for what each phase delivers.
+a single **self-contained HTML console** — inline CSS/SVG and **CSS-only navigation (no
+JavaScript)**, no external scripts, fonts, or network — so it works air-gapped, in sandboxed
+previews, and is testable without a browser. It shows the knowledge graph (layered by epistemic
+tier), the per-iteration timeline, investigation replay (any past iteration reconstructed from
+the ledger), hypothesis & confidence evolution (sparklines from `confidence_history`), a source
+explorer, and agent activity. A read-only JSON service layer (`interfaces/api`) is the REST
+contract a FastAPI app would serve.
+
+**Phase M — Model integration: gateway foundation in place.** A provider-agnostic
+`InferenceGateway` routes the three tiers — `embed` (Hugging Face) · `task`/`nano`/`small`
+(Hugging Face specialized models) · `reason`/`large` (Anthropic Claude) — with tier→model
+config, cost accounting into the Budget Governor, and **record/replay over the same cassette
+transport the adapters use**, so model calls are auditable (lean `model_call` ledger events) and
+reproducible. It degrades gracefully: live with a key, replay from a cassette, or a deterministic
+no-network default for CI. Agents are wired tier-by-tier next. See
+[`docs/06-roadmap.md`](docs/06-roadmap.md) and [`docs/11`](docs/11-model-inference-architecture.md).
 
 ### Quickstart
 
 ```bash
-pip install -e ".[dev]"        # Python 3.11+; only dependency is pydantic v2
+pip install -e ".[dev]"        # Python 3.11+; runtime dep: pydantic v2 (model providers use stdlib HTTP)
+
+# Live models (optional): open egress + export keys, then runs use the gateway providers.
+#   export ANTHROPIC_API_KEY=...        # or ANTHROPIC_AUTH_TOKEN=... (OAuth)
+#   export HF_TOKEN=...                 # Hugging Face embeddings + small models
+#   OSINTENAL_RECORD=1 osintenal ...    # record live model/HTTP calls → replay offline later
 
 osintenal run                 # run the bundled demo investigation (human-readable report)
 osintenal run --json          # same, as a schema-valid InsightReport JSON
@@ -99,6 +120,7 @@ osintenal image               # Phase 5: geolocate a sample image — ranked loc
 osintenal geo                 # Phase 6: narrow a location across ≥3 independent geospatial
                               #   constraints — centroid + uncertainty radius, calibrated
 osintenal dashboard --out d.html   # Phase 7: render the self-contained HTML console (offline)
+osintenal models              # Phase M: show tier→model routing + exercise the inference gateway
 
 pytest -q                      # unit + invariant + adapter + memory + geo + dashboard + scenario
 ```
@@ -112,7 +134,7 @@ source corroborates it — even though its backing explanation is already the hi
 type (`EXTRAPOLATION`). Every object carries provenance and the full reasoning chain is
 reported. No network or model API key is required; Phase 1 is deterministic by design (docs 08–09).
 
-### Implemented module map (Phases 1–7)
+### Implemented module map (Phases 1–7 + Model gateway)
 
 | Area | Package | Doc |
 |------|---------|-----|
@@ -129,7 +151,8 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | Image Investigation pipeline (EXIF codec, solar geometry, ranked geolocation) | `osintenal/pipelines/image_investigation.py`, `adapters/media`, `adapters/compute` | [06](docs/06-roadmap.md) |
 | **Geospatial reasoning (multi-constraint narrowing, confidence radius)** | `osintenal/pipelines/geospatial_reasoning.py` | [06](docs/06-roadmap.md) |
 | Insight report builder | `osintenal/reporting/` | [03](docs/03-data-schemas.md) |
-| **Dashboard service + self-contained HTML console** | `osintenal/interfaces/api`, `osintenal/interfaces/dashboard` | [06](docs/06-roadmap.md) |
+| Dashboard service + self-contained HTML console | `osintenal/interfaces/api`, `osintenal/interfaces/dashboard` | [06](docs/06-roadmap.md) |
+| **Model & inference gateway (tiers, providers, record/replay, cost)** | `osintenal/inference/` | [11](docs/11-model-inference-architecture.md) |
 | CLI | `osintenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
 
 A later phase can swap the embedded `GraphStore` for a graph-native backend (SQLite/Neo4j)

@@ -71,10 +71,19 @@ def test_render_is_self_contained_offline_html(data):
 def test_render_contains_all_sections_and_ladder(data):
     html = render_dashboard(data)
     for tab in ("overview", "graph", "timeline", "confidence", "sources", "agents"):
-        assert f'data-tab="{tab}"' in html
+        assert f'id="sec-{tab}"' in html          # the section
+        assert f'for="tab-{tab}"' in html         # its CSS-only nav label
     # the epistemic ladder is visually encoded
     for tier in ("information", "connection", "hypothesis", "insight"):
         assert tier in html.lower()
+
+
+def test_navigation_is_css_only_no_javascript(data):
+    html = render_dashboard(data)
+    # tabs must work with zero JS (sandboxed previews strip <script>)
+    assert "<script" not in html.lower()
+    assert html.count('class="tabradio"') == 6  # one hidden radio per tab
+    assert ":checked~main" in html              # CSS drives panel visibility
 
 
 def test_render_is_deterministic(data):
