@@ -21,7 +21,9 @@ class ToolSelectionAgent:
             for cap in req.candidate_capabilities:
                 candidates = ctx.registry.by_capability(cap)
                 if candidates:
-                    adapter = max(candidates, key=lambda a: ctx.registry.effectiveness(a.id))
+                    # Effectiveness = the seeded registry prior, refined by Investigation Memory
+                    # when present (doc 05 §3 ``effectiveness(adapter_id, context)``).
+                    adapter = max(candidates, key=lambda a: self._effectiveness(ctx, a.id))
                     chosen_cap = cap
                     break
             if adapter is None:
@@ -41,9 +43,14 @@ class ToolSelectionAgent:
                     },
                     fallback_adapters=fallbacks,
                     rationale=f"selected {adapter.id} by capability {chosen_cap!r} "
-                              f"(effectiveness {ctx.registry.effectiveness(adapter.id):.2f})",
+                              f"(effectiveness {self._effectiveness(ctx, adapter.id):.2f})",
                     expected_cost=adapter.cost_of("collect"),
                     provenance=prov,
                 )
             )
         return plans
+
+    @staticmethod
+    def _effectiveness(ctx: AgentContext, adapter_id: str) -> float:
+        seed = ctx.registry.effectiveness(adapter_id)
+        return ctx.priors.adapter_effectiveness(adapter_id, default=seed) if ctx.priors else seed

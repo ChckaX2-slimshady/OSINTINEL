@@ -42,7 +42,15 @@ ledger lean: heavy artifacts (e.g. a Wayback page snapshot) are written to a **c
 store** and the ledger holds only a `raw_response` hash/ref — bytes never enter the event log,
 so replay stays byte-identical regardless of data volume. Supplemental commercial sources
 (Maltego, Pipl, PimEyes, Recorded Future, …) are modeled as **license-gated** adapters, off
-unless the operator supplies credentials *and* attests to authorized use. See
+unless the operator supplies credentials *and* attests to authorized use.
+
+**Phase 4 — Investigation Memory: implemented.** The system now **learns strategy** from
+completed runs — which adapters and capabilities actually resolve cases — and feeds those priors
+to the planner and tool selector, so rerunning a solved case is measurably cheaper (the
+benchmark falls from 13,200 to 1,700 tokens, ~87%, once Memory corrects a misleading default).
+Learning is held behind a strict **evidence/strategy firewall**: Memory ingests only a
+whitelisted `RunDigest` of metrics (never evidence content) and is handed to agents as a
+read-only priors port with no path to read or rewrite evidentiary history. See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) for what each phase delivers.
 
 ### Quickstart
@@ -59,8 +67,10 @@ osintenal audit               # print the evidence chain for the leading insight
 osintenal adapters            # list lawful reference + license-gated supplemental adapters
 osintenal slice               # Phase 3: capability-based selection + real (cassette) evidence
                               #   updating a hypothesis; shows the ledger/CAS storage split
+osintenal memory              # Phase 4: learning benchmark — cost to solve the same case falls
+                              #   as Investigation Memory learns which adapter actually works
 
-pytest -q                      # unit + epistemic-invariant + adapter + replayed scenario tests
+pytest -q                      # unit + epistemic-invariant + adapter + memory + scenario tests
 ```
 
 The demo (the "circled structure" case) shows the full epistemic ladder — **information →
@@ -72,7 +82,7 @@ source corroborates it — even though its backing explanation is already the hi
 type (`EXTRAPOLATION`). Every object carries provenance and the full reasoning chain is
 reported. No network or model API key is required; Phase 1 is deterministic by design (docs 08–09).
 
-### Implemented module map (Phases 1–3)
+### Implemented module map (Phases 1–4)
 
 | Area | Package | Doc |
 |------|---------|-----|
@@ -84,7 +94,8 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | Investigation state (records → ledger) | `osintenal/core/state.py` | [04](docs/04-knowledge-graph.md) |
 | Knowledge graph: port, backend, constraints, queries | `osintenal/graph/` | [04](docs/04-knowledge-graph.md) |
 | Nine-agent quorum + Speculation Engine | `osintenal/agents/` | [02](docs/02-agents.md) |
-| **Adapters: cassette transport, content-addressed store, reference + license-gated adapters** | `osintenal/adapters/` | [05](docs/05-adapters.md) |
+| Adapters: cassette transport, content-addressed store, reference + license-gated adapters | `osintenal/adapters/` | [05](docs/05-adapters.md) |
+| **Investigation Memory: run digests, learned priors, evidence firewall** | `osintenal/memory/` | [01](docs/01-architecture.md) |
 | Insight report builder | `osintenal/reporting/` | [03](docs/03-data-schemas.md) |
 | CLI | `osintenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
 

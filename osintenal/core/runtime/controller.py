@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from ...adapters import AdapterRegistry
 from ...ledger import Ledger
 from ..budget import BudgetGovernor
-from ..schemas import InsightReport, Investigation
+from ..schemas import BudgetSnapshot, InsightReport, Investigation
 from ..state import InvestigationState
 from .loop import LoopResult, RecursiveLoopEngine
 
@@ -24,16 +24,21 @@ class InvestigationResult:
     ledger: Ledger
     state: InvestigationState
     loop: LoopResult
+    budget: BudgetSnapshot
 
 
 class InvestigationController:
-    def __init__(self, registry: AdapterRegistry, *, ledger_path=None) -> None:
+    def __init__(self, registry: AdapterRegistry, *, memory=None, ledger_path=None) -> None:
         self.registry = registry
         self.engine = RecursiveLoopEngine(registry)
+        # Optional Investigation Memory: supplies learned priors before the run and ingests the
+        # run's strategy digest after it (doc 06 Phase 4). Never sees evidence content.
+        self.memory = memory
         # When set, the run's ledger is streamed to a durable JSONL file (doc 06 Phase 2).
         self.ledger_path = ledger_path
 
-    def run(self, investigation: Investigation) -> InvestigationResult:
+    def run(self, investigation: Investigation, *,
+            ground_truth: dict[str, str] | None = None) -> InvestigationResult:
         ledger = Ledger(self.ledger_path)
         state = InvestigationState(investigation.investigation_id, ledger)
         governor = BudgetGovernor(investigation.config.budgets)
@@ -47,7 +52,12 @@ class InvestigationController:
         )
         investigation.status = "running"
 
-        loop_result = self.engine.run(investigation, state, governor)
+        # Learned priors are read-only and firewalled from evidence (doc 06 Phase 4).
+        priors = None
+        if self.memory is not None:
+            from ...memory import MemoryPriors
+            priors = MemoryPriors(self.memory)
+        loop_result = self.engine.run(investigation, state, governor, priors=priors)
 
         ledger.append(
             investigation_id=investigation.investigation_id,
@@ -59,10 +69,18 @@ class InvestigationController:
         )
         ledger.verify()  # tamper-evident chain must hold
 
-        return InvestigationResult(
+        result = InvestigationResult(
             investigation=investigation,
             report=loop_result.report,
             ledger=ledger,
             state=state,
             loop=loop_result,
+            budget=governor.snapshot(),
         )
+
+        # Learn strategy from the finished run (structure/metrics only, behind the firewall).
+        if self.memory is not None:
+            from ...memory import build_run_digest
+            self.memory.ingest(build_run_digest(result, registry=self.registry,
+                                                ground_truth=ground_truth))
+        return result

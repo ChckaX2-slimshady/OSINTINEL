@@ -23,9 +23,16 @@ class StubEvidenceAdapter:
     id = "stub.evidence"
     capabilities = ["stub.evidence", "geo.features", "archive.snapshot", "reference.encyclopedic"]
 
-    def __init__(self, world: list[dict[str, Any]]) -> None:
+    def __init__(self, world: list[dict[str, Any]], *, adapter_id: str | None = None,
+                 capabilities: list[str] | None = None) -> None:
         self._world = world
         self._consumed: set[str] = set()
+        # Per-instance id/capabilities let a benchmark register competing stub adapters
+        # under the same capability (doc 06 Phase 4 learning slice).
+        if adapter_id is not None:
+            self.id = adapter_id
+        if capabilities is not None:
+            self.capabilities = capabilities
 
     def cost_of(self, operation: str) -> CostEstimate:
         return CostEstimate(tokens=200, money_usd=0.0, seconds=0.05, requests=1)

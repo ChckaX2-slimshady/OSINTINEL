@@ -78,17 +78,32 @@ the artifact. This lets the catalogue favour **broad, light, structured adapters
 versatility at ~zero storage cost while the heavy path (Wayback page snapshot) is proven once
 through the CAS. EXIF/image-binary is deliberately deferred to Phase 5 (image investigation).
 
-## Phase 4 — Investigation Memory
+## Phase 4 — Investigation Memory ✅
 **Goal:** learn strategy without contaminating evidence.
-**Scope:** persist completed runs · tool/agent effectiveness metrics · confidence-calibration
-records · planner-performance metrics · successful evidence chains & failed hypotheses ·
-expose priors to the planner & tool selector. **Strict evidence/strategy firewall.**
+**Scope:** persist completed runs (JSONL of `RunDigest`s) · tool/adapter effectiveness metrics
+(Laplace-smoothed success rate) · confidence-calibration records · planner-performance metrics ·
+capability sequences · expose priors to the planner & tool selector via a read-only
+`StrategyPriors` port. **Strict evidence/strategy firewall.**
 **Vertical slice:** "After N runs, the planner reorders evidence requests and the selector
-prefers historically effective adapters; rerunning a solved case is measurably cheaper."
+prefers historically effective adapters; rerunning a solved case is measurably cheaper." —
+delivered as `osintenal memory` (the learning benchmark) and `scenarios/learning_benchmark.py`.
 **Exit criteria:**
-- Memory measurably improves planner ranking / cost on a benchmark suite.
-- Firewall test: Memory cannot read or alter active-run evidence or past confidence values
-  (the "may not rewrite evidentiary history" guarantee).
+- Memory measurably improves planner ranking / cost on a benchmark suite. ✅
+  `tests/memory/test_learning.py` — a misleading seed picks the noisy adapter first (13,200
+  tokens); Memory learns and switches to the reliable adapter, holding at 1,700 tokens (~87%
+  cheaper) and stable.
+- Firewall test: Memory cannot read or alter active-run evidence or past confidence values. ✅
+  `tests/memory/test_firewall.py` — digests carry no evidence content, ingest rejects
+  non-digests, the priors view exposes no mutation surface, and a run's ledger + confidence
+  history are provably untouched by any Memory activity.
+
+**Design.** Memory ingests only a `RunDigest` — a whitelist of strategy/outcome metrics built by
+`build_run_digest` (the sole bridge from a live run), enforced by `memory/firewall.py`. The
+planner/selector consume a `MemoryPriors` view through the `StrategyPriors` port (agents depend
+on the Protocol, not the `memory` package), so learning influences *how* the system
+investigates while remaining structurally unable to rewrite evidentiary history. An adapter is
+credited only when it supported the leader of a **resolved** run (reached the confidence
+threshold / a gate-cleared insight), so weak or single-source feeds decay out of preference.
 
 ## Phase 5 — Image Investigation Pipeline
 **Goal:** the flagship vertical (doc references "Image Investigation Mode").

@@ -60,6 +60,7 @@ class RecursiveLoopEngine:
         investigation: Investigation,
         state: InvestigationState,
         governor: BudgetGovernor,
+        priors=None,
     ) -> LoopResult:
         history: list[IterationRecord] = []
         snapshot = None
@@ -67,7 +68,8 @@ class RecursiveLoopEngine:
 
         for iteration in range(investigation.config.max_iterations):
             investigation.current_iteration = iteration
-            ctx = AgentContext(investigation, state, iteration, governor, self.registry)
+            ctx = AgentContext(investigation, state, iteration, governor, self.registry,
+                               priors=priors)
 
             # OBSERVE → HYPOTHESIZE (connections frame competing EXPLANATIONS;
             # synthesis then synthesizes those explanations INTO hypotheses — doc 00 §3)

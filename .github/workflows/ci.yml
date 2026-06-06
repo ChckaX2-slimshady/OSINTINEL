@@ -25,3 +25,5 @@ jobs:
         run: osintenal verify
       - name: Smoke-run the adapter slice (offline, from cassettes)
         run: osintenal slice
+      - name: Smoke-run the memory learning benchmark
+        run: osintenal memory

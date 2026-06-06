@@ -37,6 +37,18 @@ class EvidencePlanningAgent:
             cost = CostEstimate(tokens=200, money_usd=0.0, seconds=0.05, requests=1)
             denom = max(cost.tokens, 1)
             prov = ctx.provenance(self.name, method=AcquisitionMethod.DERIVED, confidence=0.7)
+
+            # Candidate capabilities for this investigation; Investigation Memory (if present)
+            # reorders them so the historically most effective is tried first, and boosts the
+            # request's score so productive lines of inquiry are planned earlier (doc 06 Phase 4).
+            fallback = ctx.investigation.config.candidate_capabilities or ["stub.evidence"]
+            caps = (ctx.priors.ranked_capabilities(ctx.investigation.domain, fallback)
+                    if ctx.priors else fallback)
+            score = gain / denom * 1000.0  # info-gain per kilo-token
+            if ctx.priors:
+                best_cap = max((ctx.priors.capability_score(c) for c in caps), default=0.5)
+                score *= 0.5 + best_cap  # learned-effectiveness boost
+
             req = EvidenceRequest(
                 question_ref=hs.set_id,
                 description=f"Acquire evidence discriminating: {top[0].statement!r} vs "
@@ -44,8 +56,8 @@ class EvidencePlanningAgent:
                 discriminates_between=[h.hypothesis_id for h in top],
                 expected_information_gain=gain,
                 estimated_cost=cost,
-                score=gain / denom * 1000.0,  # info-gain per kilo-token
-                candidate_capabilities=["stub.evidence"],
+                score=score,
+                candidate_capabilities=caps,
                 priority=0,
                 provenance=prov,
             )

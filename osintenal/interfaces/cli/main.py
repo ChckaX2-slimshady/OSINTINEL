@@ -89,6 +89,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("audit", help="print the evidence chain for the leading insight")
     sub.add_parser("adapters", help="list registered reference + license-gated adapters")
     sub.add_parser("slice", help="run the Phase 3 adapter vertical slice (offline, from cassettes)")
+    p_mem = sub.add_parser("memory", help="run the Phase 4 learning benchmark (cost falls as Memory learns)")
+    p_mem.add_argument("--rounds", type=int, default=5)
 
     args = parser.parse_args(argv)
 
@@ -112,7 +114,33 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "slice":
         return _slice()
 
+    if args.command == "memory":
+        return _memory(args.rounds)
+
     return 1
+
+
+def _memory(rounds: int) -> int:
+    """Run the learning benchmark and show cost falling as Investigation Memory learns."""
+    from ...memory import MemoryPriors, verify_read_only
+    from ...scenarios.learning_benchmark import run_learning_benchmark
+
+    memory, results = run_learning_benchmark(rounds)
+    print("\n=== OSINTENAL Phase 4 — Investigation Memory (learning benchmark) ===")
+    print(f"{'round':>5}  {'adapter chosen':14}  {'iters':>5}  {'tokens':>7}")
+    for i, r in enumerate(results):
+        flag = "  <- misleading seed" if i == 0 else (
+            "  <- learned" if r.selected_adapter == "geo.reliable" else "")
+        print(f"{i:>5}  {r.selected_adapter:14}  {r.iterations:>5}  {r.tokens:>7}{flag}")
+    first, last = results[0].tokens, results[-1].tokens
+    saved = (1 - last / first) * 100 if first else 0
+    print(f"\nLearned effectiveness:  geo.reliable={memory.adapter_effectiveness('geo.reliable'):.2f}"
+          f"   geo.noisy={memory.adapter_effectiveness('geo.noisy'):.2f}")
+    print(f"Cost to solve the same case: {first} -> {last} tokens ({saved:.0f}% cheaper).")
+    # The priors handed to agents are firewall-safe: no evidence handle, no mutator.
+    verify_read_only(MemoryPriors(memory))
+    print("Firewall: priors expose strategy only — no path to read or rewrite evidence.")
+    return 0 if last <= first else 1
 
 
 def _verify(ledger_path: str | None) -> int:

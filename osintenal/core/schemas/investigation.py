@@ -28,6 +28,9 @@ class InvestigationConfig(BaseModel):
     no_improvement_patience: int = Field(default=3, ge=1)
     max_iterations: int = Field(default=25, ge=1)
     budgets: Budgets = Field(default_factory=Budgets)
+    # Capability tags the Evidence Planning Agent may request for this investigation/domain.
+    # Investigation Memory (doc 06 Phase 4) reorders these by learned effectiveness.
+    candidate_capabilities: list[str] = Field(default_factory=lambda: ["stub.evidence"])
 
 
 class Investigation(BaseModel):

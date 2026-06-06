@@ -91,9 +91,10 @@ OSINTENAL/
 │   │   └── geospatial_reasoning.py# doc 06 Phase 6
 │   │
 │   ├── memory/                    # doc 06 Phase 4 — strategy only, evidence firewall
-│   │   ├── store.py               # runs, metrics, effectiveness, calibration records
-│   │   ├── priors.py              # priors exposed to planner / tool selector
-│   │   └── firewall.py            # enforces no evidence/ledger mutation
+│   │   ├── store.py               # RunDigest + InvestigationMemory (effectiveness, calibration)
+│   │   ├── digest.py              # build_run_digest: the sole, firewalled bridge from a run
+│   │   ├── priors.py              # MemoryPriors: read-only StrategyPriors for planner/selector
+│   │   └── firewall.py            # enforces no evidence content / no ledger mutation
 │   │
 │   ├── reporting/
 │   │   └── insight_report.py      # assemble InsightReport (doc 03 §15)
