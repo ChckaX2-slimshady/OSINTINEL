@@ -58,13 +58,41 @@ class Cassette:
 
 
 class HttpClient:
-    """Replay-first HTTP. ``record=False`` (default) never hits the network."""
+    """Cassette-backed HTTP with three modes (doc 11 §5):
+
+    * ``replay`` — serve from the cassette; error if missing. Deterministic/offline; the CI default.
+    * ``record`` — serve from the cassette if present, else fetch live and persist it (build the
+      recorded test corpus).
+    * ``live``   — fetch live every call, ignoring the cassette (online-first production).
+
+    The mode is resolved from (in order) an explicit ``mode=``, the legacy ``record=`` bool, the
+    ``OSINTENAL_NET`` env (``replay``/``record``/``live``), then ``OSINTENAL_RECORD=1`` → record,
+    else ``replay``.
+    """
 
     def __init__(self, cassette: Cassette, *, record: bool | None = None,
-                 user_agent: str = "osintenal/0.3 (+research; contact via repo)") -> None:
+                 mode: str | None = None,
+                 user_agent: str = "osintenal/0.4 (+research; contact via repo)") -> None:
         self.cassette = cassette
-        self.record = (os.environ.get("OSINTENAL_RECORD") == "1") if record is None else record
+        self.mode = self._resolve_mode(record, mode)
         self.user_agent = user_agent
+
+    @staticmethod
+    def _resolve_mode(record: bool | None, mode: str | None) -> str:
+        if mode is not None:
+            return mode
+        if record is True:
+            return "record"
+        if record is False:
+            return "replay"
+        net = os.environ.get("OSINTENAL_NET")
+        if net in ("replay", "record", "live"):
+            return net
+        return "record" if os.environ.get("OSINTENAL_RECORD") == "1" else "replay"
+
+    @property
+    def record(self) -> bool:  # backward-compatible accessor
+        return self.mode == "record"
 
     # -- public verbs ------------------------------------------------------
     def get_json(self, url: str, params: dict[str, Any] | None = None,
@@ -89,19 +117,21 @@ class HttpClient:
     def _fetch(self, method: str, url: str, params: dict[str, Any] | None,
                headers: dict[str, str] | None, body: str | None = None) -> bytes:
         key = request_key(method, url, params, body)
-        entry = self.cassette.get(key)
-        if entry is not None:
-            return self._decode(entry)
-        if not self.record:
+        if self.mode != "live":  # live always fetches fresh; replay/record consult the cassette
+            entry = self.cassette.get(key)
+            if entry is not None:
+                return self._decode(entry)
+        if self.mode == "replay":
             raise AdapterError(
                 f"no cassette entry for {method} {url} (params={params}); "
-                f"run with OSINTENAL_RECORD=1 to record (network-gated)"
+                f"set OSINTENAL_NET=live to fetch, or =record to record (network-gated)"
             )
         data = self._live_fetch(method, url, params, headers, body)
-        self.cassette.put(key, self._encode(url, data))
+        if self.mode == "record":
+            self.cassette.put(key, self._encode(url, data))
         return data
 
-    # -- live network (only reached when recording) ------------------------
+    # -- live network (reached in record/live modes) -----------------------
     def _live_fetch(self, method: str, url: str, params: dict[str, Any] | None,
                     headers: dict[str, str] | None, body: str | None) -> bytes:
         full_url = url

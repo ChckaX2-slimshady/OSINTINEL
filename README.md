@@ -86,7 +86,7 @@ the ledger), hypothesis & confidence evolution (sparklines from `confidence_hist
 explorer, and agent activity. A read-only JSON service layer (`interfaces/api`) is the REST
 contract a FastAPI app would serve.
 
-**Phase M — Model integration: gateway foundation in place.** A provider-agnostic
+**Phase M — Model integration: complete.** A provider-agnostic
 `InferenceGateway` routes the three tiers (`embed` · `task`/`nano`/`small` · `reason`/`large`)
 through one **universal OpenAI-compatible client**, so the whole stack runs **free** on local
 **Ollama** (or free cloud tiers — Gemini / Groq / OpenRouter) selected by *profile*, not code.
@@ -94,15 +94,18 @@ It does tier→model config, cost accounting into the Budget Governor, and **rec
 same cassette transport the adapters use** — model calls are auditable (lean `model_call` ledger
 events) and reproducible. Graceful degradation: live-local → live-cloud → recorded-replay →
 deterministic (CI). The recommended hybrid keeps embeddings/tasks local (private) and routes only
-reasoning to a free-cloud model. **Agent wiring underway:** the `task` tier now drives
+reasoning to a free-cloud model. **All three agent tiers are wired:** the `task` tier drives
 evidence→hypothesis **relevance judgment** (`agents/relevance.py`) — a `RelevanceJudge` port with
-a heuristic default (CI-stable) and an LLM judge that falls back gracefully. The `embed` tier now
+a heuristic default (CI-stable) and an LLM judge that falls back gracefully. The `embed` tier
 detects **illusory source independence** — when "independent" sources are syndicated copies, it
 collapses them so the Confidence gate isn't fooled, and the Skeptic raises a blocking finding
 (`agents/semantic.py`, `osintenal independence`). The `reason` tier now lets the flagship model
 do open-ended work — Connections proposes *additional* competing explanations and the Skeptic
 authors adversarial critique (advisory; the computed gates still own blocking) — `agents/reasoning.py`,
-`osintenal reason`. All three tiers degrade to deterministic behavior with no model present. See
+`osintenal reason`. All three tiers degrade to deterministic behavior with no model present.
+External I/O (adapters + model calls) shares one **transport with `replay`/`record`/`live` modes**
+(`OSINTENAL_NET`) so cassettes are the recorded test corpus and production is one switch from
+live; Skeptic↔Synthesis **model decorrelation** is a config knob (`OSINTENAL_SKEPTIC_PROFILE`). See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) and [`docs/11`](docs/11-model-inference-architecture.md).
 
 ### Quickstart

@@ -111,8 +111,25 @@ live-local, live-cloud, recorded-replay, or fully offline.
 - **Cost control**: the Budget Governor already tracks tokens/money/requests; the gateway feeds
   it real usage, and the planner/Memory priors (doc 06 Phase 4) can learn cheap-but-effective
   tier/model choices.
-- **Decorrelation**: the Skeptic runs on a different model (or distinct prompt+sampling) than
-  Synthesis, so the challenge layer's errors are less correlated (doc 08 §1).
+- **Decorrelation**: the Skeptic runs on a different model than Synthesis/Connections, so the
+  challenge layer's errors are less correlated (doc 08 §1). It is a config knob —
+  `OSINTENAL_SKEPTIC_PROFILE=<profile>` routes the Skeptic role to that profile's model via the
+  gateway's per-role override (`role_providers`/`role_models`).
+
+### 5a. Transport modes (online-first)
+
+External I/O (adapters *and* model calls) shares one cassette transport with three modes, set by
+`OSINTENAL_NET`:
+
+| Mode | Behavior | Use |
+|---|---|---|
+| `replay` (default) | serve from cassette; error if missing | CI / offline / reproducible |
+| `record` | serve from cassette if present, else fetch live and persist | build the recorded corpus |
+| `live` | fetch every call, ignore cassette | online-first production |
+
+Cassettes are therefore the **recorded test corpus**: record a golden run once
+(`OSINTENAL_NET=record`), commit the cassettes, and CI replays them deterministically. The
+default is `replay` (not `live`) so no environment depends on egress unless it opts in.
 
 ## 6. Embeddings: semantic memory, dedup & true source independence
 

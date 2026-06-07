@@ -97,6 +97,17 @@ def build_gateway(*, profile: str | None = None, cassette_dir: str | Path | None
             providers[tier] = _chat_provider(rp, rp.reason_model, rhttp)
             models[tier] = rp.reason_model
 
+    # Decorrelation (doc 08 §1): route the Skeptic role to a *different* model than Synthesis/
+    # Connections, so the challenge layer's errors are less correlated with the reasoning it
+    # critiques. Set OSINTENAL_SKEPTIC_PROFILE to any profile.
+    role_providers: dict = {}
+    role_models: dict = {}
+    skeptic_profile = os.environ.get("OSINTENAL_SKEPTIC_PROFILE")
+    if skeptic_profile and skeptic_profile != p.name:
+        sp = resolve_profile(skeptic_profile)
+        role_providers["skeptic"] = _chat_provider(sp, sp.reason_model, http(f"{sp.name}_skeptic"))
+        role_models["skeptic"] = sp.reason_model
+
     # embedder
     if p.embed_kind == "huggingface":
         embedder = HuggingFaceEmbedder(http("hf_embed"), p.embed_model)
@@ -107,6 +118,7 @@ def build_gateway(*, profile: str | None = None, cassette_dir: str | Path | None
                                             key_env=p.embed_key_env)
 
     return TieredGateway(providers, embedder=embedder, models=models, prices=PRICES,
+                         role_providers=role_providers, role_models=role_models,
                          governor=governor, ledger=ledger, investigation_id=investigation_id)
 
 
@@ -125,5 +137,7 @@ def gateway_status(profile: str | None = None) -> dict[str, object]:
         "key_env": p.key_env,
         "key_present": bool(os.environ.get(p.key_env)) if p.key_env else True,
         "reason_override": os.environ.get("OSINTENAL_REASON_PROFILE"),
-        "record_mode": os.environ.get("OSINTENAL_RECORD"),
+        "skeptic_override": os.environ.get("OSINTENAL_SKEPTIC_PROFILE"),
+        "net_mode": os.environ.get("OSINTENAL_NET") or (
+            "record" if os.environ.get("OSINTENAL_RECORD") == "1" else "replay"),
     }

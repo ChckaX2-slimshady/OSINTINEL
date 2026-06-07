@@ -37,11 +37,17 @@ class TieredGateway:
 
     def __init__(self, providers: dict[str, Provider], *, embedder: Embedder | None = None,
                  models: dict[str, str] | None = None, prices: dict | None = None,
+                 role_providers: dict[str, Provider] | None = None,
+                 role_models: dict[str, str] | None = None,
                  governor=None, ledger=None, investigation_id: str = "inference") -> None:
         self.providers = providers
         self.embedder = embedder
         self.models = models or {}
         self.prices = prices or {}
+        # Per-role overrides enable model decorrelation (doc 08 §1): e.g. the Skeptic running on a
+        # different model than Synthesis so their errors are less correlated.
+        self.role_providers = role_providers or {}
+        self.role_models = role_models or {}
         self._governor = governor
         self._ledger = ledger
         self.investigation_id = investigation_id
@@ -76,7 +82,10 @@ class TieredGateway:
     # -- public (LLMClient-compatible) -------------------------------------
     def complete(self, *, tier: str, role: str, payload: dict) -> dict[str, Any]:
         request = self._build_request(tier, role, payload)
-        response = self._provider(tier).chat(request)
+        if role in self.role_models and not payload.get("model"):
+            request.model = self.role_models[role]  # decorrelation: role-specific model
+        provider = self.role_providers.get(role) or self._provider(tier)
+        response = provider.chat(request)
         self._account(tier, role, request, response)
         return {
             "text": response.text, "structured": response.structured, "model": response.model,

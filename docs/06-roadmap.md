@@ -186,7 +186,7 @@ Tests assert the offline guarantee (no `http(s)://`, `src=`, `<link>`, `@import`
 graph/timeline/evolution sections are present and replayable. Navigation is **CSS-only (no
 JavaScript)** so tabs work even where scripts are stripped.
 
-## Phase M — Model Integration (cross-cutting; before Phase 8) — gateway ◑
+## Phase M — Model Integration (cross-cutting; before Phase 8) ✅
 **Goal:** make OSINTENAL model-driven over live data (doc 11), with auditable, replayable,
 cost-accounted model calls.
 **Scope:** `InferenceGateway` + `Embedder` ports · tier→model routing (`embed`=HF, `task/nano/
@@ -221,8 +221,15 @@ record model I/O and replay offline.
     deterministic runs are the floor (`osintenal reason`, `tests/inference/test_reasoning.py`).
     Next: model-authored Synthesis/Confidence prose, and Skeptic↔Synthesis model **decorrelation**
     (per-role model override) per doc 08 §1.
-- ◻ **Online-first defaults** — adapters live by default; cassettes become the recorded test
-  corpus; golden runs recorded once and replayed in CI.
+- ✅ **Online-first transport + decorrelation.** The cassette transport gained three modes
+  (`adapters/transport.py`): `replay` (cassette-only; the safe default that keeps CI/offline
+  deterministic), `record` (fetch live and persist — build the recorded corpus), and `live`
+  (fetch every call). One env var flips it: `OSINTENAL_NET=live|record|replay`. Cassettes are now
+  the *recorded test corpus* (record once → commit → replay in CI). Model **decorrelation**
+  (doc 08 §1) is a config knob: `OSINTENAL_SKEPTIC_PROFILE` routes the Skeptic role to a
+  different model than Synthesis/Connections (`tests/inference/test_transport_policy.py`).
+  *(Default stays `replay` rather than `live` so this hosted/CI context never depends on egress;
+  production sets `OSINTENAL_NET=live`.)*
 
 ## Phase 8 — Self-Improvement Systems
 **Goal:** recursively improve investigative strategy — **without rewriting evidentiary

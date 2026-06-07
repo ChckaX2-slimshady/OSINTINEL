@@ -209,6 +209,9 @@ def _models() -> int:
         print(f"  key: {st['key_env']} {'present' if st['key_present'] else 'NOT set'}")
     if st["reason_override"]:
         print(f"  reasoning tier overridden to profile: {st['reason_override']}")
+    if st["skeptic_override"]:
+        print(f"  Skeptic decorrelated onto profile: {st['skeptic_override']}")
+    print(f"  network mode: {st['net_mode']}  (replay=offline/CI · record=build corpus · live=online)")
     print(f"\nAvailable profiles: {', '.join(sorted(PROFILES))}")
     print("Recommended (free): OSINTENAL_INFERENCE_PROFILE=ollama   (fully local & private)")
     print("  hybrid: keep ollama, add OSINTENAL_REASON_PROFILE=gemini|groq|openrouter for "
@@ -216,7 +219,10 @@ def _models() -> int:
 
     gov = BudgetGovernor(Budgets())
     ledger = Ledger()
-    gw = build_gateway(governor=gov, ledger=ledger, investigation_id="models-demo")
+    # Exercise deterministically so 'models' always works (a live profile needs its endpoint);
+    # the status above reflects whatever profile is actually configured.
+    gw = build_gateway(profile="deterministic", governor=gov, ledger=ledger,
+                       investigation_id="models-demo")
     gw.complete(tier="reason", role="connections",
                 payload={"system": "Frame competing explanations.", "prompt": "ridge structure"})
     gw.complete(tier="task", role="tool_selection", payload={"prompt": "pick an adapter"})
