@@ -36,6 +36,10 @@ class ConfidenceAgent:
 
     def run(self, ctx: AgentContext) -> list[ConfidenceAssessment]:
         assessments: list[ConfidenceAssessment] = []
+        # A fitted Calibrator (Phase 8) recalibrates the softmax temperature + model version;
+        # absent one, the defaults are used (deterministic, unchanged).
+        temperature = self._temperature(ctx)
+        model_version = self._version(ctx)
         for hs in ctx.state.hypothesis_sets.values():
             active = ctx.state.active_hypotheses(hs.set_id)
             if not active:
@@ -48,7 +52,7 @@ class ConfidenceAgent:
                 scores.append(score)
                 factors_by_h[h.hypothesis_id] = self._factors(ctx, h, evidence)
 
-            probs = softmax(scores, temperature=SOFTMAX_TEMPERATURE)
+            probs = softmax(scores, temperature=temperature)
 
             total_evidence = sum(len(ctx.state.evidence_for(h.hypothesis_id)) for h in active)
             residual = max(0.05, INITIAL_RESIDUAL_MASS * (0.6 ** total_evidence))
@@ -77,14 +81,24 @@ class ConfidenceAgent:
                         target_ref=h.hypothesis_id,
                         confidence=conf,
                         factors=f,
-                        method=f"softmax(score, T={SOFTMAX_TEMPERATURE}) * (1 - residual)",
+                        method=f"softmax(score, T={temperature}) * (1 - residual)",
                         explanation=self._explain(h.statement, conf, f, raw),
-                        calibration_model_version=CALIBRATION_MODEL_VERSION,
+                        calibration_model_version=model_version,
                         provenance=ctx.provenance(self.name, method=AcquisitionMethod.COMPUTATION,
                                                   confidence=0.9),
                     )
                 )
         return assessments
+
+    @staticmethod
+    def _temperature(ctx) -> float:
+        cal = getattr(ctx, "calibrator", None)
+        return cal.temperature if cal is not None else SOFTMAX_TEMPERATURE
+
+    @staticmethod
+    def _version(ctx) -> str:
+        cal = getattr(ctx, "calibrator", None)
+        return cal.version if cal is not None else CALIBRATION_MODEL_VERSION
 
     def _gated_class(self, ctx, h, conf) -> EpistemicClass:
         """A hypothesis is HYPOTHESIS, or INSIGHT once it is the gate-cleared conclusion.

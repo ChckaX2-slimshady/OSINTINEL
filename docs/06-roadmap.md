@@ -231,16 +231,30 @@ record model I/O and replay offline.
   *(Default stays `replay` rather than `live` so this hosted/CI context never depends on egress;
   production sets `OSINTENAL_NET=live`.)*
 
-## Phase 8 — Self-Improvement Systems
+## Phase 8 — Self-Improvement Systems ✅
 **Goal:** recursively improve investigative strategy — **without rewriting evidentiary
 history.**
-**Scope:** track tool effectiveness, agent effectiveness, investigation success rates, false-
-positive rates, confidence-calibration accuracy · calibration harness (doc 09) feeding the
-Confidence model · planner/strategy tuning loop.
+**Scope:** confidence-calibration harness (ECE / Brier / reliability curve) fitting a
+temperature that feeds the Confidence model · planner/strategy tuning loop (Phase 4 memory) ·
+versioned `StrategyVersion` snapshots · strict strategy/evidence firewall audit.
+**Vertical slice:** `osintenal improve` tunes a v1→v2 strategy and shows both levers improve on a
+frozen benchmark, with the firewall audit passing.
 **Exit criteria:**
 - Calibration accuracy and planner efficiency improve over a frozen benchmark across versions.
+  ✅ `tests/improvement/test_self_improvement.py` — ECE **0.366 → 0.082** (temperature 0.5 → 2.0,
+  accuracy preserved) and planner cost **13,200 → 1,700 tokens/case** (memory), v1 → v2.
 - Self-improvement touches *strategy artifacts only*; an audit proves no evidence/ledger
-  mutation.
+  mutation. ✅ `improvement/firewall.py` — `assert_strategy_artifacts_only` scans the report for
+  evidence content, and `audit_no_evidence_mutation` proves the run's ledger hash chain + every
+  confidence history are byte-for-byte unchanged by tuning (and *detects* a rogue mutation).
+
+**Design.** The calibrator is **temperature scaling** on the Confidence Agent's softmax — it
+reduces calibration error without changing which hypothesis leads (argmax is T-invariant), so
+*calibration* improves while *accuracy* and the audit trail are untouched. It is a pure function
+of past (confidence, outcome) records and benchmarks — never evidence — and is fed back as an
+optional `Calibrator` on `AgentContext` (default off → the established behavior holds). This is
+**strategy** self-improvement behind the Phase 4 firewall, never self-modification of evidence
+or code (doc 07).
 
 ---
 
@@ -254,3 +268,11 @@ Schemas+loop (1) before storage (2) so the contract is proven first; storage bef
 adapters (3) so evidence is durable when real data arrives; memory (4) before the heavy image
 vertical (5/6) so the flagship benefits from learned priors; UI (7) before self-improvement
 (8) so improvement is observable. Each step is a usable system on its own.
+
+## Status — all phases complete ✅
+Phases 0–8 plus the cross-cutting **Phase M** (Model Integration) are implemented, each with a
+runnable demo command and green tests. The build is online- and model-driven (free/local-first
+via Ollama or free cloud tiers), with deterministic record/replay as the test mode. Remaining
+work is breadth and hardening, not new phases: more lawful adapters, live cassette recording
+against real endpoints, a graph-native backend behind the existing `GraphStore` port, a served
+API/dashboard over the existing read-only service layer, and ongoing calibration on real data.

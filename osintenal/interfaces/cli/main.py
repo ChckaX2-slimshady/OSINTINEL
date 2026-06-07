@@ -99,6 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("models", help="show the model-tier config and exercise the inference gateway")
     sub.add_parser("independence", help="embed-tier demo: detect illusory (syndicated) source independence")
     sub.add_parser("reason", help="reason-tier demo: model-generated explanations + adversarial critique")
+    sub.add_parser("improve", help="Phase 8: self-improvement — calibration + planner tuning across versions")
 
     args = parser.parse_args(argv)
 
@@ -143,7 +144,47 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "reason":
         return _reason()
 
+    if args.command == "improve":
+        return _improve()
+
     return 1
+
+
+def _improve() -> int:
+    """Phase 8: self-improvement — calibration + planner efficiency improve across versions,
+    with a firewall audit proving no evidentiary history is touched."""
+    from ...improvement import (
+        assert_strategy_artifacts_only,
+        audit_no_evidence_mutation,
+        run_self_improvement,
+    )
+    from ...scenarios import build_demo_investigation
+
+    report = run_self_improvement()
+    b, a = report.before, report.after
+    print("\n=== OSINTENAL Phase 8 — Self-Improvement ===")
+    print(f"{'metric':22} {'v1 (' + b.version + ')':>18} {'v2 (' + a.version + ')':>18}   change")
+    print(f"{'confidence ECE':22} {b.calibration_ece:>18.4f} {a.calibration_ece:>18.4f}   "
+          f"{'-' if a.calibration_ece < b.calibration_ece else '+'}"
+          f"{abs(b.calibration_ece - a.calibration_ece):.4f}")
+    print(f"{'Brier score':22} {b.calibration_brier:>18.4f} {a.calibration_brier:>18.4f}")
+    print(f"{'softmax temperature':22} {b.temperature:>18} {a.temperature:>18}")
+    print(f"{'accuracy (preserved)':22} {b.accuracy:>18} {a.accuracy:>18}")
+    print(f"{'planner tokens/case':22} {b.planner_tokens:>18} {a.planner_tokens:>18}   "
+          f"{(1 - a.planner_tokens / b.planner_tokens) * 100:.0f}% cheaper")
+
+    print("\nFirewall audit (self-improvement touches strategy only):")
+    assert_strategy_artifacts_only(report)
+    print("  report carries no evidence content: PASS")
+    _, registry = build_demo_investigation()
+    result = InvestigationController(registry).run(build_demo_investigation()[0])
+    audit_no_evidence_mutation(result, run_self_improvement)
+    print("  ledger hash chain + confidence history unchanged by tuning: PASS")
+
+    print(f"\nVerdict: calibration {'improved' if report.calibration_improved else 'flat'}, "
+          f"planner {'improved' if report.planner_improved else 'flat'}, "
+          f"accuracy {'preserved' if report.accuracy_preserved else 'changed'}.")
+    return 0 if report.improved else 1
 
 
 def _reason() -> int:

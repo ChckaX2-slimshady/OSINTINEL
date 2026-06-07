@@ -108,6 +108,19 @@ External I/O (adapters + model calls) shares one **transport with `replay`/`reco
 live; Skeptic↔Synthesis **model decorrelation** is a config knob (`OSINTENAL_SKEPTIC_PROFILE`). See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) and [`docs/11`](docs/11-model-inference-architecture.md).
 
+**Phase 8 — Self-Improvement Systems: implemented.** The system tunes its own *strategy* across
+versions — a calibration harness (ECE / Brier / reliability curve) fits a softmax **temperature**
+that feeds the Confidence model, and the Phase 4 memory loop cuts planner cost. On a frozen
+benchmark, calibration error drops **0.366 → 0.082** (accuracy preserved — temperature scaling
+doesn't change which hypothesis leads) and planner cost **13,200 → 1,700 tokens/case**, v1 → v2.
+A firewall **audit** proves self-improvement touches strategy artifacts only: the run's ledger
+hash chain and every confidence history are byte-for-byte unchanged (and a rogue mutation is
+detected). It's strategy improvement behind the evidence firewall — never self-modification of
+evidence or code (`osintenal improve`, `osintenal/improvement/`).
+
+**All phases (0–8 + Model Integration) are complete.** The build is online- and model-driven,
+free/local-first, with deterministic record/replay as the test mode.
+
 ### Quickstart
 
 ```bash
@@ -137,8 +150,11 @@ osintenal geo                 # Phase 6: narrow a location across ≥3 independe
                               #   constraints — centroid + uncertainty radius, calibrated
 osintenal dashboard --out d.html   # Phase 7: render the self-contained HTML console (offline)
 osintenal models              # Phase M: show tier→model routing + exercise the inference gateway
+osintenal independence        # Phase M: embed tier — collapse syndicated "independent" sources
+osintenal reason              # Phase M: reason tier — model-generated explanations + critique
+osintenal improve             # Phase 8: self-improvement — calibration + planner tuning, audited
 
-pytest -q                      # unit + invariant + adapter + memory + geo + dashboard + scenario
+pytest -q                      # unit + invariant + adapter + memory + geo + model + improvement
 ```
 
 The demo (the "circled structure" case) shows the full epistemic ladder — **information →
@@ -150,7 +166,7 @@ source corroborates it — even though its backing explanation is already the hi
 type (`EXTRAPOLATION`). Every object carries provenance and the full reasoning chain is
 reported. No network or model API key is required; Phase 1 is deterministic by design (docs 08–09).
 
-### Implemented module map (Phases 1–7 + Model gateway)
+### Implemented module map (Phases 1–8 + Model gateway)
 
 | Area | Package | Doc |
 |------|---------|-----|
@@ -168,7 +184,8 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | **Geospatial reasoning (multi-constraint narrowing, confidence radius)** | `osintenal/pipelines/geospatial_reasoning.py` | [06](docs/06-roadmap.md) |
 | Insight report builder | `osintenal/reporting/` | [03](docs/03-data-schemas.md) |
 | Dashboard service + self-contained HTML console | `osintenal/interfaces/api`, `osintenal/interfaces/dashboard` | [06](docs/06-roadmap.md) |
-| **Model & inference gateway (tiers, providers, record/replay, cost)** | `osintenal/inference/` | [11](docs/11-model-inference-architecture.md) |
+| Model & inference gateway (tiers, providers, record/replay, cost) | `osintenal/inference/` | [11](docs/11-model-inference-architecture.md) |
+| **Self-improvement (calibration harness, strategy tuning, firewall audit)** | `osintenal/improvement/` | [06](docs/06-roadmap.md) |
 | CLI | `osintenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
 
 A later phase can swap the embedded `GraphStore` for a graph-native backend (SQLite/Neo4j)

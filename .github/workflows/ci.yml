@@ -39,3 +39,5 @@ jobs:
         run: osintenal independence
       - name: Smoke-run the reason-tier reasoning demo
         run: osintenal reason
+      - name: Smoke-run the Phase 8 self-improvement loop
+        run: osintenal improve

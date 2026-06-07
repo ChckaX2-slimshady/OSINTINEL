@@ -29,9 +29,11 @@ class InvestigationResult:
 
 class InvestigationController:
     def __init__(self, registry: AdapterRegistry, *, memory=None, gateway=None,
-                 ledger_path=None) -> None:
+                 calibrator=None, ledger_path=None) -> None:
         self.registry = registry
         self.engine = RecursiveLoopEngine(registry)
+        # Optional fitted Calibrator (Phase 8): recalibrates the Confidence model. Default None.
+        self.calibrator = calibrator
         # Optional Investigation Memory: supplies learned priors before the run and ingests the
         # run's strategy digest after it (doc 06 Phase 4). Never sees evidence content.
         self.memory = memory
@@ -62,7 +64,7 @@ class InvestigationController:
             from ...memory import MemoryPriors
             priors = MemoryPriors(self.memory)
         loop_result = self.engine.run(investigation, state, governor, priors=priors,
-                                      gateway=self.gateway)
+                                      gateway=self.gateway, calibrator=self.calibrator)
 
         ledger.append(
             investigation_id=investigation.investigation_id,

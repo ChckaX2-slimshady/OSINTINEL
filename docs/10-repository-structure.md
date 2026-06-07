@@ -98,6 +98,12 @@ OSINTENAL/
 │   │   ├── types.py               # ChatRequest/ModelResponse/EmbeddingResult/Usage
 │   │   └── providers/             # anthropic (flagship) · huggingface (embed+small) · deterministic
 │   │
+│   ├── improvement/               # doc 06 Phase 8 — self-improvement (strategy only)
+│   │   ├── calibration.py         # ECE/Brier/reliability + temperature-scaling Calibrator
+│   │   ├── benchmark.py           # frozen calibration benchmark
+│   │   ├── tuning.py              # versioned StrategyVersion + run_self_improvement
+│   │   └── firewall.py            # audit: no evidence/ledger mutation
+│   │
 │   ├── memory/                    # doc 06 Phase 4 — strategy only, evidence firewall
 │   │   ├── store.py               # RunDigest + InvestigationMemory (effectiveness, calibration)
 │   │   ├── digest.py              # build_run_digest: the sole, firewalled bridge from a run

@@ -47,6 +47,8 @@ class AgentContext:
     llm: LLMClient | None = None
     # Optional learned priors (Investigation Memory). Read-only; never present in Phase 1 runs.
     priors: StrategyPriors | None = None
+    # Optional fitted Calibrator (Phase 8) recalibrating the Confidence model; None → defaults.
+    calibrator: object | None = None
 
     def provenance(
         self,
