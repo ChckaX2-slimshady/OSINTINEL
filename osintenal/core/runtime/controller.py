@@ -28,12 +28,16 @@ class InvestigationResult:
 
 
 class InvestigationController:
-    def __init__(self, registry: AdapterRegistry, *, memory=None, ledger_path=None) -> None:
+    def __init__(self, registry: AdapterRegistry, *, memory=None, gateway=None,
+                 ledger_path=None) -> None:
         self.registry = registry
         self.engine = RecursiveLoopEngine(registry)
         # Optional Investigation Memory: supplies learned priors before the run and ingests the
         # run's strategy digest after it (doc 06 Phase 4). Never sees evidence content.
         self.memory = memory
+        # Optional model gateway (doc 11): exposed to agents as ctx.llm. Default None keeps the
+        # loop model-free (deterministic); agents that don't call it are unaffected.
+        self.gateway = gateway
         # When set, the run's ledger is streamed to a durable JSONL file (doc 06 Phase 2).
         self.ledger_path = ledger_path
 
@@ -57,7 +61,8 @@ class InvestigationController:
         if self.memory is not None:
             from ...memory import MemoryPriors
             priors = MemoryPriors(self.memory)
-        loop_result = self.engine.run(investigation, state, governor, priors=priors)
+        loop_result = self.engine.run(investigation, state, governor, priors=priors,
+                                      gateway=self.gateway)
 
         ledger.append(
             investigation_id=investigation.investigation_id,

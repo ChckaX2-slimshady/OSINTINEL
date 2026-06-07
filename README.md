@@ -94,7 +94,10 @@ It does tier→model config, cost accounting into the Budget Governor, and **rec
 same cassette transport the adapters use** — model calls are auditable (lean `model_call` ledger
 events) and reproducible. Graceful degradation: live-local → live-cloud → recorded-replay →
 deterministic (CI). The recommended hybrid keeps embeddings/tasks local (private) and routes only
-reasoning to a free-cloud model. Agents are wired tier-by-tier next. See
+reasoning to a free-cloud model. **Agent wiring underway:** the `task` tier now drives
+evidence→hypothesis **relevance judgment** (`agents/relevance.py`) — a `RelevanceJudge` port with
+a heuristic default (CI-stable) and an LLM judge that falls back gracefully; `embed` (semantic
+source-independence) and `reason` (Connections/Synthesis/Skeptic) follow. See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) and [`docs/11`](docs/11-model-inference-architecture.md).
 
 ### Quickstart

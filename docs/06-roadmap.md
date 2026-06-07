@@ -199,9 +199,16 @@ record model I/O and replay offline.
 - ✅ **Gateway foundation** — ports, providers (deterministic + Anthropic + Hugging Face),
   record/replay, cost accounting, `model_call` events, `osintenal models`, credentials never in
   cassettes. `tests/inference/test_gateway.py`.
-- ◻ **Wire agents tier-by-tier** — `task` (relevance linking, extraction, query formulation),
-  then `embed` (Memory/dedup/true source-independence), then `reason` (Connections, Synthesis,
-  Skeptic, Epistemology) — each behind the gateway, each recorded for replay.
+- **Wire agents tier-by-tier** — each behind the gateway, each recorded for replay:
+  - ◑ **`task`** — evidence→hypothesis **relevance judgment** (`agents/relevance.py`):
+    `RelevanceJudge` port with a `HeuristicRelevanceJudge` (default; reproduces the prior
+    stand-ins, keeps CI byte-identical) and an `LLMRelevanceJudge` (task tier; JSON output,
+    embedded-JSON extraction, graceful fallback to the heuristic on bad/unreachable model). The
+    gateway is threaded through the controller/loop to `AgentContext.llm`. Next: extraction +
+    query formulation. `tests/inference/test_relevance.py`.
+  - ◻ **`embed`** — Memory/dedup/true source-independence (near-duplicate detection collapsing
+    illusory independence).
+  - ◻ **`reason`** — Connections, Synthesis, Skeptic, Epistemology behind the gateway.
 - ◻ **Online-first defaults** — adapters live by default; cassettes become the recorded test
   corpus; golden runs recorded once and replayed in CI.
 

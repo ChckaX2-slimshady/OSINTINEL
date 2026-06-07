@@ -38,6 +38,7 @@ from ..adapters import (
 from ..adapters.registry import AdapterRegistry
 from ..agents.base import AgentContext
 from ..agents.confidence import ConfidenceAgent
+from ..agents.relevance import Candidate, apply_weights
 from ..agents.selection import ToolSelectionAgent
 from ..agents.synthesis import SynthesisAgent
 from ..core.budget import BudgetGovernor
@@ -106,7 +107,10 @@ def _relevance_link(ev, mast_id: str, turbine_id: str) -> None:
         ev.weights = {mast_id: 0.6, turbine_id: -0.2}
 
 
-def run_archive_slice(*, cas_dir: str | Path | None = None, record: bool = False) -> SliceResult:
+def run_archive_slice(*, cas_dir: str | Path | None = None, record: bool = False,
+                      judge=None) -> SliceResult:
+    """Run the slice. ``judge`` (a ``RelevanceJudge``) replaces the deterministic relevance
+    stand-in with model-driven judgment (Phase M); ``None`` keeps the heuristic (CI default)."""
     cas = ContentAddressedStore(cas_dir or tempfile.mkdtemp())
     ledger = Ledger()
     state = InvestigationState("slice-inv", ledger)
@@ -178,7 +182,14 @@ def run_archive_slice(*, cas_dir: str | Path | None = None, record: bool = False
                 content_hash=art.digest(), source=art.source, url=art.url,
                 bytes_len=art.structured.get("bytes"))
         for ev in evidence:
-            _relevance_link(ev, h_mast.hypothesis_id, h_turbine.hypothesis_id)
+            if judge is None:
+                _relevance_link(ev, h_mast.hypothesis_id, h_turbine.hypothesis_id)
+            else:
+                # Phase M: a model (task tier) judges relevance instead of the heuristic stand-in.
+                apply_weights(ev, judge.score(
+                    kind=ev.kind, summary=ev.summary, structured=ev.structured,
+                    candidates=[Candidate(h_mast.hypothesis_id, h_mast.statement),
+                                Candidate(h_turbine.hypothesis_id, h_turbine.statement)]))
             ev.addresses_query = plan.evidence_request_id
             state.add_evidence(ev, ctx.iteration)
 
