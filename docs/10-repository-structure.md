@@ -116,10 +116,14 @@ OSINTENAL/
 │   ├── playbooks/                 # optional per-domain priors & cost models (doc 00 §6)
 │   │   └── README.md
 │   │
+│   ├── service/                   # investigation input layer — run_investigation() over user input
+│   │
 │   └── interfaces/
-│       ├── cli/                   # `osintenal run|verify|audit|slice|memory|image|geo|dashboard`
+│       ├── cli/                   # `osintenal run|…|improve|serve|mcp` (front-door commands)
 │       ├── api/                   # read-only service: build_dashboard_data → JSON (REST contract) ✅
-│       └── dashboard/             # self-contained offline HTML console (SVG graph/timeline/evolution) ✅
+│       ├── dashboard/             # self-contained offline HTML console (SVG graph/timeline/evolution) ✅
+│       ├── web/                   # local web app (`osintenal serve`) — browser UI, runs in memory ✅
+│       └── mcp/                   # MCP stdio server (`osintenal mcp`) — drive it from Claude ✅
 │
 ├── tests/                         # doc 09
 │   ├── unit/                      # schemas, adapters, confidence math, graph/ledger

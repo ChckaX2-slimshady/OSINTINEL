@@ -157,6 +157,43 @@ osintenal improve             # Phase 8: self-improvement — calibration + plan
 pytest -q                      # unit + invariant + adapter + memory + geo + model + improvement
 ```
 
+### Using it on your own questions
+
+Beyond the demos, two **front doors** run your own investigations (pose a question, list the
+competing answers, provide evidence; the system frames hypotheses, judges relevance, runs the
+Skeptic gate, and returns a ranked, uncertainty-aware report):
+
+```bash
+# 1) Local web app — a browser UI (dark "console" theme), runs kept in memory
+osintenal serve                      # → open http://127.0.0.1:8765
+
+# 2) MCP server — drive it by chatting with Claude (Desktop or Code)
+osintenal mcp                        # stdio MCP server exposing `investigate` + `models_status`
+```
+
+To plug the MCP server into **Claude Desktop** (`claude_desktop_config.json`) or Claude Code:
+
+```json
+{
+  "mcpServers": {
+    "osintenal": {
+      "command": "osintenal",
+      "args": ["mcp"],
+      "env": { "OSINTENAL_INFERENCE_PROFILE": "ollama" }
+    }
+  }
+}
+```
+
+Then just ask Claude: *"Use osintenal to investigate whether the ridge structure is a mast or a
+turbine, given this evidence…"* — it calls the `investigate` tool and returns the report.
+
+**Models are free & local.** Set `OSINTENAL_INFERENCE_PROFILE=ollama` (all local) — or add
+`OSINTENAL_REASON_PROFILE=gemini` to route only the heavy reasoning to a free cloud tier. With no
+model configured, tag each piece of evidence with the answer it supports and the deterministic
+engine still reasons over it. *Today this is reasoning over a question + evidence you provide;
+autonomous open-web research is the next capability (a general search/RAG adapter).*
+
 The demo (the "circled structure" case) shows the full epistemic ladder — **information →
 connection → explanation{speculation | extrapolation} → hypothesis → insight** — with the
 system framing **competing explanations**, synthesizing them into competing **hypotheses**,
@@ -186,7 +223,8 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | Dashboard service + self-contained HTML console | `osintenal/interfaces/api`, `osintenal/interfaces/dashboard` | [06](docs/06-roadmap.md) |
 | Model & inference gateway (tiers, providers, record/replay, cost) | `osintenal/inference/` | [11](docs/11-model-inference-architecture.md) |
 | **Self-improvement (calibration harness, strategy tuning, firewall audit)** | `osintenal/improvement/` | [06](docs/06-roadmap.md) |
-| CLI | `osintenal/interfaces/cli/` | [10](docs/10-repository-structure.md) |
+| **Investigation input layer (run your own questions)** | `osintenal/service/` | — |
+| **Front doors: CLI · local web app · MCP server** | `osintenal/interfaces/{cli,web,mcp}` | [10](docs/10-repository-structure.md) |
 
 A later phase can swap the embedded `GraphStore` for a graph-native backend (SQLite/Neo4j)
 behind the same port; the ledger, schemas, constraints, and agent contracts are already the

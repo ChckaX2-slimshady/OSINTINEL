@@ -100,6 +100,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("independence", help="embed-tier demo: detect illusory (syndicated) source independence")
     sub.add_parser("reason", help="reason-tier demo: model-generated explanations + adversarial critique")
     sub.add_parser("improve", help="Phase 8: self-improvement — calibration + planner tuning across versions")
+    p_serve = sub.add_parser("serve", help="launch the local web app (browser UI for investigations)")
+    p_serve.add_argument("--port", type=int, default=8765)
+    p_serve.add_argument("--host", default="127.0.0.1")
+    sub.add_parser("mcp", help="run the MCP server (stdio) so Claude can drive OSINTENAL")
 
     args = parser.parse_args(argv)
 
@@ -146,6 +150,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "improve":
         return _improve()
+
+    if args.command == "serve":
+        from ...interfaces.web import serve
+        serve(port=args.port, host=args.host)
+        return 0
+
+    if args.command == "mcp":
+        from ...interfaces.mcp import serve_stdio
+        serve_stdio()
+        return 0
 
     return 1
 
