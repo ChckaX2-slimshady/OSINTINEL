@@ -15,6 +15,7 @@ from .media import ExifAdapter
 from .registry import AdapterRegistry
 from .storage import ContentAddressedStore
 from .stub import StubEvidenceAdapter
+from .web import WebSearchAdapter
 from .transport import Cassette, HttpClient
 
 __all__ = [
@@ -34,5 +35,6 @@ __all__ = [
     "SolarGeometryAdapter",
     "StubEvidenceAdapter",
     "WaybackAdapter",
+    "WebSearchAdapter",
     "WikidataAdapter",
 ]

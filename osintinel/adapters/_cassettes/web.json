@@ -1,0 +1,18 @@
+{
+  "2020e4329de8162878ad629579d434c1ca34cc0703f1e7455a63a379eb6d166f": {
+    "text": "<html><body><h1>Bullington communications mast</h1><p>WindReach Telecom operates a lattice communications mast on Bullington ridge providing radio relay and microwave backhaul. It is a telecom mast, not a wind turbine.</p></body></html>",
+    "url": "https://windreach-telecom.example/bullington"
+  },
+  "2352ed6c356124c5f334bff3245b2a51b4528dacb524fded1de8712fe668e967": {
+    "text": "<html><body><article>Residents confirmed the ridge structure is a communications mast installed for mobile and emergency-services coverage near Bullington.</article></body></html>",
+    "url": "https://hampshire-news.example/ridge-mast"
+  },
+  "72344b068fda66d1360477ea4b38d6dfbb2f0d9e5f10b45204f8976c6a82d10f": {
+    "text": "<html><body><a class=\"result-link\" href=\"https://windreach-telecom.example/bullington\">WindReach Telecom \u2014 Bullington mast</a><a class=\"result-link\" href=\"https://hampshire-news.example/ridge-mast\">Hampshire News: the ridge mast explained</a><a class=\"result-link\" href=\"https://heritage-survey.example/bullington-down\">Heritage survey: Bullington Down</a></body></html>",
+    "url": "https://lite.duckduckgo.com/lite/"
+  },
+  "d1d7a07395f97220d3457730cf450323fbfac39b4ab1e170999624a4176f077e": {
+    "text": "<html><body><p>The Bullington Down survey records a tall mast on the chalk ridge; the antenna and relay equipment indicate a communications installation.</p></body></html>",
+    "url": "https://heritage-survey.example/bullington-down"
+  }
+}

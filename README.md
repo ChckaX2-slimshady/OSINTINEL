@@ -169,7 +169,16 @@ osintinel serve                      # → open http://127.0.0.1:8765
 
 # 2) MCP server — drive it by chatting with Claude (Desktop or Code)
 osintinel mcp                        # stdio MCP server exposing `investigate` + `models_status`
+
+# 3) Autonomous web research — the system gathers its own evidence (offline demo)
+osintinel research                   # search → fetch → extract → reason → ranked answer
 ```
+
+**Autonomous research:** `autoresearch_investigation` (service layer) and the `web.search`/
+`web.fetch` adapter let an investigation **search the open web, fetch results, and extract
+evidence itself** — lawful free backends (Wikipedia default; DuckDuckGo for diverse domains),
+grouped by domain so independent corroboration is real. The demo runs offline from a recorded
+cassette; live is `OSINTINEL_NET=live`.
 
 To plug the MCP server into **Claude Desktop** (`claude_desktop_config.json`) or Claude Code:
 
@@ -224,6 +233,7 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | Model & inference gateway (tiers, providers, record/replay, cost) | `osintinel/inference/` | [11](docs/11-model-inference-architecture.md) |
 | **Self-improvement (calibration harness, strategy tuning, firewall audit)** | `osintinel/improvement/` | [06](docs/06-roadmap.md) |
 | **Investigation input layer (run your own questions)** | `osintinel/service/` | — |
+| **Autonomous web research (search/fetch/extract → evidence)** | `osintinel/adapters/web/` | [05](docs/05-adapters.md) |
 | **Front doors: CLI · local web app · MCP server** | `osintinel/interfaces/{cli,web,mcp}` | [10](docs/10-repository-structure.md) |
 
 A later phase can swap the embedded `GraphStore` for a graph-native backend (SQLite/Neo4j)

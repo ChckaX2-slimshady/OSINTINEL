@@ -104,6 +104,7 @@ def main(argv: list[str] | None = None) -> int:
     p_serve.add_argument("--port", type=int, default=8765)
     p_serve.add_argument("--host", default="127.0.0.1")
     sub.add_parser("mcp", help="run the MCP server (stdio) so Claude can drive OSINTINEL")
+    sub.add_parser("research", help="autonomous web-research demo (gathers its own evidence, offline)")
 
     args = parser.parse_args(argv)
 
@@ -161,7 +162,44 @@ def main(argv: list[str] | None = None) -> int:
         serve_stdio()
         return 0
 
+    if args.command == "research":
+        return _research()
+
     return 1
+
+
+def _research() -> int:
+    """Autonomous web-research demo: the system gathers its own evidence, then reasons over it."""
+    import tempfile
+    from pathlib import Path
+
+    from ...adapters import Cassette, ContentAddressedStore, HttpClient, WebSearchAdapter
+    from ...service import InvestigationSummary, autoresearch_investigation
+
+    cdir = Path(__file__).resolve().parent.parent.parent / "adapters" / "_cassettes"
+    cas = ContentAddressedStore(tempfile.mkdtemp())
+    web = WebSearchAdapter(HttpClient(Cassette(cdir / "web.json")), cas, backend="duckduckgo")
+    question = "Bullington ridge communications mast"
+    result = autoresearch_investigation(
+        question=question, candidates=["communications mast", "wind turbine"],
+        web_adapter=web, limit=3)
+    s = InvestigationSummary.from_result(result)
+    leader = result.report.connective_probability_scores[0].ranked_hypotheses[0]
+    groups = sorted(result.state.independent_source_groups(leader.hypothesis_id))
+
+    print("\n=== OSINTINEL — Autonomous web research (offline demo cassette) ===")
+    print(f"Question: {question}\n")
+    print(f"Gathered {len(result.state.evidence)} pages from {len(groups)} independent "
+          f"domains: {', '.join(groups)}\n")
+    print("Ranked answers:")
+    for h in s.ranked:
+        print(f"  {h['confidence']:.0%}  [{h['class']}]  {h['statement']}")
+    print("\nThe leader reached "
+          f"{leader.epistemic_class.value} on {len(groups)} independent sources; page bytes are "
+          "in the content-addressed store, only refs in the ledger.")
+    print("\n(Lawful default backend is Wikipedia; this demo uses a recorded DuckDuckGo result "
+          "set to show multi-domain corroboration. Live: OSINTINEL_NET=live.)")
+    return 0 if leader.epistemic_class.value == "INSIGHT" else 1
 
 
 def _improve() -> int:

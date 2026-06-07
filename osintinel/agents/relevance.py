@@ -18,6 +18,7 @@ absent = irrelevant), which the caller writes onto the EvidenceObject.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
@@ -27,6 +28,10 @@ from ..inference.providers.openai_compat import _maybe_json
 # heuristic judge reproduces prior behavior exactly (byte-identical demo/slice runs).
 _SIGNAL = ("mast", "tower", "telecom", "communications", "relay", "antenna")
 _KIND_WEIGHTS = {"archive_snapshot": (0.8, -0.3), "osm_feature": (0.6, -0.2)}
+_STOPWORDS = frozenset((
+    "the", "a", "an", "is", "are", "was", "were", "be", "been", "of", "to", "in", "on", "at",
+    "and", "or", "for", "with", "by", "as", "it", "its", "this", "that", "from", "into", "near",
+    "structure", "located", "site", "the"))
 
 
 def _extract_json_object(text: str) -> dict | None:
@@ -66,26 +71,40 @@ def _overlap(statement: str, words: tuple[str, ...]) -> int:
 
 
 class HeuristicRelevanceJudge:
-    """Keyword/tag rules — deterministic, reproducible, no model."""
+    """Keyword/tag rules + lexical overlap — deterministic, reproducible, no model."""
 
     def score(self, *, kind: str, summary: str, structured: dict,
               candidates: list[Candidate]) -> dict[str, float]:
-        if kind not in _KIND_WEIGHTS or not candidates:
+        if not candidates:
             return {}
-        man_made = (structured.get("tags") or {}).get("man_made")
-        title = (structured.get("title") or "").lower()
-        signalled = ((kind == "archive_snapshot" and ("telecom" in title or "mast" in title))
-                     or (kind == "osm_feature" and man_made in {"mast", "tower"}))
-        if not signalled:
-            return {}
-        sup_w, con_w = _KIND_WEIGHTS[kind]
-        # the candidate whose statement best matches the mast/telecom signal is supported
-        target = max(candidates, key=lambda c: _overlap(c.statement, _SIGNAL))
-        weights = {target.hypothesis_id: sup_w}
-        for c in candidates:
-            if c.hypothesis_id != target.hypothesis_id:
-                weights[c.hypothesis_id] = con_w
-        return weights
+        if kind in _KIND_WEIGHTS:
+            man_made = (structured.get("tags") or {}).get("man_made")
+            title = (structured.get("title") or "").lower()
+            signalled = ((kind == "archive_snapshot" and ("telecom" in title or "mast" in title))
+                         or (kind == "osm_feature" and man_made in {"mast", "tower"}))
+            if not signalled:
+                return {}
+            sup_w, con_w = _KIND_WEIGHTS[kind]
+            target = max(candidates, key=lambda c: _overlap(c.statement, _SIGNAL))
+            weights = {target.hypothesis_id: sup_w}
+            for c in candidates:
+                if c.hypothesis_id != target.hypothesis_id:
+                    weights[c.hypothesis_id] = con_w
+            return weights
+        # generic lexical relevance for arbitrary text (web pages, notes): support the candidate
+        # whose statement shares the most distinctive words with the evidence.
+        return self._lexical(summary, structured, candidates)
+
+    @staticmethod
+    def _words(text: str) -> set[str]:
+        return {w for w in re.findall(r"[a-z0-9]{3,}", text.lower()) if w not in _STOPWORDS}
+
+    def _lexical(self, summary: str, structured: dict,
+                 candidates: list[Candidate]) -> dict[str, float]:
+        ev_words = self._words(summary + " " + " ".join(str(v) for v in structured.values()))
+        scored = [(c, len(self._words(c.statement) & ev_words)) for c in candidates]
+        best, best_n = max(scored, key=lambda t: t[1])
+        return {best.hypothesis_id: 0.5} if best_n else {}
 
 
 class LLMRelevanceJudge:

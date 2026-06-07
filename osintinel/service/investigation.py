@@ -41,6 +41,7 @@ from ..core.schemas import (
     EvidenceObject,
     Investigation,
     InvestigationConfig,
+    Provenance,
 )
 from ..core.state import InvestigationState
 from ..ledger import Ledger
@@ -57,6 +58,9 @@ class EvidenceInput:
     kind: str = "note"
     supports: int | None = None         # optional: index of the candidate this supports
     weight: float = 0.6                 # magnitude used when `supports` is given
+    payload_ref: str | None = None      # CAS ref for heavy bytes (e.g. fetched web pages)
+    content_hash: str | None = None
+    url: str | None = None
 
     def independence_group(self) -> str:
         return self.group or self.source
@@ -97,8 +101,11 @@ def run_investigation(*, question: str, candidates: list[str],
     for item in evidence:
         prov = ctx(0).provenance(AgentName.ACQUISITION, method=AcquisitionMethod.HUMAN_PROVIDED,
                                  confidence=0.8, source=item.source)
-        ev = EvidenceObject(kind=item.kind, summary=item.text,
-                            structured={"independence_group": item.independence_group()},
+        prov.url = item.url
+        prov.content_hash = item.content_hash
+        ev = EvidenceObject(kind=item.kind, summary=item.text, payload_ref=item.payload_ref,
+                            structured={"independence_group": item.independence_group(),
+                                        **({"url": item.url} if item.url else {})},
                             provenance=prov)
         if item.supports is not None and 0 <= item.supports < len(cand_list):
             target = cand_list[item.supports].hypothesis_id
@@ -127,6 +134,38 @@ def run_investigation(*, question: str, candidates: list[str],
                       termination=TerminationDecision(True, "completed"), history=[])
     return InvestigationResult(investigation=investigation, report=report, ledger=ledger,
                                state=state, loop=loop, budget=governor.snapshot())
+
+
+def autoresearch_investigation(*, question: str, candidates: list[str] | None = None,
+                               web_adapter, limit: int = 5, backend: str | None = None,
+                               gateway=None, calibrator=None, ledger=None,
+                               confidence_threshold: float = 0.7) -> InvestigationResult:
+    """Autonomous-ish research: the web adapter gathers evidence for the question, then the loop
+    reasons over it. ``candidates`` may be omitted when a model is present (the reason tier
+    proposes competing answers from the search results)."""
+    aprov = Provenance(source="web", acquisition_method=AcquisitionMethod.SCRAPE,
+                       agent_responsible=AgentName.ACQUISITION, confidence=0.7,
+                       investigation_id="web-research")
+    args = {"query": question, "limit": limit}
+    if backend is not None:
+        args["backend"] = backend
+    gathered = web_adapter.acquire("web.search", args, aprov)
+    evidence = [EvidenceInput(
+        text=ev.summary, source=ev.provenance.source,
+        group=ev.structured.get("independence_group"), kind="web_page",
+        payload_ref=ev.payload_ref, content_hash=ev.provenance.content_hash,
+        url=ev.structured.get("url")) for ev in gathered]
+
+    if not candidates:
+        if gateway is not None:
+            from ..agents.reasoning import ReasoningModel
+            candidates = ReasoningModel(gateway).propose_explanations(
+                question=question, observations=[e.text for e in evidence], existing=[], limit=4)
+        candidates = candidates or ["the claim is supported", "the claim is not supported"]
+
+    return run_investigation(question=question, candidates=candidates, evidence=evidence,
+                             domain="web-research", gateway=gateway, calibrator=calibrator,
+                             confidence_threshold=confidence_threshold)
 
 
 @dataclass

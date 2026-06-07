@@ -101,6 +101,19 @@ the licensed/commercial tools are in the **Supplemental Adapter Framework** (§4
 - Encyclopedic & open datasets (`reference.encyclopedic`, `dataset.open`), Wolfram-style
   symbolic compute (`compute.symbolic`) for shadow/sun-angle, distance, and timeline math.
 
+### Web research — `web.*`
+- **Open-web search + fetch** (`web.search`, `web.fetch`): a `WebSearchAdapter` so an
+  investigation gathers its own evidence. Lawful, free, **no-key** backends — **Wikipedia**
+  (MediaWiki search + REST page-summary, the default) and **DuckDuckGo lite** (HTML, for diverse
+  domains). Fetched bytes go to the CAS; evidence is grouped by registrable domain so the
+  embed-tier independence check is not fooled by same-site pages.
+
+### Implemented adapter inventory (all free / lawful, no paid key)
+`geo.geocode`/`geo.reverse_geocode` (Nominatim) · `geo.features` (Overpass) ·
+`archive.timemap`/`archive.snapshot` (Wayback) · `reference.encyclopedic` (Wikidata) ·
+`infra.certs` (crt.sh Certificate Transparency) · `media.exif` (built-in EXIF codec) ·
+`compute.symbolic` (NOAA solar geometry) · `web.search`/`web.fetch` (Wikipedia/DuckDuckGo).
+
 ## 4b. Supplemental Adapter Framework (license-gated, off by default)
 
 The brief's supplemental resources — across Social Media (Skopenow, Social Links,
@@ -111,6 +124,16 @@ Intelligence (Silobreaker, Media Sonar, Cobwebs), People ID (Maltego, Pipl), Ris
 Intel (KELA, Intel471 Titan, CYWARE) — are modeled as **license-gated adapters** behind the
 same interface. They are never enabled implicitly; the operator must supply credentials and
 attest to authorized use. Provenance records which licensed source was used.
+
+**Integration status (honest):** *none* of these commercial sources are functionally
+integrated — they are all paid/licensed. Only the **gating mechanism** (`commercial/base.py`)
+and a representative **Maltego stub** exist, off unless credentials + attestation are supplied.
+The deliberate emphasis is on **free, lawful** sources (the inventory above). High-value free
+additions for "modern OSINT" that fit the existing pattern (no key or free-tier key): Shodan
+**InternetDB** (`infra.*`, no key), **URLScan.io** / **AlienVault OTX** / **abuse.ch** (threat
+intel, free), **OpenCorporates** / **SEC EDGAR** / **GLEIF** (`record.public`, free),
+**Mapillary** (`geo.streetlevel`, free key), and **Brave Search** / **SearXNG** backends for
+`web.search`.
 
 ## 5. Adapter Authoring Rules
 

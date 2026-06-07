@@ -16,6 +16,8 @@ CAPABILITIES = {
     "doc.ocr", "doc.metadata", "doc.pdf",
     # media
     "media.exif", "media.metadata", "media.reverse_image", "media.similarity",
+    # web research
+    "web.search", "web.fetch",
     # reference / compute
     "record.public", "dataset.open", "reference.encyclopedic", "compute.symbolic",
     # link analysis (supplemental, license-gated)

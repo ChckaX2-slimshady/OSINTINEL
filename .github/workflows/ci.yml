@@ -41,3 +41,5 @@ jobs:
         run: osintinel reason
       - name: Smoke-run the Phase 8 self-improvement loop
         run: osintinel improve
+      - name: Smoke-run autonomous web research (offline cassette)
+        run: osintinel research
