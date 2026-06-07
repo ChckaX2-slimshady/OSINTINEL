@@ -206,8 +206,13 @@ record model I/O and replay offline.
     embedded-JSON extraction, graceful fallback to the heuristic on bad/unreachable model). The
     gateway is threaded through the controller/loop to `AgentContext.llm`. Next: extraction +
     query formulation. `tests/inference/test_relevance.py`.
-  - ◻ **`embed`** — Memory/dedup/true source-independence (near-duplicate detection collapsing
-    illusory independence).
+  - ◑ **`embed`** — true source-independence (`agents/semantic.py`): embeds supporting evidence
+    and collapses declared groups whose content is near-duplicate (syndication/wire copy), so
+    illusory corroboration can't fool the Confidence gate. The Skeptic raises a BLOCKING
+    `illusory_independence` finding when effective independence drops below the minimum, resolved
+    when a genuinely distinct source arrives (`osintenal independence`,
+    `tests/inference/test_semantic.py`). Gated on an embedder being present, so deterministic
+    runs are unaffected. Next: semantic dedup + retrieval over large corpora.
   - ◻ **`reason`** — Connections, Synthesis, Skeptic, Epistemology behind the gateway.
 - ◻ **Online-first defaults** — adapters live by default; cassettes become the recorded test
   corpus; golden runs recorded once and replayed in CI.

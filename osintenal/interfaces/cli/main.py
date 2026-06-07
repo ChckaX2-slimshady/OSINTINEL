@@ -97,6 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     p_dash.add_argument("--out", default="osintenal-dashboard.html",
                         help="output HTML path (default: ./osintenal-dashboard.html)")
     sub.add_parser("models", help="show the model-tier config and exercise the inference gateway")
+    sub.add_parser("independence", help="embed-tier demo: detect illusory (syndicated) source independence")
 
     args = parser.parse_args(argv)
 
@@ -135,7 +136,31 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "models":
         return _models()
 
+    if args.command == "independence":
+        return _independence()
+
     return 1
+
+
+def _independence() -> int:
+    """Embed-tier demo: collapse near-duplicate 'independent' sources (doc 11 §6)."""
+    from ...scenarios.independence_demo import run_independence_demo
+
+    r = run_independence_demo()
+    print("\n=== OSINTENAL Phase M (embed tier) — illusory source independence ===")
+    print("A leader corroborated by OpenStreetMap + Regional Newswire (both carrying the same")
+    print("syndicated text), then by a genuinely distinct Wikidata entity.\n")
+    merged = "; ".join("≈".join(c) for c in r.merged_clusters) or "(none)"
+    print(f"Before distinct source:  declared independent groups = {r.declared_before}, "
+          f"effective (after dedup) = {r.effective_before}  [collapsed: {merged}]")
+    print(f"  → Skeptic raised BLOCKING illusory-independence finding: {r.finding_raised}")
+    print(f"After distinct source:   declared = {r.declared_after}, effective = {r.effective_after}")
+    print(f"  → finding resolved (genuine corroboration): {r.finding_resolved}")
+    ok = (r.effective_before < r.declared_before and r.finding_raised
+          and r.effective_after >= 2 and r.finding_resolved)
+    print(f"\nembed-tier guard working: {'YES' if ok else 'NO'}  "
+          f"(syndicated corroboration no longer fools the Confidence gate)")
+    return 0 if ok else 1
 
 
 def _models() -> int:

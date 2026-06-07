@@ -22,9 +22,11 @@ from ..core.schemas import (
     SkepticFinding,
 )
 from .base import AgentContext
+from .semantic import analyze_independence
 
 PROMOTION_WATCH = 0.60  # confidence at which the promotion gate becomes relevant
 MIN_INDEPENDENT_SOURCES = 2
+SEMANTIC_DUP_THRESHOLD = 0.92  # cosine at/above which two sources are "the same content"
 
 
 class SkepticAgent:
@@ -39,6 +41,7 @@ class SkepticAgent:
             leader = max(active, key=lambda h: h.confidence)
             findings += self._challenge_source_dependency(ctx, leader)
             findings += self._challenge_premature_convergence(ctx, hs, leader, active)
+            findings += self._challenge_illusory_independence(ctx, leader)
         return findings
 
     def _existing_open(self, ctx, target_ref, category) -> SkepticFinding | None:
@@ -75,6 +78,63 @@ class SkepticAgent:
                 ctx.iteration,
             )
         return out
+
+    @staticmethod
+    def _embed_fn(ctx: AgentContext):
+        """The gateway's embed function, if a model layer is present (embed tier); else None."""
+        gateway = ctx.llm
+        embed = getattr(gateway, "embed", None) if gateway is not None else None
+        return embed if callable(embed) else None
+
+    def _challenge_illusory_independence(self, ctx: AgentContext, leader: Hypothesis):
+        """Embed-tier challenge: collapse near-duplicate 'independent' sources (doc 11 §6).
+
+        If the leader appears multi-source but its supporting evidence is near-duplicate content
+        across declared groups, the independence is illusory — raise a BLOCKING finding so the
+        Confidence gate refuses promotion until *genuinely* independent corroboration arrives.
+        Only runs when an embedder is configured, so deterministic/offline runs are unaffected.
+        """
+        embed_fn = self._embed_fn(ctx)
+        if embed_fn is None:
+            return []
+        support = [e for e in ctx.state.evidence_for(leader.hypothesis_id)
+                   if leader.hypothesis_id in e.supports]
+        groups = [ctx.state.sources.get(e.provenance.source, e.provenance.source)
+                  for e in support]
+        if len(set(groups)) < MIN_INDEPENDENT_SOURCES:
+            return []  # not claiming multi-source; nothing to debunk
+
+        try:
+            report = analyze_independence(groups, [e.summary for e in support], embed_fn,
+                                          threshold=SEMANTIC_DUP_THRESHOLD)
+        except Exception:
+            return []  # embed failure is never fatal
+
+        open_finding = self._existing_open(ctx, leader.hypothesis_id, "illusory_independence")
+        if len(report.effective) < MIN_INDEPENDENT_SOURCES and report.merged:
+            if open_finding is None:
+                clusters = "; ".join("≈".join(c) for c in report.merged)
+                prov = ctx.provenance(self.name, method=AcquisitionMethod.DERIVED, confidence=0.8)
+                f = SkepticFinding(
+                    target_ref=leader.hypothesis_id,
+                    category="illusory_independence",
+                    description=(
+                        f"Apparent independence is illusory: {clusters} carry near-duplicate "
+                        f"content; effective independent groups = {len(report.effective)} "
+                        f"(< {MIN_INDEPENDENT_SOURCES} required). Corroboration is syndicated, "
+                        f"not independent."),
+                    severity="blocking",
+                    evidence_refs=leader.supporting_evidence,
+                    provenance=prov,
+                )
+                ctx.state.add_finding(f, ctx.iteration)
+                return [f]
+        elif open_finding is not None and len(report.effective) >= MIN_INDEPENDENT_SOURCES:
+            ctx.state.resolve_finding(
+                open_finding.finding_id,
+                f"genuinely independent corroboration confirmed ({len(report.effective)} groups)",
+                ctx.iteration)
+        return []
 
     def _challenge_premature_convergence(self, ctx, hs, leader, active):
         out: list[SkepticFinding] = []

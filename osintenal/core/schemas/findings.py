@@ -20,6 +20,7 @@ class SkepticFinding(BaseModel):
         "hidden_assumption",
         "reasoning_weakness",
         "source_dependency",
+        "illusory_independence",  # near-duplicate "independent" sources (doc 11 §6)
         "alt_explanation",
         "overfit",
     ]

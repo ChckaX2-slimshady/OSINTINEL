@@ -96,8 +96,11 @@ events) and reproducible. Graceful degradation: live-local → live-cloud → re
 deterministic (CI). The recommended hybrid keeps embeddings/tasks local (private) and routes only
 reasoning to a free-cloud model. **Agent wiring underway:** the `task` tier now drives
 evidence→hypothesis **relevance judgment** (`agents/relevance.py`) — a `RelevanceJudge` port with
-a heuristic default (CI-stable) and an LLM judge that falls back gracefully; `embed` (semantic
-source-independence) and `reason` (Connections/Synthesis/Skeptic) follow. See
+a heuristic default (CI-stable) and an LLM judge that falls back gracefully. The `embed` tier now
+detects **illusory source independence** — when "independent" sources are syndicated copies, it
+collapses them so the Confidence gate isn't fooled, and the Skeptic raises a blocking finding
+(`agents/semantic.py`, `osintenal independence`). The `reason` tier
+(Connections/Synthesis/Skeptic) follows. See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) and [`docs/11`](docs/11-model-inference-architecture.md).
 
 ### Quickstart

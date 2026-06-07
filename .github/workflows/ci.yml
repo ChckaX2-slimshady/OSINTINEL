@@ -35,3 +35,5 @@ jobs:
         run: osintenal dashboard --out /tmp/osintenal-dashboard.html
       - name: Smoke-run the inference gateway (deterministic, offline)
         run: osintenal models
+      - name: Smoke-run the embed-tier source-independence guard
+        run: osintenal independence
