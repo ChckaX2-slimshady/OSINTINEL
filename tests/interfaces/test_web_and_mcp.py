@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from osintenal.interfaces.mcp import TOOLS, handle_request
-from osintenal.interfaces.web import (
+from osintinel.interfaces.mcp import TOOLS, handle_request
+from osintinel.interfaces.web import (
     build_result_page,
     parse_form,
     render_form,
@@ -45,7 +45,7 @@ def test_http_server_serves_form_and_runs_investigation():
     import urllib.request
     from http.server import ThreadingHTTPServer
 
-    from osintenal.interfaces.web.app import _Handler
+    from osintinel.interfaces.web.app import _Handler
 
     srv = ThreadingHTTPServer(("127.0.0.1", 8794), _Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -64,7 +64,7 @@ def test_http_server_serves_form_and_runs_investigation():
 # -- MCP server --------------------------------------------------------------
 def test_mcp_initialize_and_tools_list():
     init = handle_request({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
-    assert init["result"]["serverInfo"]["name"] == "osintenal"
+    assert init["result"]["serverInfo"]["name"] == "osintinel"
     assert "tools" in init["result"]["capabilities"]
     names = {t["name"] for t in handle_request(
         {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})["result"]["tools"]}

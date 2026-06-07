@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import json
 
-from osintenal.adapters.transport import Cassette, HttpClient, request_key
-from osintenal.agents.llm import LLMClient
-from osintenal.core.budget import BudgetGovernor
-from osintenal.core.schemas import Budgets
-from osintenal.inference import build_gateway, gateway_status
-from osintenal.inference.providers.anthropic import API_URL, AnthropicProvider
-from osintenal.inference.providers.huggingface import FEATURE_URL, HuggingFaceEmbedder
-from osintenal.inference.types import ChatMessage, ChatRequest
-from osintenal.ledger import Ledger
+from osintinel.adapters.transport import Cassette, HttpClient, request_key
+from osintinel.agents.llm import LLMClient
+from osintinel.core.budget import BudgetGovernor
+from osintinel.core.schemas import Budgets
+from osintinel.inference import build_gateway, gateway_status
+from osintinel.inference.providers.anthropic import API_URL, AnthropicProvider
+from osintinel.inference.providers.huggingface import FEATURE_URL, HuggingFaceEmbedder
+from osintinel.inference.types import ChatMessage, ChatRequest
+from osintinel.ledger import Ledger
 
 
 # -- deterministic default ---------------------------------------------------
@@ -105,21 +105,21 @@ def test_ollama_profile_builds_local_openai_provider_without_a_key(tmp_path):
 
 
 def test_per_tier_model_override_via_env(tmp_path, monkeypatch):
-    monkeypatch.setenv("OSINTENAL_REASON_MODEL", "llama3.1:70b")
+    monkeypatch.setenv("OSINTINEL_REASON_MODEL", "llama3.1:70b")
     gw = build_gateway(profile="ollama", cassette_dir=tmp_path, record=False)
     assert gw.models["reason"] == "llama3.1:70b"
 
 
 def test_hybrid_reason_override_routes_only_reasoning_tier(tmp_path, monkeypatch):
     # local stack for embed/task, free-cloud profile for the reasoning tier (doc 11 §2)
-    monkeypatch.setenv("OSINTENAL_REASON_PROFILE", "groq")
+    monkeypatch.setenv("OSINTINEL_REASON_PROFILE", "groq")
     gw = build_gateway(profile="ollama", cassette_dir=tmp_path, record=False)
     assert gw.models["reason"] == "llama-3.3-70b-versatile"   # from groq
     assert gw.models["task"] == "qwen2.5:3b-instruct"          # still local ollama
 
 
 def test_openai_compatible_provider_replays_recorded_response(tmp_path):
-    from osintenal.inference.providers.openai_compat import OpenAICompatibleProvider
+    from osintinel.inference.providers.openai_compat import OpenAICompatibleProvider
 
     base = "http://localhost:11434/v1"
     cass = Cassette(tmp_path / "ollama.json")
@@ -142,7 +142,7 @@ def test_openai_compatible_provider_replays_recorded_response(tmp_path):
 
 
 def test_openai_compatible_embedder_replays_recorded_vectors(tmp_path):
-    from osintenal.inference.providers.openai_compat import OpenAICompatibleEmbedder
+    from osintinel.inference.providers.openai_compat import OpenAICompatibleEmbedder
 
     base = "http://localhost:11434/v1"
     cass = Cassette(tmp_path / "emb.json")

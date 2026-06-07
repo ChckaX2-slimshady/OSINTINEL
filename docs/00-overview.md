@@ -1,8 +1,8 @@
 # 00 — Overview, Foundational Separation & Epistemic Integrity
 
-## 1. What OSINTENAL Is
+## 1. What OSINTINEL Is
 
-**OSINTENAL** — Open Source Intelligence Sentinel :: *Autonomous Aggregation :: Insight via
+**OSINTINEL** — Open Source Intelligence Sentinel :: *Autonomous Aggregation :: Insight via
 Intelligence :: Evolution via Recursive Improvement*. A layer that orchestrates specialist
 agents and tool adapters to *query, aggregate, investigate, synthesize, and continuously
 refine* insights from niche, publicly available data — through investigation, adaptive
@@ -76,7 +76,7 @@ this is enforced by:
 
 ## 4. Epistemic Integrity Layer
 
-Every output produced by OSINTENAL — internal or user-facing — carries an explicit
+Every output produced by OSINTINEL — internal or user-facing — carries an explicit
 **epistemic class**:
 
 | Class | Tier | Definition | Produced by |

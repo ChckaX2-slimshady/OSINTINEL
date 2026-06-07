@@ -7,7 +7,7 @@ completeness — *working intelligence is preferable to perfect architecture.*
 Each phase below lists: goal, scope, the vertical slice that proves it, and **exit criteria**
 (must all pass to advance). Phases map to the brief's Phase 1–8.
 
-> **Paradigm correction (post-Phase 7).** OSINTENAL is **online and model-driven**: it depends on
+> **Paradigm correction (post-Phase 7).** OSINTINEL is **online and model-driven**: it depends on
 > live open-source data and a tiered model ensemble (doc 11). The deterministic, no-network,
 > no-key behavior built through Phases 1–7 is retained **as the test/replay mode**, not the
 > product's operating mode. Model integration is tracked as **Phase M** (below), slotted before
@@ -29,7 +29,7 @@ backed where required, deterministic where possible) · CLI to start an investig
 Observe→…→Repeat loop and emit an `InsightReport` with ranked competing hypotheses, Known
 Unknowns, and a reasoning chain."
 **Exit criteria:**
-- `osintenal run` executes end-to-end and emits a schema-valid `InsightReport`.
+- `osintinel run` executes end-to-end and emits a schema-valid `InsightReport`.
 - Loop honors all termination conditions (doc 01 §5).
 - Skeptic gate provably blocks promotion on a `blocking` finding (tested).
 - Competing hypotheses preserved; `confidence_history` append-only (epistemic-invariant tests
@@ -43,7 +43,7 @@ hash chain · materialized-view rebuild/replay · write-time integrity constrain
 provenance-required, append-only).
 **Vertical slice:** "Run an investigation, kill the process, reload from the ledger, and get a
 byte-identical graph; produce a full evidence chain for any insight." — delivered as
-`osintenal verify` (persist → reload → replay → byte-identical graph) and `osintenal audit`.
+`osintinel verify` (persist → reload → replay → byte-identical graph) and `osintinel audit`.
 **Exit criteria:**
 - Graph fully reconstructable from the ledger (replay test). ✅ `tests/graph/test_replay.py`
 - Ladder & provenance constraints reject malformed writes. ✅ `tests/graph/test_constraints.py`
@@ -63,10 +63,10 @@ dependencies); a SQLite/Neo4j backend can replace the embedded one behind the sa
 **Scope:** Adapter interface + Registry + capability map (doc 05) · 5 reference adapters
 (Wayback[timemap+snapshot], Nominatim, Overpass, Wikidata, crt.sh/CT) · cassette transport for
 record/replay · content-addressed artifact store · license-gated supplemental framework ·
-live smoke tests (network-gated, opt-in via `OSINTENAL_RECORD=1`).
+live smoke tests (network-gated, opt-in via `OSINTINEL_RECORD=1`).
 **Vertical slice:** "Tool Selection picks an archive adapter by capability, Acquisition fetches
 a real snapshot, evidence updates a hypothesis — all replayable from cassettes." — delivered as
-`osintenal slice` (and `osintenal adapters`).
+`osintinel slice` (and `osintinel adapters`).
 **Exit criteria:**
 - ≥4 adapters pass contract + parse/normalize tests; outputs schema-valid with provenance.
   ✅ 5 adapters, `tests/adapters/test_reference_adapters.py`
@@ -92,7 +92,7 @@ capability sequences · expose priors to the planner & tool selector via a read-
 `StrategyPriors` port. **Strict evidence/strategy firewall.**
 **Vertical slice:** "After N runs, the planner reorders evidence requests and the selector
 prefers historically effective adapters; rerunning a solved case is measurably cheaper." —
-delivered as `osintenal memory` (the learning benchmark) and `scenarios/learning_benchmark.py`.
+delivered as `osintinel memory` (the learning benchmark) and `scenarios/learning_benchmark.py`.
 **Exit criteria:**
 - Memory measurably improves planner ranking / cost on a benchmark suite. ✅
   `tests/memory/test_learning.py` — a misleading seed picks the noisy adapter first (13,200
@@ -119,7 +119,7 @@ generation. Output: ranked location hypotheses with supporting + contradicting e
 confidence scores, recommended next steps.
 **Vertical slice:** "Upload an image; receive ranked geolocation hypotheses with an explicit
 contradicting-evidence section and recommended next investigations." — delivered as
-`osintenal image` and `pipelines/image_investigation.py`.
+`osintinel image` and `pipelines/image_investigation.py`.
 **Exit criteria:**
 - Image mode produces ranked location hypotheses with supporting AND contradicting evidence. ✅
   `tests/pipelines/test_image_pipeline.py`
@@ -143,7 +143,7 @@ relevance rule standing in for a vision/LLM model (the loop stays model-free thr
 comparison · multi-constraint location narrowing · confidence radii on `Location` nodes.
 **Vertical slice:** a golden suite where independent constraints (sun elevation, ground
 elevation, landmark bearing/distance, biome band) intersect to a centroid + radius — delivered
-as `osintenal geo` and `pipelines/geospatial_reasoning.py`.
+as `osintinel geo` and `pipelines/geospatial_reasoning.py`.
 **Exit criteria:**
 - Demonstrated location-narrowing across ≥3 independent geospatial constraints on golden
   cases, with calibrated confidence and uncertainty radius. ✅
@@ -165,7 +165,7 @@ Phase 5 `compute.symbolic` solar model; a `SyntheticDEM` stands in for a real el
 **Scope (REST API + Web Dashboard):** Knowledge Graph visualization · Timeline · Investigation
 Replay · Hypothesis Evolution tracking · Confidence Evolution tracking · Source Explorer ·
 Agent Activity Monitoring.
-**Vertical slice:** `osintenal dashboard` renders a run into one self-contained HTML console;
+**Vertical slice:** `osintinel dashboard` renders a run into one self-contained HTML console;
 the JSON service payload (`interfaces/api`) is the REST contract.
 **Exit criteria:**
 - Live and historical investigations render as an explorable graph + timeline. ✅
@@ -187,17 +187,17 @@ graph/timeline/evolution sections are present and replayable. Navigation is **CS
 JavaScript)** so tabs work even where scripts are stripped.
 
 ## Phase M — Model Integration (cross-cutting; before Phase 8) ✅
-**Goal:** make OSINTENAL model-driven over live data (doc 11), with auditable, replayable,
+**Goal:** make OSINTINEL model-driven over live data (doc 11), with auditable, replayable,
 cost-accounted model calls.
 **Scope:** `InferenceGateway` + `Embedder` ports · tier→model routing (`embed`=HF, `task/nano/
 small`=HF specialized, `reason/large`=Anthropic) · providers over the cassette transport
 (record/replay) · cost into the Budget Governor · lean `model_call` ledger events · graceful
 degradation (live → replay → deterministic).
-**Vertical slice:** `osintenal models` shows the routing and exercises the gateway; live runs
+**Vertical slice:** `osintinel models` shows the routing and exercises the gateway; live runs
 record model I/O and replay offline.
 **Milestones / exit criteria:**
 - ✅ **Gateway foundation** — ports, providers (deterministic + Anthropic + Hugging Face),
-  record/replay, cost accounting, `model_call` events, `osintenal models`, credentials never in
+  record/replay, cost accounting, `model_call` events, `osintinel models`, credentials never in
   cassettes. `tests/inference/test_gateway.py`.
 - **Wire agents tier-by-tier** — each behind the gateway, each recorded for replay:
   - ◑ **`task`** — evidence→hypothesis **relevance judgment** (`agents/relevance.py`):
@@ -210,7 +210,7 @@ record model I/O and replay offline.
     and collapses declared groups whose content is near-duplicate (syndication/wire copy), so
     illusory corroboration can't fool the Confidence gate. The Skeptic raises a BLOCKING
     `illusory_independence` finding when effective independence drops below the minimum, resolved
-    when a genuinely distinct source arrives (`osintenal independence`,
+    when a genuinely distinct source arrives (`osintinel independence`,
     `tests/inference/test_semantic.py`). Gated on an embedder being present, so deterministic
     runs are unaffected. Next: semantic dedup + retrieval over large corpora.
   - ◑ **`reason`** — open-ended model reasoning (`agents/reasoning.py`): Connections asks the
@@ -218,18 +218,18 @@ record model I/O and replay offline.
     candidates), and the Skeptic asks it for adversarial critique (hidden assumptions / reasoning
     weaknesses). Model output is advisory — severity is capped below `blocking`, so the computed
     gates (source-dependency, illusory-independence) remain the only blockers. Gated on a gateway;
-    deterministic runs are the floor (`osintenal reason`, `tests/inference/test_reasoning.py`).
+    deterministic runs are the floor (`osintinel reason`, `tests/inference/test_reasoning.py`).
     Next: model-authored Synthesis/Confidence prose, and Skeptic↔Synthesis model **decorrelation**
     (per-role model override) per doc 08 §1.
 - ✅ **Online-first transport + decorrelation.** The cassette transport gained three modes
   (`adapters/transport.py`): `replay` (cassette-only; the safe default that keeps CI/offline
   deterministic), `record` (fetch live and persist — build the recorded corpus), and `live`
-  (fetch every call). One env var flips it: `OSINTENAL_NET=live|record|replay`. Cassettes are now
+  (fetch every call). One env var flips it: `OSINTINEL_NET=live|record|replay`. Cassettes are now
   the *recorded test corpus* (record once → commit → replay in CI). Model **decorrelation**
-  (doc 08 §1) is a config knob: `OSINTENAL_SKEPTIC_PROFILE` routes the Skeptic role to a
+  (doc 08 §1) is a config knob: `OSINTINEL_SKEPTIC_PROFILE` routes the Skeptic role to a
   different model than Synthesis/Connections (`tests/inference/test_transport_policy.py`).
   *(Default stays `replay` rather than `live` so this hosted/CI context never depends on egress;
-  production sets `OSINTENAL_NET=live`.)*
+  production sets `OSINTINEL_NET=live`.)*
 
 ## Phase 8 — Self-Improvement Systems ✅
 **Goal:** recursively improve investigative strategy — **without rewriting evidentiary
@@ -237,7 +237,7 @@ history.**
 **Scope:** confidence-calibration harness (ECE / Brier / reliability curve) fitting a
 temperature that feeds the Confidence model · planner/strategy tuning loop (Phase 4 memory) ·
 versioned `StrategyVersion` snapshots · strict strategy/evidence firewall audit.
-**Vertical slice:** `osintenal improve` tunes a v1→v2 strategy and shows both levers improve on a
+**Vertical slice:** `osintinel improve` tunes a v1→v2 strategy and shows both levers improve on a
 frozen benchmark, with the firewall audit passing.
 **Exit criteria:**
 - Calibration accuracy and planner efficiency improve over a frozen benchmark across versions.

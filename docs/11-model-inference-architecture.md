@@ -1,6 +1,6 @@
 # 11 — Model & Inference Architecture
 
-> **Paradigm:** OSINTENAL is an **online, model-driven** system. It depends on live open-source
+> **Paradigm:** OSINTINEL is an **online, model-driven** system. It depends on live open-source
 > data (the adapters, doc 05) and on a tiered ensemble of models for reasoning. The earlier
 > "runs fully offline with no model" property is retained **only as the test/replay mode** — it
 > is how CI stays deterministic and free, not how the product operates.
@@ -92,11 +92,11 @@ real profile is one env var. Every non-paid profile is **free**:
 
 **The recommended hybrid (doc-optimal for cost *and* privacy):** run `ollama` for `embed`+`task`
 (local, unlimited, evidence never leaves the machine) and route **only the reasoning tier** to a
-free cloud profile via `OSINTENAL_REASON_PROFILE=gemini` (or `groq`/`openrouter`). Per-tier model
-overrides: `OSINTENAL_{REASON,SMALL,TASK,EMBED}_MODEL`.
+free cloud profile via `OSINTINEL_REASON_PROFILE=gemini` (or `groq`/`openrouter`). Per-tier model
+overrides: `OSINTINEL_{REASON,SMALL,TASK,EMBED}_MODEL`.
 
 **Graceful degradation** (`config.py::build_gateway`): a live profile calls its endpoint (and
-records to a cassette for later replay); `OSINTENAL_RECORD=0` forces replay from a committed
+records to a cassette for later replay); `OSINTINEL_RECORD=0` forces replay from a committed
 cassette; the `deterministic` profile needs neither network nor keys. The same code path runs
 live-local, live-cloud, recorded-replay, or fully offline.
 
@@ -113,13 +113,13 @@ live-local, live-cloud, recorded-replay, or fully offline.
   tier/model choices.
 - **Decorrelation**: the Skeptic runs on a different model than Synthesis/Connections, so the
   challenge layer's errors are less correlated (doc 08 §1). It is a config knob —
-  `OSINTENAL_SKEPTIC_PROFILE=<profile>` routes the Skeptic role to that profile's model via the
+  `OSINTINEL_SKEPTIC_PROFILE=<profile>` routes the Skeptic role to that profile's model via the
   gateway's per-role override (`role_providers`/`role_models`).
 
 ### 5a. Transport modes (online-first)
 
 External I/O (adapters *and* model calls) shares one cassette transport with three modes, set by
-`OSINTENAL_NET`:
+`OSINTINEL_NET`:
 
 | Mode | Behavior | Use |
 |---|---|---|
@@ -128,7 +128,7 @@ External I/O (adapters *and* model calls) shares one cassette transport with thr
 | `live` | fetch every call, ignore cassette | online-first production |
 
 Cassettes are therefore the **recorded test corpus**: record a golden run once
-(`OSINTENAL_NET=record`), commit the cassettes, and CI replays them deterministically. The
+(`OSINTINEL_NET=record`), commit the cassettes, and CI replays them deterministically. The
 default is `replay` (not `live`) so no environment depends on egress unless it opts in.
 
 ## 6. Embeddings: semantic memory, dedup & true source independence
@@ -148,7 +148,7 @@ Embeddings unlock capabilities the deterministic loop only approximated:
 
 - **Local-first needs no key and no internet** beyond `localhost`: install [Ollama](https://ollama.com),
   `ollama pull qwen2.5:14b-instruct qwen2.5:3b-instruct nomic-embed-text`, then
-  `OSINTENAL_INFERENCE_PROFILE=ollama`. Nothing leaves the machine.
+  `OSINTINEL_INFERENCE_PROFILE=ollama`. Nothing leaves the machine.
 - **Free cloud tiers** are environment variables only, never committed:
   `GEMINI_API_KEY` (Google AI Studio), `GROQ_API_KEY`, `OPENROUTER_API_KEY` — and the optional
   `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN`, `HF_TOKEN`. Request **headers carry the key; the
@@ -163,13 +163,13 @@ Embeddings unlock capabilities the deterministic loop only approximated:
 # fully local & private (recommended)
 ollama serve &
 ollama pull qwen2.5:14b-instruct qwen2.5:3b-instruct nomic-embed-text
-export OSINTENAL_INFERENCE_PROFILE=ollama
+export OSINTINEL_INFERENCE_PROFILE=ollama
 
 # or: local bulk + heavier free-cloud reasoning (one extra knob)
-export OSINTENAL_INFERENCE_PROFILE=ollama
-export OSINTENAL_REASON_PROFILE=gemini GEMINI_API_KEY=...
+export OSINTINEL_INFERENCE_PROFILE=ollama
+export OSINTINEL_REASON_PROFILE=gemini GEMINI_API_KEY=...
 
-osintenal models           # shows the active routing
+osintinel models           # shows the active routing
 ```
 
 ## 8. Rollout (doc 06 placement)
@@ -178,7 +178,7 @@ Introduced as **Phase M (Model Integration)**, slotted before Phase 8 (Self-Impr
 depends on it for calibration of model-produced confidence:
 
 1. **Gateway foundation** — ports, providers (deterministic + Anthropic + HF), record/replay,
-   cost, the `model_call` ledger event, `osintenal models`. *(this milestone)*
+   cost, the `model_call` ledger event, `osintinel models`. *(this milestone)*
 2. **Wire agents tier-by-tier** — `task` first (relevance linking, extraction, query
    formulation), then `embed` (Memory/dedup/independence), then `reason` (Connections, Synthesis,
    Skeptic, Epistemology) — each behind the gateway, each recorded for replay.

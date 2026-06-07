@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.adapters import Cassette, HttpClient
-from osintenal.adapters.commercial import LicenseGatedAdapter, LicenseGateError, MaltegoAdapter
-from osintenal.adapters.commercial.base import ATTESTATION_ENV
+from osintinel.adapters import Cassette, HttpClient
+from osintinel.adapters.commercial import LicenseGatedAdapter, LicenseGateError, MaltegoAdapter
+from osintinel.adapters.commercial.base import ATTESTATION_ENV
 
 
 def _maltego(tmp_path) -> MaltegoAdapter:

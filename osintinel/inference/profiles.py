@@ -2,10 +2,10 @@
 
 A profile maps the three tiers to concrete models on a concrete endpoint. The default is
 ``deterministic`` (no network, CI). The operator selects a real profile with
-``OSINTENAL_INFERENCE_PROFILE``; models are overridable per tier via env so you can match your
+``OSINTINEL_INFERENCE_PROFILE``; models are overridable per tier via env so you can match your
 hardware without code changes. ``ollama`` (fully local, free, private) is the recommended base;
 the cloud profiles are all **free tiers**. The hybrid sweet spot — local embeddings/tasks with a
-free-cloud reasoning tier — is one extra knob, ``OSINTENAL_REASON_PROFILE``.
+free-cloud reasoning tier — is one extra knob, ``OSINTINEL_REASON_PROFILE``.
 """
 
 from __future__ import annotations
@@ -96,16 +96,16 @@ DEFAULT_PROFILE = "deterministic"
 
 
 def resolve_profile(name: str | None = None) -> Profile:
-    """Return the named profile (default from ``OSINTENAL_INFERENCE_PROFILE``) with per-tier
-    model overrides from ``OSINTENAL_{REASON,SMALL,TASK,EMBED}_MODEL`` applied."""
-    name = name or os.environ.get("OSINTENAL_INFERENCE_PROFILE", DEFAULT_PROFILE)
+    """Return the named profile (default from ``OSINTINEL_INFERENCE_PROFILE``) with per-tier
+    model overrides from ``OSINTINEL_{REASON,SMALL,TASK,EMBED}_MODEL`` applied."""
+    name = name or os.environ.get("OSINTINEL_INFERENCE_PROFILE", DEFAULT_PROFILE)
     if name not in PROFILES:
         raise ValueError(f"unknown inference profile {name!r}; choose from {sorted(PROFILES)}")
     p = PROFILES[name]
     return replace(
         p,
-        reason_model=os.environ.get("OSINTENAL_REASON_MODEL", p.reason_model),
-        small_model=os.environ.get("OSINTENAL_SMALL_MODEL", p.small_model),
-        task_model=os.environ.get("OSINTENAL_TASK_MODEL", p.task_model),
-        embed_model=os.environ.get("OSINTENAL_EMBED_MODEL", p.embed_model),
+        reason_model=os.environ.get("OSINTINEL_REASON_MODEL", p.reason_model),
+        small_model=os.environ.get("OSINTINEL_SMALL_MODEL", p.small_model),
+        task_model=os.environ.get("OSINTINEL_TASK_MODEL", p.task_model),
+        embed_model=os.environ.get("OSINTINEL_EMBED_MODEL", p.embed_model),
     )

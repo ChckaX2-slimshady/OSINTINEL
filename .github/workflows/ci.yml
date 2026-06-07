@@ -22,22 +22,22 @@ jobs:
       - name: Run test suite
         run: pytest -q
       - name: Smoke-run the demo investigation
-        run: osintenal verify
+        run: osintinel verify
       - name: Smoke-run the adapter slice (offline, from cassettes)
-        run: osintenal slice
+        run: osintinel slice
       - name: Smoke-run the memory learning benchmark
-        run: osintenal memory
+        run: osintinel memory
       - name: Smoke-run the image investigation pipeline
-        run: osintenal image
+        run: osintinel image
       - name: Smoke-run the geospatial narrowing suite
-        run: osintenal geo
+        run: osintinel geo
       - name: Smoke-render the dashboard console
-        run: osintenal dashboard --out /tmp/osintenal-dashboard.html
+        run: osintinel dashboard --out /tmp/osintinel-dashboard.html
       - name: Smoke-run the inference gateway (deterministic, offline)
-        run: osintenal models
+        run: osintinel models
       - name: Smoke-run the embed-tier source-independence guard
-        run: osintenal independence
+        run: osintinel independence
       - name: Smoke-run the reason-tier reasoning demo
-        run: osintenal reason
+        run: osintinel reason
       - name: Smoke-run the Phase 8 self-improvement loop
-        run: osintenal improve
+        run: osintinel improve

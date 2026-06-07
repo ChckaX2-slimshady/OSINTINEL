@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.adapters.storage import CAS_SCHEME, ContentAddressedStore, digest_bytes
-from osintenal.adapters.transport import AdapterError, Cassette, HttpClient, request_key
+from osintinel.adapters.storage import CAS_SCHEME, ContentAddressedStore, digest_bytes
+from osintinel.adapters.transport import AdapterError, Cassette, HttpClient, request_key
 
 
 # -- content-addressed store -------------------------------------------------

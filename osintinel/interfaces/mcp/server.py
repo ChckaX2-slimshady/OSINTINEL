@@ -1,7 +1,7 @@
 """MCP stdio server (zero dependencies).
 
 Implements just enough of MCP — ``initialize``, ``tools/list``, ``tools/call`` over
-newline-delimited JSON-RPC 2.0 on stdin/stdout — to expose OSINTENAL as conversational tools.
+newline-delimited JSON-RPC 2.0 on stdin/stdout — to expose OSINTINEL as conversational tools.
 The dispatch is pure (``handle_request``); ``serve_stdio`` drives it. The model profile is read
 from the environment, so a configured local Ollama (or free cloud tier) is used automatically.
 """
@@ -21,7 +21,7 @@ TOOLS: list[dict] = [
     {
         "name": "investigate",
         "description": (
-            "Run a multi-agent OSINTENAL investigation over a question, the competing answers to "
+            "Run a multi-agent OSINTINEL investigation over a question, the competing answers to "
             "weigh, and any evidence you provide. Returns ranked hypotheses with confidence, "
             "preserved alternatives, known unknowns, and recommended next steps. Uses the "
             "configured local/free models to judge evidence relevance, propose additional "
@@ -47,7 +47,7 @@ TOOLS: list[dict] = [
     },
     {
         "name": "models_status",
-        "description": "Show the active model profile and tier→model routing for OSINTENAL.",
+        "description": "Show the active model profile and tier→model routing for OSINTINEL.",
         "inputSchema": {"type": "object", "properties": {}},
     },
 ]
@@ -106,7 +106,7 @@ def handle_request(req: dict) -> dict | None:
     if method == "initialize":
         return _result(rid, {"protocolVersion": PROTOCOL_VERSION,
                              "capabilities": {"tools": {}},
-                             "serverInfo": {"name": "osintenal", "version": "0.1.0"}})
+                             "serverInfo": {"name": "osintinel", "version": "0.1.0"}})
     if method == "notifications/initialized":
         return None
     if method == "tools/list":

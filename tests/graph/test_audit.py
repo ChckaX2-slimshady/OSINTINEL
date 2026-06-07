@@ -4,8 +4,8 @@ sourced INFORMATION nodes (doc 04 §6, doc 03 §16.3); graph queries agree with 
 
 from __future__ import annotations
 
-from osintenal.core.schemas import EpistemicClass
-from osintenal.graph import (
+from osintinel.core.schemas import EpistemicClass
+from osintinel.graph import (
     build_graph,
     chain_terminates_in_information,
     contradiction_clusters,

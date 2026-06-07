@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.interfaces.api import build_dashboard_data, dashboard_json, replay_iteration
-from osintenal.interfaces.dashboard import render_dashboard, write_dashboard
+from osintinel.interfaces.api import build_dashboard_data, dashboard_json, replay_iteration
+from osintinel.interfaces.dashboard import render_dashboard, write_dashboard
 
 
 @pytest.fixture
@@ -52,7 +52,7 @@ def test_replay_reconstructs_past_iterations_from_ledger(demo_result):
     # the graph grows monotonically; a past iteration has no more nodes than the final one
     assert len(early.nodes()) <= len(full.nodes())
     # the fully-replayed graph matches the live graph
-    from osintenal.graph import build_graph
+    from osintinel.graph import build_graph
     assert full.summary() == build_graph(demo_result.state).summary()
 
 
@@ -94,7 +94,7 @@ def test_write_dashboard_emits_file(demo_result, tmp_path):
     path = write_dashboard(demo_result, tmp_path / "d.html")
     assert path.exists()
     text = path.read_text()
-    assert "OSINTENAL" in text and "<svg" in text
+    assert "OSINTINEL" in text and "<svg" in text
 
 
 def test_dashboard_json_helper(demo_result):

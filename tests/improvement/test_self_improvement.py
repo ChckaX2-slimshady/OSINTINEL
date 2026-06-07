@@ -5,8 +5,8 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.core.runtime import InvestigationController
-from osintenal.improvement import (
+from osintinel.core.runtime import InvestigationController
+from osintinel.improvement import (
     assert_strategy_artifacts_only,
     audit_no_evidence_mutation,
     brier_score,
@@ -14,10 +14,10 @@ from osintenal.improvement import (
     fit_temperature,
     run_self_improvement,
 )
-from osintenal.improvement.benchmark import CALIBRATION_BENCHMARK
-from osintenal.improvement.calibration import predictions_at, reliability_curve
-from osintenal.improvement.firewall import FirewallViolation
-from osintenal.scenarios import build_demo_investigation
+from osintinel.improvement.benchmark import CALIBRATION_BENCHMARK
+from osintinel.improvement.calibration import predictions_at, reliability_curve
+from osintinel.improvement.firewall import FirewallViolation
+from osintinel.scenarios import build_demo_investigation
 
 
 # -- calibration math --------------------------------------------------------

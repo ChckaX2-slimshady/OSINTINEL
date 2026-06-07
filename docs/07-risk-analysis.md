@@ -32,7 +32,7 @@ afterthoughts.
 
 ## 3. Legal, Ethical & Safety Risks
 
-**Safety constraint (binding):** OSINTENAL is designed **exclusively for lawful open-source
+**Safety constraint (binding):** OSINTINEL is designed **exclusively for lawful open-source
 intelligence gathering on publicly available information.**
 
 **Prohibited and out of scope by design:** credential theft · malware deployment ·

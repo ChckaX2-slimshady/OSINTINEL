@@ -262,7 +262,7 @@ replayable, and auditable (doc 01 §3).
 ## Per-Agent Prompt Discipline (LLM agents)
 
 Each LLM agent ships with a system prompt that encodes its contract and, critically, the
-**universal rules** above. Prompts are versioned in `osintenal/agents/<name>/prompt.md`,
+**universal rules** above. Prompts are versioned in `osintinel/agents/<name>/prompt.md`,
 hashed into the ledger on every call (doc 01 §7), and covered by golden tests (doc 09). The
 Skeptic and Connections prompts in particular hardcode the anti-premature-convergence and
 no-fabrication constraints so they survive model changes.

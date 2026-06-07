@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from osintenal.core.runtime import InvestigationController
-from osintenal.memory import InvestigationMemory, build_run_digest
-from osintenal.scenarios.learning_benchmark import CORRECT, build_benchmark_investigation
+from osintinel.core.runtime import InvestigationController
+from osintinel.memory import InvestigationMemory, build_run_digest
+from osintinel.scenarios.learning_benchmark import CORRECT, build_benchmark_investigation
 
 
 def test_ground_truth_yields_calibration_records():

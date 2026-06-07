@@ -5,7 +5,7 @@ request up in a cassette (a VCR-style recording keyed by request hash) and retur
 response without touching the network. This is what makes a whole investigation reproducible
 offline and in CI — no live endpoints, no flakiness, deterministic bytes.
 
-Recording is opt-in: constructing with ``record=True`` (wired to ``OSINTENAL_RECORD=1``) performs
+Recording is opt-in: constructing with ``record=True`` (wired to ``OSINTINEL_RECORD=1``) performs
 the real fetch via the stdlib (zero new dependencies) and appends it to the cassette. CI never
 records. The request key deliberately ignores volatile headers so recordings stay stable.
 """
@@ -66,13 +66,13 @@ class HttpClient:
     * ``live``   — fetch live every call, ignoring the cassette (online-first production).
 
     The mode is resolved from (in order) an explicit ``mode=``, the legacy ``record=`` bool, the
-    ``OSINTENAL_NET`` env (``replay``/``record``/``live``), then ``OSINTENAL_RECORD=1`` → record,
+    ``OSINTINEL_NET`` env (``replay``/``record``/``live``), then ``OSINTINEL_RECORD=1`` → record,
     else ``replay``.
     """
 
     def __init__(self, cassette: Cassette, *, record: bool | None = None,
                  mode: str | None = None,
-                 user_agent: str = "osintenal/0.4 (+research; contact via repo)") -> None:
+                 user_agent: str = "osintinel/0.4 (+research; contact via repo)") -> None:
         self.cassette = cassette
         self.mode = self._resolve_mode(record, mode)
         self.user_agent = user_agent
@@ -85,10 +85,10 @@ class HttpClient:
             return "record"
         if record is False:
             return "replay"
-        net = os.environ.get("OSINTENAL_NET")
+        net = os.environ.get("OSINTINEL_NET")
         if net in ("replay", "record", "live"):
             return net
-        return "record" if os.environ.get("OSINTENAL_RECORD") == "1" else "replay"
+        return "record" if os.environ.get("OSINTINEL_RECORD") == "1" else "replay"
 
     @property
     def record(self) -> bool:  # backward-compatible accessor
@@ -124,7 +124,7 @@ class HttpClient:
         if self.mode == "replay":
             raise AdapterError(
                 f"no cassette entry for {method} {url} (params={params}); "
-                f"set OSINTENAL_NET=live to fetch, or =record to record (network-gated)"
+                f"set OSINTINEL_NET=live to fetch, or =record to record (network-gated)"
             )
         data = self._live_fetch(method, url, params, headers, body)
         if self.mode == "record":

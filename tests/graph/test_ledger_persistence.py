@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.ledger import Ledger
-from osintenal.ledger.ledger import LedgerIntegrityError
+from osintinel.ledger import Ledger
+from osintinel.ledger.ledger import LedgerIntegrityError
 
 
 def test_save_load_roundtrip_preserves_chain(tmp_path):

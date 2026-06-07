@@ -1,6 +1,6 @@
 # Architecture Decisions (Condensed)
 
-A decision-oriented digest of the OSINTENAL architecture. Each entry: **decision →
+A decision-oriented digest of the OSINTINEL architecture. Each entry: **decision →
 rationale → consequence**. Full detail in the numbered docs.
 
 ## AD-1 · Deterministic runtime owns control flow; agents only emit typed evidence

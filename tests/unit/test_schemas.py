@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from osintenal.core.schemas import (
+from osintinel.core.schemas import (
     AcquisitionMethod,
     AgentName,
     EpistemicClass,

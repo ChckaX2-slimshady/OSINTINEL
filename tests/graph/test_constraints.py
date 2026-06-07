@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.core.schemas import AcquisitionMethod, AgentName, EpistemicClass, Provenance
-from osintenal.graph import ConstraintViolation, InMemoryGraphStore, Node
-from osintenal.graph.store import SUPPORTS, SYNTHESIZED_FROM, Edge
+from osintinel.core.schemas import AcquisitionMethod, AgentName, EpistemicClass, Provenance
+from osintinel.graph import ConstraintViolation, InMemoryGraphStore, Node
+from osintinel.graph.store import SUPPORTS, SYNTHESIZED_FROM, Edge
 
 
 def _prov(eid: str | None = "ev-1") -> Provenance:
@@ -80,7 +80,7 @@ def test_synthesized_from_must_be_hypothesis_to_explanation():
 
 def test_well_formed_graph_from_demo_passes(demo_result):
     # The real demo projection writes cleanly through every constraint.
-    from osintenal.graph import build_graph
+    from osintinel.graph import build_graph
     store = build_graph(demo_result.state)
     assert len(store.nodes(node_type="Hypothesis")) >= 2
     assert store.nodes(node_type="Source")  # sources materialized

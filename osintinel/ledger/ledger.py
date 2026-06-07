@@ -4,7 +4,7 @@ The single source of truth for evidentiary history: events are immutable and cha
 which operationalizes "the system may not rewrite evidentiary history." Phase 2 makes the
 ledger **durable** — it can be flushed to an append-only JSONL file and reloaded into a
 byte-identical event stream, from which the entire knowledge graph is replayable
-(``osintenal.ledger.replay``). The same interface admits a SQLite/graph backend later
+(``osintinel.ledger.replay``). The same interface admits a SQLite/graph backend later
 (doc 04 §1) without touching callers.
 """
 

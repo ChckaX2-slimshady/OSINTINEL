@@ -6,7 +6,7 @@ framework, **memory**, **interfaces**, and **docs/tests**. The boundaries here a
 ports described in docs 01–05, so each top-level package can be built and tested in isolation.
 
 ```
-OSINTENAL/
+OSINTINEL/
 ├── README.md
 ├── pyproject.toml                 # packaging, deps, tool config (ruff/pyright/pytest)
 ├── LICENSE
@@ -15,7 +15,7 @@ OSINTENAL/
 │   ├── 00-overview.md … 10-repository-structure.md
 │   └── ARCHITECTURE_DECISIONS.md
 │
-├── osintenal/                    # the package
+├── osintinel/                    # the package
 │   ├── __init__.py
 │   ├── config.py                  # budgets, thresholds, model-tier → model id map
 │   │
@@ -119,11 +119,11 @@ OSINTENAL/
 │   ├── service/                   # investigation input layer — run_investigation() over user input
 │   │
 │   └── interfaces/
-│       ├── cli/                   # `osintenal run|…|improve|serve|mcp` (front-door commands)
+│       ├── cli/                   # `osintinel run|…|improve|serve|mcp` (front-door commands)
 │       ├── api/                   # read-only service: build_dashboard_data → JSON (REST contract) ✅
 │       ├── dashboard/             # self-contained offline HTML console (SVG graph/timeline/evolution) ✅
-│       ├── web/                   # local web app (`osintenal serve`) — browser UI, runs in memory ✅
-│       └── mcp/                   # MCP stdio server (`osintenal mcp`) — drive it from Claude ✅
+│       ├── web/                   # local web app (`osintinel serve`) — browser UI, runs in memory ✅
+│       └── mcp/                   # MCP stdio server (`osintinel mcp`) — drive it from Claude ✅
 │
 ├── tests/                         # doc 09
 │   ├── unit/                      # schemas, adapters, confidence math, graph/ledger

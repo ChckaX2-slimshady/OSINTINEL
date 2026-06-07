@@ -7,9 +7,9 @@ termination conditions are honored.
 
 from __future__ import annotations
 
-from osintenal.core.runtime import InvestigationController
-from osintenal.core.schemas import EpistemicClass, InsightReport
-from osintenal.scenarios import build_demo_investigation
+from osintinel.core.runtime import InvestigationController
+from osintinel.core.schemas import EpistemicClass, InsightReport
+from osintinel.scenarios import build_demo_investigation
 
 
 def test_run_emits_schema_valid_report(demo_result):
@@ -53,16 +53,16 @@ def test_skeptic_gate_holds_promotion_until_independent_corroboration():
     investigation, registry = build_demo_investigation()
     controller = InvestigationController(registry)
 
-    from osintenal.core.budget import BudgetGovernor
-    from osintenal.core.state import InvestigationState
-    from osintenal.ledger import Ledger
+    from osintinel.core.budget import BudgetGovernor
+    from osintinel.core.state import InvestigationState
+    from osintinel.ledger import Ledger
 
     ledger = Ledger()
     state = InvestigationState(investigation.investigation_id, ledger)
     governor = BudgetGovernor(investigation.config.budgets)
     engine = controller.engine
 
-    from osintenal.agents import AgentContext
+    from osintinel.agents import AgentContext
 
     def step(i):
         ctx = AgentContext(investigation, state, i, governor, registry)

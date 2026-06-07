@@ -3,10 +3,10 @@
 A licensed source may run only when BOTH are true:
 
 1. credentials are present (an env var named by ``auth_env``), and
-2. the operator has attested to authorized use (``OSINTENAL_ATTEST_AUTHORIZED=1``).
+2. the operator has attested to authorized use (``OSINTINEL_ATTEST_AUTHORIZED=1``).
 
 Otherwise every verb raises ``LicenseGateError`` — the source is invisible to selection, never
-called implicitly. This keeps OSINTENAL lawful-by-default while leaving the door open to
+called implicitly. This keeps OSINTINEL lawful-by-default while leaving the door open to
 operator-authorized commercial intelligence. Which licensed source was used is always recorded
 in provenance.
 """
@@ -19,7 +19,7 @@ from typing import Any
 from ...core.schemas import CostEstimate
 from ..base import ReferenceAdapter
 
-ATTESTATION_ENV = "OSINTENAL_ATTEST_AUTHORIZED"
+ATTESTATION_ENV = "OSINTINEL_ATTEST_AUTHORIZED"
 
 
 class LicenseGateError(RuntimeError):
@@ -29,7 +29,7 @@ class LicenseGateError(RuntimeError):
 class LicenseGatedAdapter(ReferenceAdapter):
     """Base for commercial adapters. Subclasses set ``id``, ``capabilities``, ``auth_env``."""
 
-    auth_env: str = "OSINTENAL_UNCONFIGURED"
+    auth_env: str = "OSINTINEL_UNCONFIGURED"
     vendor: str = "unknown"
     default_cost = CostEstimate(tokens=300, money_usd=0.05, seconds=1.0, requests=1)
 

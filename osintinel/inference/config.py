@@ -2,9 +2,9 @@
 
 ``build_gateway`` assembles a tier-routed gateway from a *profile* (doc 11): ``deterministic`` by
 default (no network, CI), or a free/local profile (Ollama, Gemini, Groq, OpenRouter, …) selected
-via ``OSINTENAL_INFERENCE_PROFILE``. Selecting a live profile implies live calls (which also
-record to a cassette for later offline replay) unless ``OSINTENAL_RECORD=0``. A second knob,
-``OSINTENAL_REASON_PROFILE``, routes *only* the reasoning tier to a different profile — the
+via ``OSINTINEL_INFERENCE_PROFILE``. Selecting a live profile implies live calls (which also
+record to a cassette for later offline replay) unless ``OSINTINEL_RECORD=0``. A second knob,
+``OSINTINEL_REASON_PROFILE``, routes *only* the reasoning tier to a different profile — the
 local-embeddings + free-cloud-reasoning hybrid (doc 11 §2).
 """
 
@@ -44,8 +44,8 @@ def anthropic_available() -> bool:
 def _record_default(record: bool | None, profile_name: str) -> bool:
     if record is not None:
         return record
-    if "OSINTENAL_RECORD" in os.environ:
-        return os.environ["OSINTENAL_RECORD"] == "1"
+    if "OSINTINEL_RECORD" in os.environ:
+        return os.environ["OSINTINEL_RECORD"] == "1"
     return profile_name != "deterministic"  # selecting a live profile implies live calls
 
 
@@ -89,7 +89,7 @@ def build_gateway(*, profile: str | None = None, cassette_dir: str | Path | None
         models[tier] = model
 
     # Hybrid: route only the reasoning tier to a different (e.g. free-cloud) profile.
-    reason_override = os.environ.get("OSINTENAL_REASON_PROFILE")
+    reason_override = os.environ.get("OSINTINEL_REASON_PROFILE")
     if reason_override:
         rp = resolve_profile(reason_override)
         rhttp = http(f"{rp.name}_reason")
@@ -99,10 +99,10 @@ def build_gateway(*, profile: str | None = None, cassette_dir: str | Path | None
 
     # Decorrelation (doc 08 §1): route the Skeptic role to a *different* model than Synthesis/
     # Connections, so the challenge layer's errors are less correlated with the reasoning it
-    # critiques. Set OSINTENAL_SKEPTIC_PROFILE to any profile.
+    # critiques. Set OSINTINEL_SKEPTIC_PROFILE to any profile.
     role_providers: dict = {}
     role_models: dict = {}
-    skeptic_profile = os.environ.get("OSINTENAL_SKEPTIC_PROFILE")
+    skeptic_profile = os.environ.get("OSINTINEL_SKEPTIC_PROFILE")
     if skeptic_profile and skeptic_profile != p.name:
         sp = resolve_profile(skeptic_profile)
         role_providers["skeptic"] = _chat_provider(sp, sp.reason_model, http(f"{sp.name}_skeptic"))
@@ -136,8 +136,8 @@ def gateway_status(profile: str | None = None) -> dict[str, object]:
         "embed": {"kind": p.embed_kind, "model": p.embed_model, "base_url": p.embed_base_url},
         "key_env": p.key_env,
         "key_present": bool(os.environ.get(p.key_env)) if p.key_env else True,
-        "reason_override": os.environ.get("OSINTENAL_REASON_PROFILE"),
-        "skeptic_override": os.environ.get("OSINTENAL_SKEPTIC_PROFILE"),
-        "net_mode": os.environ.get("OSINTENAL_NET") or (
-            "record" if os.environ.get("OSINTENAL_RECORD") == "1" else "replay"),
+        "reason_override": os.environ.get("OSINTINEL_REASON_PROFILE"),
+        "skeptic_override": os.environ.get("OSINTINEL_SKEPTIC_PROFILE"),
+        "net_mode": os.environ.get("OSINTINEL_NET") or (
+            "record" if os.environ.get("OSINTINEL_RECORD") == "1" else "replay"),
     }

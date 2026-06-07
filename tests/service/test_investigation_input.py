@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from osintenal.core.schemas import EpistemicClass
-from osintenal.graph import build_graph, chain_terminates_in_information
-from osintenal.ledger import replay_state
-from osintenal.service import EvidenceInput, InvestigationSummary, run_investigation
+from osintinel.core.schemas import EpistemicClass
+from osintinel.graph import build_graph, chain_terminates_in_information
+from osintinel.ledger import replay_state
+from osintinel.service import EvidenceInput, InvestigationSummary, run_investigation
 
 
 def test_tagged_evidence_drives_the_right_hypothesis():

@@ -2,11 +2,11 @@
 
 These are hand-crafted, realistic recordings for a small coherent investigation (a suspected
 telecom mast near Bullington, Hampshire, and the domain ``windreach.example``). Keys are
-computed with the real :func:`osintenal.adapters.transport.request_key`, so the committed JSON
+computed with the real :func:`osintinel.adapters.transport.request_key`, so the committed JSON
 always matches what the adapters request at replay time.
 
-Run ``python -m osintenal.adapters._cassettes.build_demo`` to regenerate. Live recordings (an
-environment with real egress) would replace these via ``OSINTENAL_RECORD=1``; the offline
+Run ``python -m osintinel.adapters._cassettes.build_demo`` to regenerate. Live recordings (an
+environment with real egress) would replace these via ``OSINTINEL_RECORD=1``; the offline
 cassettes keep CI and the demo deterministic.
 """
 

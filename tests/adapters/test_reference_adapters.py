@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from osintenal.adapters import (
+from osintinel.adapters import (
     Adapter,
     Cassette,
     CertTransparencyAdapter,
@@ -23,10 +23,10 @@ from osintenal.adapters import (
     WaybackAdapter,
     WikidataAdapter,
 )
-from osintenal.adapters.storage import CAS_SCHEME
-from osintenal.core.schemas import AcquisitionMethod, AgentName, EvidenceObject, Provenance
+from osintinel.adapters.storage import CAS_SCHEME
+from osintinel.core.schemas import AcquisitionMethod, AgentName, EvidenceObject, Provenance
 
-CASSETTES = Path("osintenal/adapters/_cassettes")
+CASSETTES = Path("osintinel/adapters/_cassettes")
 
 
 def _prov() -> Provenance:

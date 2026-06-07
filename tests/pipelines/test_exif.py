@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.adapters import ContentAddressedStore
-from osintenal.adapters.media.exif import parse_exif, write_exif_jpeg
-from osintenal.adapters.media.exif_adapter import ExifAdapter
-from osintenal.adapters.storage import CAS_SCHEME
-from osintenal.core.schemas import AcquisitionMethod, AgentName, EvidenceObject, Provenance
+from osintinel.adapters import ContentAddressedStore
+from osintinel.adapters.media.exif import parse_exif, write_exif_jpeg
+from osintinel.adapters.media.exif_adapter import ExifAdapter
+from osintinel.adapters.storage import CAS_SCHEME
+from osintinel.core.schemas import AcquisitionMethod, AgentName, EvidenceObject, Provenance
 
 
 def _prov() -> Provenance:

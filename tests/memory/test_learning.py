@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from osintenal.memory import InvestigationMemory, MemoryPriors, RunDigest
-from osintenal.memory.store import AdapterStat
-from osintenal.scenarios.learning_benchmark import run_learning_benchmark
+from osintinel.memory import InvestigationMemory, MemoryPriors, RunDigest
+from osintinel.memory.store import AdapterStat
+from osintinel.scenarios.learning_benchmark import run_learning_benchmark
 
 
 def test_memory_learns_effective_adapter_and_lowers_cost():

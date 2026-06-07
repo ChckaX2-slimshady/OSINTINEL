@@ -9,13 +9,13 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.core.schemas import EpistemicClass, Location
-from osintenal.pipelines.geospatial_reasoning import (
+from osintinel.core.schemas import EpistemicClass, Location
+from osintinel.pipelines.geospatial_reasoning import (
     GeospatialReasoner,
     haversine_km,
     initial_bearing,
 )
-from osintenal.scenarios.geospatial_demo import (
+from osintinel.scenarios.geospatial_demo import (
     CONFLICT_CASE,
     GOLDEN_CASES,
     constraints_for,

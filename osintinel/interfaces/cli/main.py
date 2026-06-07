@@ -1,11 +1,11 @@
-"""OSINTENAL CLI (doc 06 Phase 1–2).
+"""OSINTINEL CLI (doc 06 Phase 1–2).
 
 Commands:
-  osintenal run [--json] [--max-iterations N]   run the bundled demo investigation
-  osintenal report                              run the demo and print the InsightReport
-  osintenal verify [--ledger PATH]              run, persist the ledger, reload & replay it,
+  osintinel run [--json] [--max-iterations N]   run the bundled demo investigation
+  osintinel report                              run the demo and print the InsightReport
+  osintinel verify [--ledger PATH]              run, persist the ledger, reload & replay it,
                                                 and prove a byte-identical graph + hash chain
-  osintenal audit                               print the full evidence chain for the leading
+  osintinel audit                               print the full evidence chain for the leading
                                                 insight (terminating in sourced INFORMATION)
 
 The deterministic bundled scenario makes the full recursive loop demonstrable offline. Custom
@@ -33,7 +33,7 @@ def _run_demo(max_iterations: int | None, ledger_path=None):
 
 def _print_human(result) -> None:
     r = result.report
-    print("\n=== OSINTENAL Insight Report ===")
+    print("\n=== OSINTINEL Insight Report ===")
     print(f"Investigation : {result.investigation.title}")
     print(f"Iterations    : {result.loop.iterations}  "
           f"(terminated: {result.loop.termination.reason})")
@@ -75,7 +75,7 @@ def _print_human(result) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="osintenal", description="Open Source Intelligence Sentinel")
+    parser = argparse.ArgumentParser(prog="osintinel", description="Open Source Intelligence Sentinel")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_run = sub.add_parser("run", help="run the bundled demo investigation")
@@ -94,8 +94,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("image", help="run the Phase 5 image-geolocation pipeline on a sample image")
     sub.add_parser("geo", help="run the Phase 6 geospatial constraint-narrowing golden suite")
     p_dash = sub.add_parser("dashboard", help="render the Phase 7 self-contained HTML console")
-    p_dash.add_argument("--out", default="osintenal-dashboard.html",
-                        help="output HTML path (default: ./osintenal-dashboard.html)")
+    p_dash.add_argument("--out", default="osintinel-dashboard.html",
+                        help="output HTML path (default: ./osintinel-dashboard.html)")
     sub.add_parser("models", help="show the model-tier config and exercise the inference gateway")
     sub.add_parser("independence", help="embed-tier demo: detect illusory (syndicated) source independence")
     sub.add_parser("reason", help="reason-tier demo: model-generated explanations + adversarial critique")
@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
     p_serve = sub.add_parser("serve", help="launch the local web app (browser UI for investigations)")
     p_serve.add_argument("--port", type=int, default=8765)
     p_serve.add_argument("--host", default="127.0.0.1")
-    sub.add_parser("mcp", help="run the MCP server (stdio) so Claude can drive OSINTENAL")
+    sub.add_parser("mcp", help="run the MCP server (stdio) so Claude can drive OSINTINEL")
 
     args = parser.parse_args(argv)
 
@@ -176,7 +176,7 @@ def _improve() -> int:
 
     report = run_self_improvement()
     b, a = report.before, report.after
-    print("\n=== OSINTENAL Phase 8 — Self-Improvement ===")
+    print("\n=== OSINTINEL Phase 8 — Self-Improvement ===")
     print(f"{'metric':22} {'v1 (' + b.version + ')':>18} {'v2 (' + a.version + ')':>18}   change")
     print(f"{'confidence ECE':22} {b.calibration_ece:>18.4f} {a.calibration_ece:>18.4f}   "
           f"{'-' if a.calibration_ece < b.calibration_ece else '+'}"
@@ -206,7 +206,7 @@ def _reason() -> int:
     from ...scenarios.reason_demo import run_reason_demo
 
     r = run_reason_demo()
-    print("\n=== OSINTENAL Phase M (reason tier) — open-ended model reasoning ===")
+    print("\n=== OSINTINEL Phase M (reason tier) — open-ended model reasoning ===")
     print("Question: What is the circular structure on the ridge?\n")
     print(f"Competing explanations: {r.given} given → {r.after_connections} after the reason "
           f"tier proposed new ones:")
@@ -227,7 +227,7 @@ def _independence() -> int:
     from ...scenarios.independence_demo import run_independence_demo
 
     r = run_independence_demo()
-    print("\n=== OSINTENAL Phase M (embed tier) — illusory source independence ===")
+    print("\n=== OSINTINEL Phase M (embed tier) — illusory source independence ===")
     print("A leader corroborated by OpenStreetMap + Regional Newswire (both carrying the same")
     print("syndicated text), then by a genuinely distinct Wikidata entity.\n")
     merged = "; ".join("≈".join(c) for c in r.merged_clusters) or "(none)"
@@ -251,7 +251,7 @@ def _models() -> int:
     from ...ledger import Ledger
 
     st = gateway_status()
-    print("\n=== OSINTENAL — Model & Inference layer (doc 11) ===")
+    print("\n=== OSINTINEL — Model & Inference layer (doc 11) ===")
     print(f"Active profile: {st['profile']}  ({'local' if st['local'] else 'cloud'}, "
           f"{'free' if st['free'] else 'paid'}) — {st['note']}")
     if st["base_url"]:
@@ -268,8 +268,8 @@ def _models() -> int:
         print(f"  Skeptic decorrelated onto profile: {st['skeptic_override']}")
     print(f"  network mode: {st['net_mode']}  (replay=offline/CI · record=build corpus · live=online)")
     print(f"\nAvailable profiles: {', '.join(sorted(PROFILES))}")
-    print("Recommended (free): OSINTENAL_INFERENCE_PROFILE=ollama   (fully local & private)")
-    print("  hybrid: keep ollama, add OSINTENAL_REASON_PROFILE=gemini|groq|openrouter for "
+    print("Recommended (free): OSINTINEL_INFERENCE_PROFILE=ollama   (fully local & private)")
+    print("  hybrid: keep ollama, add OSINTINEL_REASON_PROFILE=gemini|groq|openrouter for "
           "heavier free-cloud reasoning")
 
     gov = BudgetGovernor(Budgets())
@@ -306,7 +306,7 @@ def _dashboard(out: str) -> int:
     path = Path(out)
     path.write_text(html, encoding="utf-8")
 
-    print("\n=== OSINTENAL Phase 7 — Investigation Console ===")
+    print("\n=== OSINTINEL Phase 7 — Investigation Console ===")
     print(f"Rendered self-contained dashboard → {path}  ({len(html) // 1024} KB)")
     print(f"  graph: {len(data.nodes)} nodes / {len(data.edges)} edges")
     print(f"  timeline: {len(data.timeline)} iterations, {len(data.events)} ledger events")
@@ -326,7 +326,7 @@ def _geo() -> int:
         solve_case,
     )
 
-    print("\n=== OSINTENAL Phase 6 — Geospatial constraint narrowing ===")
+    print("\n=== OSINTINEL Phase 6 — Geospatial constraint narrowing ===")
     print(f"{'golden case':24} {'groups':>6} {'radius':>9} {'conf':>6} {'error':>8}  truth-in-radius")
     results = run_geospatial_demo()
     covered = 0
@@ -356,7 +356,7 @@ def _image() -> int:
     from ...scenarios.image_demo import run_image_demo
 
     r = run_image_demo()
-    print("\n=== OSINTENAL Phase 5 — Image Investigation (geolocation) ===")
+    print("\n=== OSINTINEL Phase 5 — Image Investigation (geolocation) ===")
     print("Question: Where was this image taken?\n")
     print("Ranked location hypotheses:")
     for i, f in enumerate(r.ranked):
@@ -388,7 +388,7 @@ def _memory(rounds: int) -> int:
     from ...scenarios.learning_benchmark import run_learning_benchmark
 
     memory, results = run_learning_benchmark(rounds)
-    print("\n=== OSINTENAL Phase 4 — Investigation Memory (learning benchmark) ===")
+    print("\n=== OSINTINEL Phase 4 — Investigation Memory (learning benchmark) ===")
     print(f"{'round':>5}  {'adapter chosen':14}  {'iters':>5}  {'tokens':>7}")
     for i, r in enumerate(results):
         flag = "  <- misleading seed" if i == 0 else (
@@ -435,7 +435,7 @@ def _audit() -> int:
     cps = result.report.connective_probability_scores[0]
     leader = cps.ranked_hypotheses[0]
 
-    print("\n=== OSINTENAL Evidence Chain (audit) ===")
+    print("\n=== OSINTINEL Evidence Chain (audit) ===")
     print(f"Insight: {leader.statement!r}  "
           f"[{leader.epistemic_class.value} / {leader.explanation_type.value.lower()}]  "
           f"confidence {leader.confidence:.2f}\n")
@@ -464,7 +464,7 @@ def _adapters() -> int:
     m = MaltegoAdapter.__new__(MaltegoAdapter)
     print(f"  {m.id:20} vendor={m.vendor}  caps: {', '.join(m.capabilities)}")
     print(f"  (enable with credentials in {MaltegoAdapter.auth_env} + "
-          f"OSINTENAL_ATTEST_AUTHORIZED=1)")
+          f"OSINTINEL_ATTEST_AUTHORIZED=1)")
     return 0
 
 
@@ -476,7 +476,7 @@ def _slice() -> int:
     mast = result.state.hypotheses[result.mast_hypothesis_id]
     raws = [e for e in result.ledger.events() if e.type == "raw_response"]
 
-    print("\n=== OSINTENAL Phase 3 — adapter vertical slice (offline, from cassettes) ===")
+    print("\n=== OSINTINEL Phase 3 — adapter vertical slice (offline, from cassettes) ===")
     print(f"Tool Selection chose by capability: {', '.join(result.selected_adapters)}")
     print(f"\nLeading hypothesis: {mast.statement!r}")
     print(f"  confidence {mast.confidence:.2f}  ->  {mast.epistemic_class.value}  "

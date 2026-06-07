@@ -2,7 +2,7 @@
 
 ## 1. Architectural Overview
 
-OSINTENAL is a **quorum of cooperating specialist agents** coordinated by a deterministic
+OSINTINEL is a **quorum of cooperating specialist agents** coordinated by a deterministic
 **Orchestration Runtime**, reading and writing a single shared **Knowledge Graph** that is
 backed by an append-only **Provenance Ledger**. Tools reach the outside world only through
 the **Adapter Framework**. **Investigation Memory** observes runs and informs strategy

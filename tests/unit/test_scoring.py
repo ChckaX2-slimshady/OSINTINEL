@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from osintenal.agents.scoring import entropy, normalize_with_residual, softmax
+from osintinel.agents.scoring import entropy, normalize_with_residual, softmax
 
 
 def test_softmax_sums_to_one():

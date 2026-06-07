@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "osintenal"
+name = "osintinel"
 version = "0.1.0"
 description = "Open Source Intelligence Sentinel — Autonomous Evidence Intelligence Operating System"
 readme = "README.md"
@@ -19,10 +19,10 @@ dev = [
 ]
 
 [project.scripts]
-osintenal = "osintenal.interfaces.cli.main:main"
+osintinel = "osintinel.interfaces.cli.main:main"
 
 [tool.setuptools.packages.find]
-include = ["osintenal*"]
+include = ["osintinel*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

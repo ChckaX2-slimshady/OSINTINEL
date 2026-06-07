@@ -13,5 +13,5 @@ dist/
 build/
 
 # Phase 7 dashboard default output
-osintenal-dashboard.html
+osintinel-dashboard.html
 *.dashboard.html

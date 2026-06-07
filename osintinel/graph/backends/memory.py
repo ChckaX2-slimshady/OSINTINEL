@@ -1,7 +1,7 @@
 """Embedded in-memory ``GraphStore`` (doc 04 §1, Phase 1/2 default).
 
 Zero-ops and laptop-runnable. The graph is a materialized view over the ledger, so this store
-is always rebuildable by ``osintenal.graph.builder.build_graph`` from replayed state — a Neo4j
+is always rebuildable by ``osintinel.graph.builder.build_graph`` from replayed state — a Neo4j
 or SQLite backend can replace it behind the same port without touching agents.
 """
 

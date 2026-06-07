@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from osintenal.agents.semantic import analyze_independence, cosine
-from osintenal.inference import build_gateway
+from osintinel.agents.semantic import analyze_independence, cosine
+from osintinel.inference import build_gateway
 
 
 def _embed():
@@ -52,7 +52,7 @@ def test_single_group_is_noop():
 
 # -- Skeptic integration (gated on an embedder) ------------------------------
 def test_skeptic_raises_illusory_independence_with_embedder():
-    from osintenal.scenarios.independence_demo import run_independence_demo
+    from osintinel.scenarios.independence_demo import run_independence_demo
     r = run_independence_demo()
     assert r.declared_before == 2 and r.effective_before == 1   # syndicated pair collapses
     assert r.finding_raised is True                            # blocking finding holds promotion

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from osintenal.agents.relevance import (
+from osintinel.agents.relevance import (
     Candidate,
     HeuristicRelevanceJudge,
     LLMRelevanceJudge,
@@ -95,8 +95,8 @@ def test_apply_weights_sets_supports_and_contradicts():
 
 # -- end-to-end: the slice accepts a model judge -----------------------------
 def test_archive_slice_uses_injected_judge(tmp_path):
-    from osintenal.core.schemas import EpistemicClass
-    from osintenal.scenarios.archive_slice import run_archive_slice
+    from osintinel.core.schemas import EpistemicClass
+    from osintinel.scenarios.archive_slice import run_archive_slice
 
     class MastJudge:  # a stand-in "model" that backs the mast hypothesis from any evidence
         def score(self, *, kind, summary, structured, candidates):
@@ -112,7 +112,7 @@ def test_archive_slice_uses_injected_judge(tmp_path):
 
 def test_archive_slice_default_judge_is_unchanged(tmp_path):
     # no judge → heuristic path → same outcome as before (regression guard)
-    from osintenal.scenarios.archive_slice import run_archive_slice
+    from osintinel.scenarios.archive_slice import run_archive_slice
     result = run_archive_slice(cas_dir=tmp_path / "cas")
     assert result.selected_adapters == ["archive.wayback", "osm.overpass"]
     mast = result.state.hypotheses[result.mast_hypothesis_id]

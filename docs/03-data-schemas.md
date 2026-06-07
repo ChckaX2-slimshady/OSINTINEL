@@ -2,7 +2,7 @@
 
 These schemas are the contract that the orchestration runtime, agents, graph, and adapters
 are all written against. They are presented as JSON Schema / typed-shape sketches intended to
-be realized as **Pydantic v2 models** in `osintenal/core/schemas/`. Field names here are
+be realized as **Pydantic v2 models** in `osintinel/core/schemas/`. Field names here are
 normative.
 
 > Convention: all ids are UUIDv7 strings (time-sortable). All timestamps are RFC 3339 UTC.

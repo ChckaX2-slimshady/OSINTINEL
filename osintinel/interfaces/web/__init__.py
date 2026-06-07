@@ -1,6 +1,6 @@
-"""Local web app (Phase post-8): a browser front door to OSINTENAL.
+"""Local web app (Phase post-8): a browser front door to OSINTINEL.
 
-``osintenal serve`` launches a dependency-free ``http.server`` where you pose a question, list the
+``osintinel serve`` launches a dependency-free ``http.server`` where you pose a question, list the
 competing answers, paste evidence, and get the full Investigation Console back. Runs are held in
 memory (saving is opt-in). The request handlers delegate to small pure functions so the app is
 testable without binding a socket.

@@ -15,7 +15,7 @@ Linking evidence to a hypothesis here is a small deterministic relevance rule st
 the Connections/LLM judgment (Phase 1 keeps the loop model-free). Synthesis + Confidence then
 move the hypothesis, and — with two independent source groups — promote it to INSIGHT.
 
-Everything runs offline from committed cassettes; ``record=True`` (``OSINTENAL_RECORD=1``) would
+Everything runs offline from committed cassettes; ``record=True`` (``OSINTINEL_RECORD=1``) would
 refresh them against live endpoints.
 """
 

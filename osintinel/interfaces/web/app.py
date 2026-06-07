@@ -62,7 +62,7 @@ _BANNER = (
     '<div style="background:#0b0e16;border-bottom:1px solid #222c44;padding:10px 24px;'
     'font:13px system-ui;color:#8a96b0">'
     '<a href="/" style="color:#3ddc84;text-decoration:none">&larr; New investigation</a>'
-    '&nbsp;·&nbsp; OSINTENAL — records kept in memory for this session</div>')
+    '&nbsp;·&nbsp; OSINTINEL — records kept in memory for this session</div>')
 
 
 def build_result_page(run_id: str) -> str | None:
@@ -77,9 +77,9 @@ def render_form(message: str = "") -> str:
     note = f'<p class="msg">{_e(message)}</p>' if message else ""
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OSINTENAL — New investigation</title><style>{_FORM_CSS}</style></head>
+<title>OSINTINEL — New investigation</title><style>{_FORM_CSS}</style></head>
 <body>
-<header><span class="logo">&#9678;</span> OSINTENAL
+<header><span class="logo">&#9678;</span> OSINTINEL
   <span class="muted">/ New investigation</span></header>
 <main>
   {note}
@@ -96,8 +96,8 @@ def render_form(message: str = "") -> str:
         placeholder="OpenStreetMap | node tagged man_made=mast at the coordinate | 1&#10;Wikidata | radio relay station entity nearby | 1&#10;Local news | residents call it 'the turbine' | 2"></textarea></label>
     <button type="submit">Investigate</button>
   </form>
-  <p class="muted">Tip: set <code>OSINTENAL_INFERENCE_PROFILE=ollama</code> (and optionally
-    <code>OSINTENAL_REASON_PROFILE=gemini</code>) before launching to have local/free models judge
+  <p class="muted">Tip: set <code>OSINTINEL_INFERENCE_PROFILE=ollama</code> (and optionally
+    <code>OSINTINEL_REASON_PROFILE=gemini</code>) before launching to have local/free models judge
     relevance, propose explanations, and critique. Without a model, tag evidence with a supports#.</p>
 </main></body></html>"""
 
@@ -165,7 +165,7 @@ class _Handler(BaseHTTPRequestHandler):
 
 def serve(port: int = 8765, host: str = "127.0.0.1") -> None:
     server = ThreadingHTTPServer((host, port), _Handler)
-    print(f"OSINTENAL web app on http://{host}:{port}  (Ctrl+C to stop)")
+    print(f"OSINTINEL web app on http://{host}:{port}  (Ctrl+C to stop)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

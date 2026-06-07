@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.adapters.transport import AdapterError, Cassette, HttpClient, request_key
-from osintenal.inference import build_gateway, gateway_status
+from osintinel.adapters.transport import AdapterError, Cassette, HttpClient, request_key
+from osintinel.inference import build_gateway, gateway_status
 
 
 # -- transport mode resolution ----------------------------------------------
@@ -14,12 +14,12 @@ def test_mode_resolution_precedence(tmp_path, monkeypatch):
     assert HttpClient(cass, record=False).mode == "replay"
     assert HttpClient(cass, record=True).mode == "record"
     assert HttpClient(cass, mode="live").mode == "live"
-    monkeypatch.setenv("OSINTENAL_NET", "live")
+    monkeypatch.setenv("OSINTINEL_NET", "live")
     assert HttpClient(cass).mode == "live"
-    monkeypatch.delenv("OSINTENAL_NET")
-    monkeypatch.setenv("OSINTENAL_RECORD", "1")
+    monkeypatch.delenv("OSINTINEL_NET")
+    monkeypatch.setenv("OSINTINEL_RECORD", "1")
     assert HttpClient(cass).mode == "record"
-    monkeypatch.delenv("OSINTENAL_RECORD")
+    monkeypatch.delenv("OSINTINEL_RECORD")
     assert HttpClient(cass).mode == "replay"          # safe default
 
 
@@ -39,7 +39,7 @@ def test_replay_serves_recorded_entry_without_network(tmp_path):
 
 def test_live_mode_fetches_and_ignores_cassette(tmp_path, monkeypatch):
     # patch the network so 'live' is testable without egress
-    import osintenal.adapters.transport as t
+    import osintinel.adapters.transport as t
 
     class _Resp:
         def __init__(self, data): self._data = data
@@ -64,7 +64,7 @@ def test_live_mode_fetches_and_ignores_cassette(tmp_path, monkeypatch):
 
 
 def test_record_mode_persists_fetched_response(tmp_path, monkeypatch):
-    import osintenal.adapters.transport as t
+    import osintinel.adapters.transport as t
 
     class _Resp:
         def read(self): return b'{"v": 1}'
@@ -80,8 +80,8 @@ def test_record_mode_persists_fetched_response(tmp_path, monkeypatch):
 
 # -- model decorrelation -----------------------------------------------------
 def test_skeptic_decorrelation_routes_to_a_different_model(tmp_path, monkeypatch):
-    monkeypatch.setenv("OSINTENAL_INFERENCE_PROFILE", "ollama")
-    monkeypatch.setenv("OSINTENAL_SKEPTIC_PROFILE", "groq")
+    monkeypatch.setenv("OSINTINEL_INFERENCE_PROFILE", "ollama")
+    monkeypatch.setenv("OSINTINEL_SKEPTIC_PROFILE", "groq")
     gw = build_gateway(cassette_dir=tmp_path, record=False)
     assert gw.role_models["skeptic"] == "llama-3.3-70b-versatile"     # groq's reason model
     assert gw.models["reason"] == "qwen2.5:14b-instruct"               # connections stay local
@@ -91,9 +91,9 @@ def test_skeptic_decorrelation_routes_to_a_different_model(tmp_path, monkeypatch
 
 
 def test_status_reports_overrides_and_net_mode(monkeypatch):
-    monkeypatch.setenv("OSINTENAL_INFERENCE_PROFILE", "ollama")
-    monkeypatch.setenv("OSINTENAL_SKEPTIC_PROFILE", "gemini")
-    monkeypatch.setenv("OSINTENAL_NET", "live")
+    monkeypatch.setenv("OSINTINEL_INFERENCE_PROFILE", "ollama")
+    monkeypatch.setenv("OSINTINEL_SKEPTIC_PROFILE", "gemini")
+    monkeypatch.setenv("OSINTINEL_NET", "live")
     st = gateway_status()
     assert st["skeptic_override"] == "gemini" and st["net_mode"] == "live"
 

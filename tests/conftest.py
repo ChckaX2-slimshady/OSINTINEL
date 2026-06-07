@@ -1,12 +1,12 @@
-"""Shared fixtures for the OSINTENAL test suite (doc 09)."""
+"""Shared fixtures for the OSINTINEL test suite (doc 09)."""
 
 from __future__ import annotations
 
 import pytest
 
-from osintenal.core.runtime import InvestigationController
-from osintenal.scenarios import build_demo_investigation
-from osintenal.scenarios.archive_slice import run_archive_slice
+from osintinel.core.runtime import InvestigationController
+from osintinel.scenarios import build_demo_investigation
+from osintinel.scenarios.archive_slice import run_archive_slice
 
 
 @pytest.fixture

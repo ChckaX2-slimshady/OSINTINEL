@@ -1,6 +1,6 @@
 # 04 — Knowledge Graph Schema
 
-OSINTENAL uses **graph-native storage**. The graph is the shared state of the quorum; it is
+OSINTINEL uses **graph-native storage**. The graph is the shared state of the quorum; it is
 a *materialized view* over the append-only Provenance Ledger (doc 03 §13), which guarantees
 replay and tamper-evidence. **Nothing enters the graph without a source.**
 

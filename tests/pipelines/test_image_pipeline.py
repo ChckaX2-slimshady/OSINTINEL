@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.core.schemas import AcquisitionMethod, EpistemicClass
-from osintenal.ledger import replay_state
-from osintenal.scenarios.image_demo import run_image_demo
+from osintinel.core.schemas import AcquisitionMethod, EpistemicClass
+from osintinel.ledger import replay_state
+from osintinel.scenarios.image_demo import run_image_demo
 
 
 @pytest.fixture(scope="module")

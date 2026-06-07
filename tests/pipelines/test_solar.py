@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-from osintenal.adapters.compute.solar import SolarGeometryAdapter, solar_position
-from osintenal.core.schemas import AcquisitionMethod, AgentName, Provenance
+from osintinel.adapters.compute.solar import SolarGeometryAdapter, solar_position
+from osintinel.core.schemas import AcquisitionMethod, AgentName, Provenance
 
 
 def _prov() -> Provenance:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from osintenal.agents.reasoning import ReasoningModel
+from osintinel.agents.reasoning import ReasoningModel
 
 
 class _Gateway:
@@ -60,7 +60,7 @@ def test_critique_validates_categories_and_caps_severity():
 
 # -- wiring: Connections + Skeptic gated on a gateway ------------------------
 def test_reason_demo_widens_space_and_adds_critique():
-    from osintenal.scenarios.reason_demo import run_reason_demo
+    from osintinel.scenarios.reason_demo import run_reason_demo
     r = run_reason_demo()
     assert r.after_connections > r.given            # model proposed new competing explanations
     assert any(c == "hidden_assumption" for c, _s, _d in r.model_findings)
@@ -75,13 +75,13 @@ def test_no_gateway_means_no_model_findings_or_extra_explanations(demo_result):
 
 def test_connections_unchanged_without_gateway():
     # Connections with no llm uses only the given candidates (deterministic floor)
-    from osintenal.agents.connections import ConnectionsAgent
-    from osintenal.agents.base import AgentContext
-    from osintenal.core.budget import BudgetGovernor
-    from osintenal.adapters import AdapterRegistry
-    from osintenal.core.schemas import Budgets, Investigation, InvestigationConfig
-    from osintenal.core.state import InvestigationState
-    from osintenal.ledger import Ledger
+    from osintinel.agents.connections import ConnectionsAgent
+    from osintinel.agents.base import AgentContext
+    from osintinel.core.budget import BudgetGovernor
+    from osintinel.adapters import AdapterRegistry
+    from osintinel.core.schemas import Budgets, Investigation, InvestigationConfig
+    from osintinel.core.state import InvestigationState
+    from osintinel.ledger import Ledger
 
     inv = Investigation(title="t", objective="o", domain="d",
                         inputs=[{"kind": "question", "question": "q?",

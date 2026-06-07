@@ -268,11 +268,11 @@ def render_dashboard(data: DashboardData) -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OSINTENAL — {_e(data.title)}</title>
+<title>OSINTINEL — {_e(data.title)}</title>
 <style>{_CSS}</style></head>
 <body>
 <header class="top">
-  <div class="brand"><span class="logo">◎</span> OSINTENAL
+  <div class="brand"><span class="logo">◎</span> OSINTINEL
     <span class="muted">/ Investigation Console</span></div>
   <div class="meta">{_e(data.title)} · <code>{_e(data.investigation_id[:8])}</code>
     · {_e(data.domain or "—")} · terminated: {_e(data.termination_reason)}</div>

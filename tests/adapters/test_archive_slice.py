@@ -8,12 +8,12 @@ while the ledger stays lean.
 
 from __future__ import annotations
 
-from osintenal.adapters import ContentAddressedStore
-from osintenal.adapters.registry import AdapterRegistry
-from osintenal.core.schemas import EpistemicClass
-from osintenal.graph import build_graph, chain_terminates_in_information
-from osintenal.ledger import replay_state
-from osintenal.scenarios.archive_slice import build_registry
+from osintinel.adapters import ContentAddressedStore
+from osintinel.adapters.registry import AdapterRegistry
+from osintinel.core.schemas import EpistemicClass
+from osintinel.graph import build_graph, chain_terminates_in_information
+from osintinel.ledger import replay_state
+from osintinel.scenarios.archive_slice import build_registry
 
 
 def test_tool_selection_chose_adapters_by_capability(slice_result):
@@ -59,15 +59,15 @@ def test_selection_falls_back_when_preferred_capability_absent(tmp_path):
     # With no geo.features adapter registered, an alternative capability must still resolve.
     cas = ContentAddressedStore(tmp_path)
     full = build_registry(cas)
-    from osintenal.agents.base import AgentContext
-    from osintenal.agents.selection import ToolSelectionAgent
-    from osintenal.core.budget import BudgetGovernor
-    from osintenal.core.schemas import (
+    from osintinel.agents.base import AgentContext
+    from osintinel.agents.selection import ToolSelectionAgent
+    from osintinel.core.budget import BudgetGovernor
+    from osintinel.core.schemas import (
         AcquisitionMethod, AgentName, Budgets, EvidenceRequest, HypothesisSet, Investigation,
         InvestigationConfig, Provenance,
     )
-    from osintenal.core.state import InvestigationState
-    from osintenal.ledger import Ledger
+    from osintinel.core.state import InvestigationState
+    from osintinel.ledger import Ledger
 
     # registry missing the first-choice capability but offering a fallback
     reg = AdapterRegistry()

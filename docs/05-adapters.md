@@ -1,6 +1,6 @@
 # 05 — Adapter Specifications
 
-OSINTENAL reaches the outside world **only** through adapters. We implement *adapters rather
+OSINTINEL reaches the outside world **only** through adapters. We implement *adapters rather
 than direct integrations* so tools stay interchangeable and investigative paths are never
 hardcoded. The Tool Selection Agent chooses adapters dynamically by capability (doc 02 §4).
 

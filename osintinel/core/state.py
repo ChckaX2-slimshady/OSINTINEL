@@ -3,12 +3,12 @@
 Every mutation is mediated here and recorded as an append-only ledger event whose payload
 carries enough to **reconstruct the object byte-for-byte**. The ledger is therefore the
 single source of truth; this in-memory state is a *materialized view* over it (doc 04 §8).
-``osintenal.ledger.replay`` rebuilds an identical ``InvestigationState`` from the events alone.
+``osintinel.ledger.replay`` rebuilds an identical ``InvestigationState`` from the events alone.
 
 This module enforces the structural guarantees doc 04 §7 assigns to graph write-time
 constraints: provenance-or-nothing, hypothesis preservation (append-only confidence history,
 no deletion), set-minimum (a HypothesisSet never drops below one active member), and
-speculation quarantine. The graph projection (``osintenal.graph``) is built from this state.
+speculation quarantine. The graph projection (``osintinel.graph``) is built from this state.
 """
 
 from __future__ import annotations

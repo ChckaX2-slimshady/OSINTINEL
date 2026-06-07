@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import pytest
 
-from osintenal.core.runtime import InvestigationController
-from osintenal.memory import (
+from osintinel.core.runtime import InvestigationController
+from osintinel.memory import (
     FirewallViolation,
     InvestigationMemory,
     MemoryPriors,
@@ -19,8 +19,8 @@ from osintenal.memory import (
     build_run_digest,
     verify_read_only,
 )
-from osintenal.memory.firewall import assert_no_evidence_leak
-from osintenal.scenarios.learning_benchmark import build_benchmark_investigation
+from osintinel.memory.firewall import assert_no_evidence_leak
+from osintinel.scenarios.learning_benchmark import build_benchmark_investigation
 
 
 def _run_with_memory():
@@ -55,7 +55,7 @@ def test_ingest_rejects_non_digest_objects():
 
 
 def test_assert_strategy_only_rejects_smuggled_evidence_keys():
-    from osintenal.memory.store import RunDigest
+    from osintinel.memory.store import RunDigest
 
     # A subclass that tries to smuggle evidence content past the metric-only contract.
     class Smuggler(RunDigest):

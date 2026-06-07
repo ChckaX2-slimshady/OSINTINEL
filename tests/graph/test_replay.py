@@ -7,8 +7,8 @@ reload from the ledger" guarantee.
 
 from __future__ import annotations
 
-from osintenal.graph import build_graph
-from osintenal.ledger import Ledger, replay_state
+from osintinel.graph import build_graph
+from osintinel.ledger import Ledger, replay_state
 
 
 def test_in_memory_replay_is_byte_identical(demo_result):
@@ -36,8 +36,8 @@ def test_graph_reconstructed_from_ledger_matches_live(demo_result):
 
 def test_streaming_ledger_file_matches_in_memory(tmp_path):
     # A ledger that streams to disk as it runs reloads to the same events.
-    from osintenal.core.runtime import InvestigationController
-    from osintenal.scenarios import build_demo_investigation
+    from osintinel.core.runtime import InvestigationController
+    from osintinel.scenarios import build_demo_investigation
 
     inv, reg = build_demo_investigation()
     path = tmp_path / "live.jsonl"
