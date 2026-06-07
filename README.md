@@ -235,6 +235,7 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | **Investigation input layer (run your own questions)** | `osintinel/service/` | — |
 | **Autonomous web research (search/fetch/extract → evidence)** | `osintinel/adapters/web/` | [05](docs/05-adapters.md) |
 | **Free infra/threat-intel adapters (Shodan InternetDB · URLScan · OTX)** | `osintinel/adapters/{infrastructure,threat}` | [05](docs/05-adapters.md) |
+| **Free public-records adapters (OpenCorporates · SEC EDGAR · GLEIF)** | `osintinel/adapters/records/` | [05](docs/05-adapters.md) |
 | **Front doors: CLI · local web app · MCP server** | `osintinel/interfaces/{cli,web,mcp}` | [10](docs/10-repository-structure.md) |
 
 A later phase can swap the embedded `GraphStore` for a graph-native backend (SQLite/Neo4j)

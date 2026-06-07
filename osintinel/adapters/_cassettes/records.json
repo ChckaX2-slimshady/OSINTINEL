@@ -1,0 +1,14 @@
+{
+  "6afe1c53e1da8f6b919c9a2f93a438310e3554a6f0ce101610dda81bcc3b1b02": {
+    "text": "{\"hits\": {\"hits\": [{\"_id\": \"f1\", \"_source\": {\"display_names\": [\"WindReach Telecom Ltd (CIK 0001234567)\"], \"file_type\": \"20-F\", \"file_date\": \"2024-04-30\"}}]}}",
+    "url": "https://efts.sec.gov/LATEST/search-index"
+  },
+  "a2d5b1d01fa3b6bc052dd63b176d84a58bf22ff890c011323d8479f807ea8706": {
+    "text": "{\"data\": [{\"id\": \"5493001\", \"attributes\": {\"lei\": \"549300EXAMPLE0000001\", \"entity\": {\"legalName\": {\"name\": \"WindReach Telecom Ltd\"}, \"legalAddress\": {\"country\": \"GB\"}}, \"registration\": {\"status\": \"ISSUED\"}}}]}",
+    "url": "https://api.gleif.org/api/v1/lei-records"
+  },
+  "d6b325b13cd87d6656aed5974d5d5b7c59760f841d1f781c4a67b0935e25a00b": {
+    "text": "{\"results\": {\"companies\": [{\"company\": {\"name\": \"WindReach Telecom Ltd\", \"jurisdiction_code\": \"gb\", \"company_number\": \"12345678\", \"current_status\": \"Active\"}}, {\"company\": {\"name\": \"WindReach Telecom Holdings\", \"jurisdiction_code\": \"gb\", \"company_number\": \"87654321\", \"current_status\": \"Active\"}}]}}",
+    "url": "https://api.opencorporates.com/v0.4/companies/search"
+  }
+}

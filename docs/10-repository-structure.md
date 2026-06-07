@@ -83,6 +83,7 @@ OSINTINEL/
 │   │   ├── geospatial/            # nominatim, overpass  (+ mapillary, satellite later)
 │   │   ├── infrastructure/        # cert_transparency, shodan_internetdb, urlscan
 │   │   ├── threat/                # alienvault otx (threat.intel)
+│   │   ├── records/               # opencorporates, sec_edgar, gleif (record.public)
 │   │   ├── archives/              # wayback, wikidata  (+ archive_today, wikimedia later)
 │   │   ├── media/                 # exif codec + ExifAdapter (media.exif)
 │   │   ├── web/                   # WebSearchAdapter (web.search/web.fetch) — Wikipedia/DDG

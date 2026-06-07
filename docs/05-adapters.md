@@ -114,7 +114,7 @@ the licensed/commercial tools are in the **Supplemental Adapter Framework** (§4
 `infra.certs` (crt.sh Certificate Transparency) · `infra.exposure` (Shodan InternetDB, no key) ·
 `infra.urlscan` (URLScan.io, no key) · `threat.intel` (AlienVault OTX, free key) ·
 `media.exif` (built-in EXIF codec) · `compute.symbolic` (NOAA solar geometry) ·
-`web.search`/`web.fetch` (Wikipedia/DuckDuckGo).
+`web.search`/`web.fetch` (Wikipedia/DuckDuckGo) · `record.public` (OpenCorporates, SEC EDGAR, GLEIF).
 
 ## 4b. Supplemental Adapter Framework (license-gated, off by default)
 
@@ -132,8 +132,8 @@ integrated — they are all paid/licensed. Only the **gating mechanism** (`comme
 and a representative **Maltego stub** exist, off unless credentials + attestation are supplied.
 The deliberate emphasis is on **free, lawful** sources (the inventory above). **Shodan
 InternetDB**, **URLScan.io**, and **AlienVault OTX** are now built (`infra.exposure`,
-`infra.urlscan`, `threat.intel`). Further high-value free additions that fit the same pattern:
-**OpenCorporates** / **SEC EDGAR** / **GLEIF** (`record.public`, free), **Mapillary**
+`infra.urlscan`, `threat.intel`); **OpenCorporates**, **SEC EDGAR**, and **GLEIF** add corporate/public records (`record.public`). Further high-value free additions that fit the same pattern:
+**Mapillary**
 (`geo.streetlevel`, free key), **abuse.ch** (threat, free key), and **Brave Search** / **SearXNG**
 backends for `web.search`.
 

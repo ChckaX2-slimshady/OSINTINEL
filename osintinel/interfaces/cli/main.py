@@ -106,6 +106,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("mcp", help="run the MCP server (stdio) so Claude can drive OSINTINEL")
     sub.add_parser("research", help="autonomous web-research demo (gathers its own evidence, offline)")
     sub.add_parser("intel", help="free infra/threat adapters (Shodan InternetDB, URLScan, OTX) demo")
+    sub.add_parser("records", help="free public-records adapters (OpenCorporates, SEC EDGAR, GLEIF) demo")
 
     args = parser.parse_args(argv)
 
@@ -169,7 +170,54 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "intel":
         return _intel()
 
+    if args.command == "records":
+        return _records()
+
     return 1
+
+
+def _records() -> int:
+    """Demo the free public-records / corporate adapters (offline cassette)."""
+    from pathlib import Path
+
+    from ...adapters import (
+        Cassette,
+        GLEIFAdapter,
+        HttpClient,
+        OpenCorporatesAdapter,
+        SECEdgarAdapter,
+    )
+    from ...core.schemas import AcquisitionMethod, AgentName, Provenance
+
+    cdir = Path(__file__).resolve().parent.parent.parent / "adapters" / "_cassettes"
+    company = "WindReach Telecom"
+
+    def client():
+        return HttpClient(Cassette(cdir / "records.json"))
+
+    def prov():
+        return Provenance(source="records", acquisition_method=AcquisitionMethod.API,
+                          agent_responsible=AgentName.ACQUISITION, confidence=0.7,
+                          investigation_id="records-demo")
+
+    print("\n=== OSINTINEL — free public-records adapters (offline demo) ===")
+    print(f"Entity: {company}\n")
+    runs = [
+        ("OpenCorporates", OpenCorporatesAdapter(client()).acquire(
+            "record.public", {"query": company}, prov())),
+        ("SEC EDGAR", SECEdgarAdapter(client()).acquire(
+            "record.public", {"query": company}, prov())),
+        ("GLEIF", GLEIFAdapter(client()).acquire(
+            "record.public", {"query": company}, prov())),
+    ]
+    for name, evs in runs:
+        ev = evs[0]
+        print(f"  [{name}] {ev.summary}")
+        print(f"      source group: {ev.structured['independence_group']} · tool: "
+              f"{ev.provenance.tool_used}")
+    print("\nAll free/lawful. Live: OSINTINEL_NET=live (OpenCorporates optional free token via "
+          "OPENCORPORATES_API_TOKEN; SEC EDGAR & GLEIF need no key).")
+    return 0
 
 
 def _intel() -> int:

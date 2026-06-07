@@ -45,3 +45,5 @@ jobs:
         run: osintinel research
       - name: Smoke-run the free infra/threat-intel adapters
         run: osintinel intel
+      - name: Smoke-run the free public-records adapters
+        run: osintinel records

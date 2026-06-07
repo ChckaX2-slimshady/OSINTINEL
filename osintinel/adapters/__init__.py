@@ -15,6 +15,7 @@ from .infrastructure import (
     ShodanInternetDBAdapter,
     UrlscanAdapter,
 )
+from .records import GLEIFAdapter, OpenCorporatesAdapter, SECEdgarAdapter
 from .threat import OTXAdapter
 from .media import ExifAdapter
 from .registry import AdapterRegistry
@@ -29,7 +30,10 @@ __all__ = [
     "AdapterRegistry",
     "Cassette",
     "CertTransparencyAdapter",
+    "GLEIFAdapter",
     "OTXAdapter",
+    "OpenCorporatesAdapter",
+    "SECEdgarAdapter",
     "ShodanInternetDBAdapter",
     "UrlscanAdapter",
     "ContentAddressedStore",
