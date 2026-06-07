@@ -99,8 +99,10 @@ evidence→hypothesis **relevance judgment** (`agents/relevance.py`) — a `Rele
 a heuristic default (CI-stable) and an LLM judge that falls back gracefully. The `embed` tier now
 detects **illusory source independence** — when "independent" sources are syndicated copies, it
 collapses them so the Confidence gate isn't fooled, and the Skeptic raises a blocking finding
-(`agents/semantic.py`, `osintenal independence`). The `reason` tier
-(Connections/Synthesis/Skeptic) follows. See
+(`agents/semantic.py`, `osintenal independence`). The `reason` tier now lets the flagship model
+do open-ended work — Connections proposes *additional* competing explanations and the Skeptic
+authors adversarial critique (advisory; the computed gates still own blocking) — `agents/reasoning.py`,
+`osintenal reason`. All three tiers degrade to deterministic behavior with no model present. See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) and [`docs/11`](docs/11-model-inference-architecture.md).
 
 ### Quickstart

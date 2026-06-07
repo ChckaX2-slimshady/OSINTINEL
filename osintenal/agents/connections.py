@@ -37,6 +37,10 @@ class ConnectionsAgent:
             if len(candidates) < 2:
                 # Resist a single-explanation framing: keep the space open.
                 candidates = list(candidates) + ["alternative / none of the above"]
+            # Reason tier (Phase M): when a model is present, generate *additional* competing
+            # explanations beyond those handed in — open-ended hypothesis generation. Falls back
+            # to the given candidates when no model is configured (deterministic default).
+            candidates = self._augment_candidates(ctx, q.get("question", ""), candidates)
             prov = ctx.provenance(self.name, method=AcquisitionMethod.DERIVED, confidence=0.5)
             hs = HypothesisSet(
                 question=q["question"],
@@ -60,3 +64,13 @@ class ConnectionsAgent:
                 ctx.state.add_explanation(explanation, ctx.iteration)
             created.append(hs)
         return created
+
+    def _augment_candidates(self, ctx: AgentContext, question: str,
+                            candidates: list[str]) -> list[str]:
+        if ctx.llm is None:
+            return candidates
+        from .reasoning import ReasoningModel
+        observations = [f"{o.type}: {o.content}" for o in ctx.state.observations.values()]
+        extra = ReasoningModel(ctx.llm).propose_explanations(
+            question=question, observations=observations, existing=candidates, limit=2)
+        return candidates + extra

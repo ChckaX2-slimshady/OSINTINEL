@@ -37,3 +37,5 @@ jobs:
         run: osintenal models
       - name: Smoke-run the embed-tier source-independence guard
         run: osintenal independence
+      - name: Smoke-run the reason-tier reasoning demo
+        run: osintenal reason

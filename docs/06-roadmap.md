@@ -213,7 +213,14 @@ record model I/O and replay offline.
     when a genuinely distinct source arrives (`osintenal independence`,
     `tests/inference/test_semantic.py`). Gated on an embedder being present, so deterministic
     runs are unaffected. Next: semantic dedup + retrieval over large corpora.
-  - ◻ **`reason`** — Connections, Synthesis, Skeptic, Epistemology behind the gateway.
+  - ◑ **`reason`** — open-ended model reasoning (`agents/reasoning.py`): Connections asks the
+    reason tier for *additional* competing explanations (hypothesis generation beyond the given
+    candidates), and the Skeptic asks it for adversarial critique (hidden assumptions / reasoning
+    weaknesses). Model output is advisory — severity is capped below `blocking`, so the computed
+    gates (source-dependency, illusory-independence) remain the only blockers. Gated on a gateway;
+    deterministic runs are the floor (`osintenal reason`, `tests/inference/test_reasoning.py`).
+    Next: model-authored Synthesis/Confidence prose, and Skeptic↔Synthesis model **decorrelation**
+    (per-role model override) per doc 08 §1.
 - ◻ **Online-first defaults** — adapters live by default; cassettes become the recorded test
   corpus; golden runs recorded once and replayed in CI.
 

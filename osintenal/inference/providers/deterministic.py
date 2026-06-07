@@ -38,6 +38,25 @@ class DeterministicProvider:
             finish_reason="stop")
 
 
+class ScriptedProvider:
+    """Returns canned, role-keyed responses through the real gateway — a demo/test double for
+    the reason tier so model-driven behavior is exercisable offline (akin to a cassette)."""
+
+    def __init__(self, by_role: dict[str, str], *, model: str = "scripted-1",
+                 default: str = "[]") -> None:
+        self.by_role = by_role
+        self.default = default
+        self.model = model
+
+    def chat(self, request: ChatRequest) -> ModelResponse:
+        text = self.by_role.get(request.role, self.default)
+        return ModelResponse(
+            text=text, model=self.model,
+            usage=Usage(input_tokens=approx_tokens(_canonical(request)),
+                        output_tokens=approx_tokens(text)),
+            finish_reason="stop")
+
+
 class DeterministicEmbedder:
     """Hashing bag-of-words embeddings: reproducible and similarity-meaningful (token overlap)."""
 

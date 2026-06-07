@@ -42,6 +42,7 @@ class SkepticAgent:
             findings += self._challenge_source_dependency(ctx, leader)
             findings += self._challenge_premature_convergence(ctx, hs, leader, active)
             findings += self._challenge_illusory_independence(ctx, leader)
+            findings += self._challenge_with_model(ctx, leader)
         return findings
 
     def _existing_open(self, ctx, target_ref, category) -> SkepticFinding | None:
@@ -135,6 +136,37 @@ class SkepticAgent:
                 f"genuinely independent corroboration confirmed ({len(report.effective)} groups)",
                 ctx.iteration)
         return []
+
+    def _challenge_with_model(self, ctx: AgentContext, leader: Hypothesis):
+        """Reason-tier adversarial critique (doc 11): the model authors objections that the
+        structural challenges can't — hidden assumptions, reasoning weaknesses. Advisory only:
+        severity is capped below 'blocking' so the computed gates remain the sole blockers.
+        Runs only when a model is configured; deterministic runs are unaffected.
+        """
+        if ctx.llm is None:
+            return []
+        from .reasoning import ReasoningModel
+        evidence = [e.summary for e in ctx.state.evidence_for(leader.hypothesis_id)]
+        try:
+            objections = ReasoningModel(ctx.llm).critique(statement=leader.statement,
+                                                          evidence=evidence)
+        except Exception:
+            return []
+        existing = {(f.category, f.description) for f in ctx.state.findings.values()}
+        out: list[SkepticFinding] = []
+        for obj in objections:
+            key = (obj["category"], obj["description"])
+            if key in existing:
+                continue
+            prov = ctx.provenance(self.name, method=AcquisitionMethod.DERIVED, confidence=0.6)
+            f = SkepticFinding(
+                target_ref=leader.hypothesis_id, category=obj["category"],
+                description=obj["description"],
+                severity=obj["severity"],  # already capped to <= "high" by ReasoningModel
+                provenance=prov)
+            ctx.state.add_finding(f, ctx.iteration)
+            out.append(f)
+        return out
 
     def _challenge_premature_convergence(self, ctx, hs, leader, active):
         out: list[SkepticFinding] = []

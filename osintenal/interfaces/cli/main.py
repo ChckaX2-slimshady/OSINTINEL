@@ -98,6 +98,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="output HTML path (default: ./osintenal-dashboard.html)")
     sub.add_parser("models", help="show the model-tier config and exercise the inference gateway")
     sub.add_parser("independence", help="embed-tier demo: detect illusory (syndicated) source independence")
+    sub.add_parser("reason", help="reason-tier demo: model-generated explanations + adversarial critique")
 
     args = parser.parse_args(argv)
 
@@ -139,7 +140,31 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "independence":
         return _independence()
 
+    if args.command == "reason":
+        return _reason()
+
     return 1
+
+
+def _reason() -> int:
+    """Reason-tier demo: model-generated competing explanations + adversarial critique."""
+    from ...scenarios.reason_demo import run_reason_demo
+
+    r = run_reason_demo()
+    print("\n=== OSINTENAL Phase M (reason tier) — open-ended model reasoning ===")
+    print("Question: What is the circular structure on the ridge?\n")
+    print(f"Competing explanations: {r.given} given → {r.after_connections} after the reason "
+          f"tier proposed new ones:")
+    for s in r.proposed:
+        print(f"    + {s}")
+    print("\nSkeptic — model-authored objections (advisory; structural gates still own blocking):")
+    for category, severity, desc in r.model_findings:
+        print(f"  [{severity:6}] {category}: {desc}")
+    print(f"\nreason-tier model calls recorded in the ledger: {r.model_calls}")
+    ok = r.after_connections > r.given and len(r.model_findings) >= 1
+    print(f"reason tier working: {'YES' if ok else 'NO'}  "
+          f"(model widened the hypothesis space and challenged the leader)")
+    return 0 if ok else 1
 
 
 def _independence() -> int:
