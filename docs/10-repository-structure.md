@@ -81,9 +81,11 @@ OSINTINEL/
 │   │   ├── stub.py                # Phase 1 deterministic stub adapter
 │   │   ├── _cassettes/            # committed VCR recordings + build_demo.py
 │   │   ├── geospatial/            # nominatim, overpass  (+ mapillary, satellite later)
-│   │   ├── infrastructure/        # cert_transparency  (+ dns, asn, amass later)
+│   │   ├── infrastructure/        # cert_transparency, shodan_internetdb, urlscan
+│   │   ├── threat/                # alienvault otx (threat.intel)
 │   │   ├── archives/              # wayback, wikidata  (+ archive_today, wikimedia later)
 │   │   ├── media/                 # exif codec + ExifAdapter (media.exif)
+│   │   ├── web/                   # WebSearchAdapter (web.search/web.fetch) — Wikipedia/DDG
 │   │   ├── compute/               # solar geometry (compute.symbolic)
 │   │   ├── identity/ documents/   # later phases (sherlock, ocr…)
 │   │   └── commercial/            # license-gated supplemental (Maltego…), off by default

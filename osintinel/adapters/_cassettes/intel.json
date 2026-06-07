@@ -1,0 +1,14 @@
+{
+  "41d4edc404636ed8b348bbee9299d95d39993c916500aa6014ea5927ee78c9f7": {
+    "text": "{\"results\": [{\"task\": {\"url\": \"https://windreach-telecom.example/\"}, \"page\": {\"url\": \"https://windreach-telecom.example/\", \"asnname\": \"EXAMPLE-AS\"}}, {\"task\": {\"url\": \"https://login.windreach-telecom.example/\"}, \"page\": {\"url\": \"https://login.windreach-telecom.example/\", \"asnname\": \"EXAMPLE-AS\"}}]}",
+    "url": "https://urlscan.io/api/v1/search/"
+  },
+  "9b747de88b378c2b84af7483e03d581749e7171f0d06e756ec958dcfd2b481e1": {
+    "text": "{\"ip\": \"203.0.113.10\", \"ports\": [22, 80, 443], \"cpes\": [\"cpe:/a:nginx:nginx\"], \"hostnames\": [\"mast.windreach-telecom.example\"], \"tags\": [\"self-signed\"], \"vulns\": [\"CVE-2023-44487\"]}",
+    "url": "https://internetdb.shodan.io/203.0.113.10"
+  },
+  "e2f7a50f8be52855f693735e6f51fc7f08317dd274573b4ec830e1dbd6a5f903": {
+    "text": "{\"pulse_info\": {\"count\": 1, \"pulses\": [{\"name\": \"Telecom infrastructure scanning campaign\", \"tags\": [\"scanning\", \"telecom\"]}]}}",
+    "url": "https://otx.alienvault.com/api/v1/indicators/domain/windreach-telecom.example/general"
+  }
+}

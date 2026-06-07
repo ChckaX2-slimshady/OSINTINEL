@@ -10,7 +10,12 @@ from .archives import WaybackAdapter, WikidataAdapter
 from .base import Adapter, AdapterError, RawArtifact, RawHit, ReferenceAdapter
 from .compute import SolarGeometryAdapter
 from .geospatial import NominatimAdapter, OverpassAdapter
-from .infrastructure import CertTransparencyAdapter
+from .infrastructure import (
+    CertTransparencyAdapter,
+    ShodanInternetDBAdapter,
+    UrlscanAdapter,
+)
+from .threat import OTXAdapter
 from .media import ExifAdapter
 from .registry import AdapterRegistry
 from .storage import ContentAddressedStore
@@ -24,6 +29,9 @@ __all__ = [
     "AdapterRegistry",
     "Cassette",
     "CertTransparencyAdapter",
+    "OTXAdapter",
+    "ShodanInternetDBAdapter",
+    "UrlscanAdapter",
     "ContentAddressedStore",
     "ExifAdapter",
     "HttpClient",

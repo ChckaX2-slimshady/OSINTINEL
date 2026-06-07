@@ -105,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
     p_serve.add_argument("--host", default="127.0.0.1")
     sub.add_parser("mcp", help="run the MCP server (stdio) so Claude can drive OSINTINEL")
     sub.add_parser("research", help="autonomous web-research demo (gathers its own evidence, offline)")
+    sub.add_parser("intel", help="free infra/threat adapters (Shodan InternetDB, URLScan, OTX) demo")
 
     args = parser.parse_args(argv)
 
@@ -165,7 +166,54 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "research":
         return _research()
 
+    if args.command == "intel":
+        return _intel()
+
     return 1
+
+
+def _intel() -> int:
+    """Demo the free infra/threat-intel adapters (offline cassette)."""
+    from pathlib import Path
+
+    from ...adapters import (
+        Cassette,
+        HttpClient,
+        OTXAdapter,
+        ShodanInternetDBAdapter,
+        UrlscanAdapter,
+    )
+    from ...core.schemas import AcquisitionMethod, AgentName, Provenance
+
+    cdir = Path(__file__).resolve().parent.parent.parent / "adapters" / "_cassettes"
+    domain, ip = "windreach-telecom.example", "203.0.113.10"
+
+    def client():
+        return HttpClient(Cassette(cdir / "intel.json"))
+
+    def prov():
+        return Provenance(source="intel", acquisition_method=AcquisitionMethod.API,
+                          agent_responsible=AgentName.ACQUISITION, confidence=0.7,
+                          investigation_id="intel-demo")
+
+    print("\n=== OSINTINEL — free infra/threat-intel adapters (offline demo) ===")
+    print(f"Target: {domain} / {ip}\n")
+    runs = [
+        ("Shodan InternetDB", ShodanInternetDBAdapter(client()).acquire(
+            "infra.exposure", {"ip": ip}, prov())),
+        ("URLScan.io", UrlscanAdapter(client()).acquire(
+            "infra.urlscan", {"domain": domain}, prov())),
+        ("AlienVault OTX", OTXAdapter(client()).acquire(
+            "threat.intel", {"indicator": domain}, prov())),
+    ]
+    for name, evs in runs:
+        ev = evs[0]
+        print(f"  [{name}] {ev.summary}")
+        print(f"      source group: {ev.structured['independence_group']} · "
+              f"tool: {ev.provenance.tool_used} · license: {ev.provenance.license_note}")
+    print("\nAll free / lawful (Shodan InternetDB & URLScan search need no key; OTX uses a free "
+          "key). Live: OSINTINEL_NET=live, keys via URLSCAN_API_KEY / OTX_API_KEY.")
+    return 0
 
 
 def _research() -> int:

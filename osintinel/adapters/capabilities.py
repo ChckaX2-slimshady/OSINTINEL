@@ -8,6 +8,7 @@ CAPABILITIES = {
     "geo.geocode", "geo.reverse_geocode", "geo.features", "geo.streetlevel", "geo.satellite",
     # infrastructure
     "infra.dns", "infra.subdomains", "infra.asn", "infra.certs",
+    "infra.exposure", "infra.urlscan", "threat.intel",
     # identity
     "identity.username", "identity.profile",
     # archives

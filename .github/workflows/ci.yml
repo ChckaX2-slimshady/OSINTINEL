@@ -43,3 +43,5 @@ jobs:
         run: osintinel improve
       - name: Smoke-run autonomous web research (offline cassette)
         run: osintinel research
+      - name: Smoke-run the free infra/threat-intel adapters
+        run: osintinel intel

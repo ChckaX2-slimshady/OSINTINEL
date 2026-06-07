@@ -108,11 +108,13 @@ the licensed/commercial tools are in the **Supplemental Adapter Framework** (§4
   domains). Fetched bytes go to the CAS; evidence is grouped by registrable domain so the
   embed-tier independence check is not fooled by same-site pages.
 
-### Implemented adapter inventory (all free / lawful, no paid key)
+### Implemented adapter inventory (all free / lawful)
 `geo.geocode`/`geo.reverse_geocode` (Nominatim) · `geo.features` (Overpass) ·
 `archive.timemap`/`archive.snapshot` (Wayback) · `reference.encyclopedic` (Wikidata) ·
-`infra.certs` (crt.sh Certificate Transparency) · `media.exif` (built-in EXIF codec) ·
-`compute.symbolic` (NOAA solar geometry) · `web.search`/`web.fetch` (Wikipedia/DuckDuckGo).
+`infra.certs` (crt.sh Certificate Transparency) · `infra.exposure` (Shodan InternetDB, no key) ·
+`infra.urlscan` (URLScan.io, no key) · `threat.intel` (AlienVault OTX, free key) ·
+`media.exif` (built-in EXIF codec) · `compute.symbolic` (NOAA solar geometry) ·
+`web.search`/`web.fetch` (Wikipedia/DuckDuckGo).
 
 ## 4b. Supplemental Adapter Framework (license-gated, off by default)
 
@@ -128,12 +130,12 @@ attest to authorized use. Provenance records which licensed source was used.
 **Integration status (honest):** *none* of these commercial sources are functionally
 integrated — they are all paid/licensed. Only the **gating mechanism** (`commercial/base.py`)
 and a representative **Maltego stub** exist, off unless credentials + attestation are supplied.
-The deliberate emphasis is on **free, lawful** sources (the inventory above). High-value free
-additions for "modern OSINT" that fit the existing pattern (no key or free-tier key): Shodan
-**InternetDB** (`infra.*`, no key), **URLScan.io** / **AlienVault OTX** / **abuse.ch** (threat
-intel, free), **OpenCorporates** / **SEC EDGAR** / **GLEIF** (`record.public`, free),
-**Mapillary** (`geo.streetlevel`, free key), and **Brave Search** / **SearXNG** backends for
-`web.search`.
+The deliberate emphasis is on **free, lawful** sources (the inventory above). **Shodan
+InternetDB**, **URLScan.io**, and **AlienVault OTX** are now built (`infra.exposure`,
+`infra.urlscan`, `threat.intel`). Further high-value free additions that fit the same pattern:
+**OpenCorporates** / **SEC EDGAR** / **GLEIF** (`record.public`, free), **Mapillary**
+(`geo.streetlevel`, free key), **abuse.ch** (threat, free key), and **Brave Search** / **SearXNG**
+backends for `web.search`.
 
 ## 5. Adapter Authoring Rules
 
