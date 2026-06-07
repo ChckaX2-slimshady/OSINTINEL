@@ -139,25 +139,30 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _models() -> int:
-    """Show the tier→model routing, provider availability, and exercise the gateway."""
+    """Show the active inference profile, tier routing, and exercise the gateway."""
     from ...core.budget import BudgetGovernor
     from ...core.schemas import Budgets
-    from ...inference import build_gateway, gateway_status
+    from ...inference import PROFILES, build_gateway, gateway_status
     from ...ledger import Ledger
 
     st = gateway_status()
     print("\n=== OSINTENAL — Model & Inference layer (doc 11) ===")
+    print(f"Active profile: {st['profile']}  ({'local' if st['local'] else 'cloud'}, "
+          f"{'free' if st['free'] else 'paid'}) — {st['note']}")
+    if st["base_url"]:
+        print(f"  endpoint: {st['base_url']}")
     print("Tier → model:")
     for tier, model in st["tier_models"].items():
         print(f"  {tier:7} → {model}")
-    print(f"  embed   → {st['embed_model']}")
-    print("\nProvider availability:")
-    print(f"  Anthropic flagship (ANTHROPIC_API_KEY/AUTH_TOKEN): "
-          f"{'ready' if st['anthropic_key'] else 'NOT configured'}")
-    print(f"  Hugging Face (HF_TOKEN): {'ready' if st['huggingface_token'] else 'NOT configured'}")
-    mode = ("live (recording)" if st["record_mode"] else
-            "deterministic offline (no keys / not recording)")
-    print(f"  Active mode: {mode}")
+    print(f"  embed   → {st['embed']['model']} ({st['embed']['kind']})")
+    if st["key_env"]:
+        print(f"  key: {st['key_env']} {'present' if st['key_present'] else 'NOT set'}")
+    if st["reason_override"]:
+        print(f"  reasoning tier overridden to profile: {st['reason_override']}")
+    print(f"\nAvailable profiles: {', '.join(sorted(PROFILES))}")
+    print("Recommended (free): OSINTENAL_INFERENCE_PROFILE=ollama   (fully local & private)")
+    print("  hybrid: keep ollama, add OSINTENAL_REASON_PROFILE=gemini|groq|openrouter for "
+          "heavier free-cloud reasoning")
 
     gov = BudgetGovernor(Budgets())
     ledger = Ledger()
@@ -169,14 +174,12 @@ def _models() -> int:
 
     def cos(a, b):
         return sum(x * y for x, y in zip(a, b))
-    print("\nGateway exercise (deterministic):")
+    print(f"\nGateway exercise (profile '{st['profile']}'):")
     print(f"  embedding similarity — duplicate {cos(vecs[0], vecs[1]):.2f} vs "
           f"different {cos(vecs[0], vecs[2]):.2f}")
     print(f"  cost summary: {gw.cost_summary()}")
     print(f"  model_call ledger events: {sum(1 for e in ledger.events() if e.type == 'model_call')}"
           f" (lean: hashes + token counts only — no prompt/response bytes)")
-    print("\nGo live: open egress to the provider, set ANTHROPIC_API_KEY + HF_TOKEN, and run with "
-          "OSINTENAL_RECORD=1 to record (then replay offline). See docs/11.")
     return 0
 
 

@@ -19,12 +19,13 @@ scrutinizing, and recursive evaluation.
 
 ## Status
 
-> **Paradigm: online and model-driven.** OSINTENAL depends on live open-source data (the
-> adapters) and a tiered model ensemble — embeddings + small specialized models (Hugging Face)
-> for per-task work, and a flagship reasoning model (Anthropic Claude, via API key or OAuth) for
-> open-ended reasoning. The fully-deterministic, no-network, no-key path is retained **as the
-> test/replay mode** (record live once → replay in CI), *not* as the product's operating mode.
-> Model & inference architecture: [`docs/11`](docs/11-model-inference-architecture.md).
+> **Paradigm: online, model-driven, and free to run.** OSINTENAL depends on live open-source
+> data (the adapters) and a tiered model ensemble — **all of which can run locally and for $0**.
+> Via one OpenAI-compatible interface the tiers point at **Ollama** (local: embeddings + small
+> task models + reasoning, fully private) or, for heavier reasoning, a **free cloud tier**
+> (Gemini / Groq / OpenRouter). Switching is one env var, not code. The deterministic,
+> no-network path is retained **as the test/replay mode** (record live once → replay in CI), not
+> the operating mode. Model & inference architecture: [`docs/11`](docs/11-model-inference-architecture.md).
 
 **Phase 0 — Architecture: complete.** The full design corpus lives in [`docs/`](docs/).
 
@@ -86,12 +87,14 @@ explorer, and agent activity. A read-only JSON service layer (`interfaces/api`) 
 contract a FastAPI app would serve.
 
 **Phase M — Model integration: gateway foundation in place.** A provider-agnostic
-`InferenceGateway` routes the three tiers — `embed` (Hugging Face) · `task`/`nano`/`small`
-(Hugging Face specialized models) · `reason`/`large` (Anthropic Claude) — with tier→model
-config, cost accounting into the Budget Governor, and **record/replay over the same cassette
-transport the adapters use**, so model calls are auditable (lean `model_call` ledger events) and
-reproducible. It degrades gracefully: live with a key, replay from a cassette, or a deterministic
-no-network default for CI. Agents are wired tier-by-tier next. See
+`InferenceGateway` routes the three tiers (`embed` · `task`/`nano`/`small` · `reason`/`large`)
+through one **universal OpenAI-compatible client**, so the whole stack runs **free** on local
+**Ollama** (or free cloud tiers — Gemini / Groq / OpenRouter) selected by *profile*, not code.
+It does tier→model config, cost accounting into the Budget Governor, and **record/replay over the
+same cassette transport the adapters use** — model calls are auditable (lean `model_call` ledger
+events) and reproducible. Graceful degradation: live-local → live-cloud → recorded-replay →
+deterministic (CI). The recommended hybrid keeps embeddings/tasks local (private) and routes only
+reasoning to a free-cloud model. Agents are wired tier-by-tier next. See
 [`docs/06-roadmap.md`](docs/06-roadmap.md) and [`docs/11`](docs/11-model-inference-architecture.md).
 
 ### Quickstart
@@ -99,10 +102,12 @@ no-network default for CI. Agents are wired tier-by-tier next. See
 ```bash
 pip install -e ".[dev]"        # Python 3.11+; runtime dep: pydantic v2 (model providers use stdlib HTTP)
 
-# Live models (optional): open egress + export keys, then runs use the gateway providers.
-#   export ANTHROPIC_API_KEY=...        # or ANTHROPIC_AUTH_TOKEN=... (OAuth)
-#   export HF_TOKEN=...                 # Hugging Face embeddings + small models
-#   OSINTENAL_RECORD=1 osintenal ...    # record live model/HTTP calls → replay offline later
+# Models are free to run. Fully local & private via Ollama (recommended):
+#   ollama serve && ollama pull qwen2.5:14b-instruct qwen2.5:3b-instruct nomic-embed-text
+#   export OSINTENAL_INFERENCE_PROFILE=ollama
+# Or keep embeddings/tasks local and route only reasoning to a free cloud tier:
+#   export OSINTENAL_INFERENCE_PROFILE=ollama OSINTENAL_REASON_PROFILE=gemini GEMINI_API_KEY=...
+# (No profile set ⇒ deterministic offline mode — the default for CI/tests.)
 
 osintenal run                 # run the bundled demo investigation (human-readable report)
 osintenal run --json          # same, as a schema-valid InsightReport JSON

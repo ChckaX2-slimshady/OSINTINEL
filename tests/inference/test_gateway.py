@@ -24,9 +24,9 @@ def test_deterministic_gateway_is_reproducible_and_llmclient_compatible():
     assert a["text"] == b["text"] and a["model"] == "deterministic-1"
 
 
-def test_no_keys_means_deterministic_mode():
+def test_default_profile_is_deterministic():
     st = gateway_status()
-    assert st["anthropic_key"] is False and st["huggingface_token"] is False
+    assert st["profile"] == "deterministic" and st["local"] is True
     assert build_gateway().providers["reason"].__class__.__name__ == "DeterministicProvider"
 
 
@@ -93,6 +93,65 @@ def test_anthropic_provider_replays_recorded_response(tmp_path):
     resp = prov.chat(req)
     assert resp.text == "Most likely a mast."
     assert resp.usage.input_tokens == 42 and resp.usage.output_tokens == 5
+
+
+def test_ollama_profile_builds_local_openai_provider_without_a_key(tmp_path):
+    # the recommended free path: local Ollama, no API key, OpenAI-compatible
+    gw = build_gateway(profile="ollama", cassette_dir=tmp_path, record=False)
+    reason = gw.providers["reason"]
+    assert reason.__class__.__name__ == "OpenAICompatibleProvider"
+    assert reason.base_url == "http://localhost:11434/v1" and reason.key_env is None
+    assert gw.models["reason"] == "qwen2.5:14b-instruct"
+
+
+def test_per_tier_model_override_via_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("OSINTENAL_REASON_MODEL", "llama3.1:70b")
+    gw = build_gateway(profile="ollama", cassette_dir=tmp_path, record=False)
+    assert gw.models["reason"] == "llama3.1:70b"
+
+
+def test_hybrid_reason_override_routes_only_reasoning_tier(tmp_path, monkeypatch):
+    # local stack for embed/task, free-cloud profile for the reasoning tier (doc 11 §2)
+    monkeypatch.setenv("OSINTENAL_REASON_PROFILE", "groq")
+    gw = build_gateway(profile="ollama", cassette_dir=tmp_path, record=False)
+    assert gw.models["reason"] == "llama-3.3-70b-versatile"   # from groq
+    assert gw.models["task"] == "qwen2.5:3b-instruct"          # still local ollama
+
+
+def test_openai_compatible_provider_replays_recorded_response(tmp_path):
+    from osintenal.inference.providers.openai_compat import OpenAICompatibleProvider
+
+    base = "http://localhost:11434/v1"
+    cass = Cassette(tmp_path / "ollama.json")
+    req = ChatRequest(tier="reason", role="synthesis", model="qwen2.5:14b-instruct",
+                      system="Be precise.", messages=[ChatMessage(role="user", content="Go.")])
+    body = json.dumps({"model": "qwen2.5:14b-instruct",
+                       "messages": [{"role": "system", "content": "Be precise."},
+                                    {"role": "user", "content": "Go."}],
+                       "max_tokens": 1024, "temperature": 0.0, "stream": False}, sort_keys=True)
+    api = {"model": "qwen2.5:14b-instruct",
+           "choices": [{"message": {"role": "assistant", "content": "A mast."},
+                        "finish_reason": "stop"}],
+           "usage": {"prompt_tokens": 12, "completion_tokens": 3}}
+    cass.put(request_key("POST", f"{base}/chat/completions", None, body),
+             {"url": base, "text": json.dumps(api)})
+
+    prov = OpenAICompatibleProvider(HttpClient(cass, record=False), "qwen2.5:14b-instruct", base)
+    resp = prov.chat(req)
+    assert resp.text == "A mast." and resp.usage.input_tokens == 12
+
+
+def test_openai_compatible_embedder_replays_recorded_vectors(tmp_path):
+    from osintenal.inference.providers.openai_compat import OpenAICompatibleEmbedder
+
+    base = "http://localhost:11434/v1"
+    cass = Cassette(tmp_path / "emb.json")
+    body = json.dumps({"model": "nomic-embed-text", "input": ["hi"]})
+    cass.put(request_key("POST", f"{base}/embeddings", None, body),
+             {"url": base, "text": json.dumps({"data": [{"embedding": [0.1, 0.2]}]})})
+    emb = OpenAICompatibleEmbedder(HttpClient(cass, record=False), "nomic-embed-text", base)
+    result = emb.embed(["hi"])
+    assert result.vectors == [[0.1, 0.2]] and result.dims == 2
 
 
 def test_huggingface_embedder_replays_recorded_vectors(tmp_path):
