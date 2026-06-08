@@ -194,6 +194,13 @@ To plug the MCP server into **Claude Desktop** (`claude_desktop_config.json`) or
 }
 ```
 
+
+**One-command setup** (does the JSON edit for you, backs up any existing config, solves the PATH gotcha):
+```bash
+python scripts/install_claude_mcp.py        # add --reason-profile gemini for a free-cloud reasoning tier
+```
+Then fully quit and reopen Claude Desktop.
+
 Then just ask Claude: *"Use osintinel to investigate whether the ridge structure is a mast or a
 turbine, given this evidence…"* — it calls the `investigate` tool and returns the report.
 
