@@ -57,7 +57,13 @@ class OpenAICompatibleProvider:
         headers = {"content-type": "application/json", **_bearer(self.key_env)}
         raw = self.http.post_text(f"{self.base_url}/chat/completions",
                                   data=json.dumps(body, sort_keys=True), headers=headers)
-        data = json.loads(raw)
+        try:  # an HTML error page or truncated body must degrade, never crash the run
+            data = json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            return ModelResponse(text="", model=request.model or self.model,
+                                 usage=Usage(input_tokens=approx_tokens(str(messages)),
+                                             output_tokens=0),
+                                 structured=None, finish_reason="parse_error")
         choice = (data.get("choices") or [{}])[0]
         text = (choice.get("message") or {}).get("content", "") or ""
         usage = data.get("usage") or {}
@@ -81,7 +87,10 @@ class OpenAICompatibleEmbedder:
         raw = self.http.post_text(f"{self.base_url}/embeddings",
                                   data=json.dumps({"model": self.model, "input": texts}),
                                   headers=headers)
-        data = json.loads(raw)
-        vectors = [row["embedding"] for row in data.get("data", [])]
+        try:
+            data = json.loads(raw)
+            vectors = [row["embedding"] for row in data.get("data", [])]
+        except (json.JSONDecodeError, ValueError, KeyError, TypeError):
+            return EmbeddingResult(vectors=[], model=self.model, dims=0)
         return EmbeddingResult(vectors=vectors, model=data.get("model", self.model),
                                dims=len(vectors[0]) if vectors else 0)

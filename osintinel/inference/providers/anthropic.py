@@ -53,7 +53,11 @@ class AnthropicProvider:
         headers = {"anthropic-version": API_VERSION, "content-type": "application/json",
                    **auth_headers()}
         raw = self.http.post_text(API_URL, data=json.dumps(body, sort_keys=True), headers=headers)
-        data = json.loads(raw)
+        try:
+            data = json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            return ModelResponse(text="", model=self.model, usage=Usage(), structured=None,
+                                 finish_reason="parse_error")
         text = "".join(b.get("text", "") for b in data.get("content", [])
                        if b.get("type") == "text")
         usage = data.get("usage", {})

@@ -31,7 +31,10 @@ class HuggingFaceEmbedder:
     def embed(self, texts: list[str]) -> EmbeddingResult:
         raw = self.http.post_text(FEATURE_URL.format(model=self.model),
                                   data=json.dumps({"inputs": texts}), headers=hf_headers())
-        vectors = json.loads(raw)
+        try:
+            vectors = json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            return EmbeddingResult(vectors=[], model=self.model, dims=0)
         if vectors and isinstance(vectors[0], (int, float)):  # single-text APIs return one vector
             vectors = [vectors]
         return EmbeddingResult(vectors=vectors, model=self.model,
@@ -54,9 +57,12 @@ class HuggingFaceProvider:
                                "return_full_text": False}}
         raw = self.http.post_text(TEXTGEN_URL.format(model=request.model or self.model),
                                   data=json.dumps(body), headers=hf_headers())
-        data = json.loads(raw)
-        text = data[0]["generated_text"] if isinstance(data, list) else data.get(
-            "generated_text", "")
+        try:
+            data = json.loads(raw)
+            text = (data[0].get("generated_text", "") if isinstance(data, list) and data
+                    else data.get("generated_text", "") if isinstance(data, dict) else "")
+        except (json.JSONDecodeError, ValueError, AttributeError, IndexError, KeyError):
+            text = ""  # garbage / empty / error body → degrade to deterministic floor
         return ModelResponse(
             text=text, model=request.model or self.model,
             usage=Usage(input_tokens=approx_tokens(prompt), output_tokens=approx_tokens(text)),

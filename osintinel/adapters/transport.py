@@ -42,7 +42,10 @@ class Cassette:
         self.path = Path(path)
         self._entries: dict[str, dict] = {}
         if self.path.exists():
-            self._entries = json.loads(self.path.read_text(encoding="utf-8"))
+            try:
+                self._entries = json.loads(self.path.read_text(encoding="utf-8")) or {}
+            except json.JSONDecodeError as exc:  # corrupt recording → clear, typed failure
+                raise AdapterError(f"cassette {self.path} is not valid JSON: {exc}") from exc
 
     def get(self, key: str) -> dict | None:
         return self._entries.get(key)
@@ -72,10 +75,14 @@ class HttpClient:
 
     def __init__(self, cassette: Cassette, *, record: bool | None = None,
                  mode: str | None = None,
-                 user_agent: str = "osintinel/0.4 (+research; contact via repo)") -> None:
+                 user_agent: str = "osintinel/0.4 (+research; contact via repo)",
+                 block_private_net: bool = False) -> None:
         self.cassette = cassette
         self.mode = self._resolve_mode(record, mode)
         self.user_agent = user_agent
+        # SSRF guard for the *untrusted web* path: validate the target and every redirect hop.
+        # Off by default so inference calls to a local/operator endpoint (Ollama) still work.
+        self.block_private_net = block_private_net
 
     @staticmethod
     def _resolve_mode(record: bool | None, mode: str | None) -> str:
@@ -141,6 +148,13 @@ class HttpClient:
         data = body.encode("utf-8") if body is not None else None
         req = urllib.request.Request(full_url, data=data, headers=req_headers, method=method)
         try:
+            if self.block_private_net:
+                from .netguard import assert_public_url  # local import avoids an import cycle
+
+                assert_public_url(full_url)
+                opener = urllib.request.build_opener(_GuardedRedirectHandler())
+                with opener.open(req, timeout=30) as resp:  # noqa: S310 (guarded, recording only)
+                    return resp.read()
             with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 (recording only)
                 return resp.read()
         except Exception as exc:  # surfaced as data, never an unhandled crash
@@ -159,3 +173,13 @@ class HttpClient:
         if "b64" in entry:
             return base64.b64decode(entry["b64"])
         return entry["text"].encode("utf-8")
+
+
+class _GuardedRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Re-validate each redirect target so a public URL can't bounce us to a private one."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D102
+        from .netguard import assert_public_url
+
+        assert_public_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)

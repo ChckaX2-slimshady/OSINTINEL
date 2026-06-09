@@ -25,6 +25,8 @@ from typing import Any
 
 from ...core.schemas import AcquisitionMethod, EvidenceObject, Provenance
 from ..base import CollectTarget, RawArtifact, RawHit, ReferenceAdapter
+from ..netguard import BlockedRequestError, assert_public_url
+from ..transport import AdapterError
 
 _TAG = re.compile(r"<[^>]+>")
 _WS = re.compile(r"\s+")
@@ -109,6 +111,10 @@ class WebSearchAdapter(ReferenceAdapter):
             text = data.get("extract", "") or rec.get("snippet", "")
             raw_bytes = json.dumps(data).encode("utf-8")
         else:
+            try:  # SSRF guard: never let a discovered URL point at our own/LAN services
+                assert_public_url(url)
+            except BlockedRequestError as exc:
+                raise AdapterError(str(exc)) from exc
             raw_bytes = self.client.get_bytes(url)
             text = strip_html(raw_bytes.decode("utf-8", errors="replace"))
         digest = self.cas.put(raw_bytes) if self.cas is not None else None
