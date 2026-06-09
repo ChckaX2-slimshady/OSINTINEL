@@ -183,8 +183,11 @@ osintinel research                   # search → fetch → extract → reason �
 **Autonomous research:** `autoresearch_investigation` (service layer) and the `web.search`/
 `web.fetch` adapter let an investigation **search the open web, fetch results, and extract
 evidence itself** — lawful free backends (Wikipedia default; DuckDuckGo for diverse domains),
-grouped by domain so independent corroboration is real. The demo runs offline from a recorded
-cassette; live is `OSINTINEL_NET=live`.
+grouped by domain so independent corroboration is real. With `rounds > 1` it **investigates
+iteratively**: the Epistemology agent's *known-unknowns* become the next searches, and it
+re-reasons over the growing evidence until it converges. The open-web fetch path is **SSRF-guarded**
+(refuses loopback/private targets) and retries transient failures with backoff. The demo runs
+offline from a recorded cassette; live is `OSINTINEL_NET=live`.
 
 To plug the MCP server into **Claude Desktop** (`claude_desktop_config.json`) or Claude Code:
 

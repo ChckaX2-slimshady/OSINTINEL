@@ -183,7 +183,7 @@ Selected by **capability tag**, not by name, so they're interchangeable.
 | `threat.intel` | AlienVault OTX | free key |
 | `media.exif` | built-in EXIF codec | n/a |
 | `compute.symbolic` | NOAA solar geometry | n/a |
-| `web.search` / `web.fetch` | Wikipedia (default) + DuckDuckGo | none |
+| `web.search` / `web.fetch` | Wikipedia (default) + DuckDuckGo | none (SSRF-guarded) |
 | `record.public` | OpenCorporates, SEC EDGAR, GLEIF | none |
 
 **Commercial / supplemental adapters** (Maltego, Pipl, PimEyes, Recorded Future, …) are

@@ -316,7 +316,7 @@ def _research() -> int:
     question = "Bullington ridge communications mast"
     result = autoresearch_investigation(
         question=question, candidates=["communications mast", "wind turbine"],
-        web_adapter=web, limit=3)
+        web_adapter=web, limit=3, rounds=2)  # iterative: chase known-unknowns if any surface
     s = InvestigationSummary.from_result(result)
     leader = result.report.connective_probability_scores[0].ranked_hypotheses[0]
     groups = sorted(result.state.independent_source_groups(leader.hypothesis_id))

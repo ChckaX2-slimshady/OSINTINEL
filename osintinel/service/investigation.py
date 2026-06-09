@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from ..adapters.registry import AdapterRegistry
+from ..adapters.transport import AdapterError
 from ..agents.base import AgentContext
 from ..agents.confidence import ConfidenceAgent
 from ..agents.connections import ConnectionsAgent
@@ -136,25 +137,36 @@ def run_investigation(*, question: str, candidates: list[str],
                                state=state, loop=loop, budget=governor.snapshot())
 
 
-def autoresearch_investigation(*, question: str, candidates: list[str] | None = None,
-                               web_adapter, limit: int = 5, backend: str | None = None,
-                               gateway=None, calibrator=None, ledger=None,
-                               confidence_threshold: float = 0.7) -> InvestigationResult:
-    """Autonomous-ish research: the web adapter gathers evidence for the question, then the loop
-    reasons over it. ``candidates`` may be omitted when a model is present (the reason tier
-    proposes competing answers from the search results)."""
+def _gather_web_evidence(web_adapter, query: str, limit: int,
+                         backend: str | None) -> list[EvidenceInput]:
+    """One search → fetch → evidence pass. Failures (missing cassette, blocked URL) raise
+    AdapterError, which the caller treats as 'this query yielded nothing' and moves on."""
     aprov = Provenance(source="web", acquisition_method=AcquisitionMethod.SCRAPE,
                        agent_responsible=AgentName.ACQUISITION, confidence=0.7,
                        investigation_id="web-research")
-    args = {"query": question, "limit": limit}
+    args = {"query": query, "limit": limit}
     if backend is not None:
         args["backend"] = backend
     gathered = web_adapter.acquire("web.search", args, aprov)
-    evidence = [EvidenceInput(
+    return [EvidenceInput(
         text=ev.summary, source=ev.provenance.source,
         group=ev.structured.get("independence_group"), kind="web_page",
         payload_ref=ev.payload_ref, content_hash=ev.provenance.content_hash,
         url=ev.structured.get("url")) for ev in gathered]
+
+
+def autoresearch_investigation(*, question: str, candidates: list[str] | None = None,
+                               web_adapter, limit: int = 5, backend: str | None = None,
+                               gateway=None, calibrator=None, ledger=None,
+                               confidence_threshold: float = 0.7, rounds: int = 1,
+                               followups_per_round: int = 2) -> InvestigationResult:
+    """Autonomous research: the web adapter gathers evidence, the loop reasons over it, and — when
+    ``rounds > 1`` — the investigation *continues itself*, turning the Epistemology agent's
+    **known-unknowns** into follow-up searches and re-reasoning over the growing evidence. This is
+    the difference between one-shot retrieval and an agent that notices what it still doesn't know
+    and goes looking. ``candidates`` may be omitted when a model is present (the reason tier
+    proposes competing answers from the first results)."""
+    evidence = _gather_web_evidence(web_adapter, question, limit, backend)
 
     if not candidates:
         if gateway is not None:
@@ -163,9 +175,29 @@ def autoresearch_investigation(*, question: str, candidates: list[str] | None = 
                 question=question, observations=[e.text for e in evidence], existing=[], limit=4)
         candidates = candidates or ["the claim is supported", "the claim is not supported"]
 
-    return run_investigation(question=question, candidates=candidates, evidence=evidence,
-                             domain="web-research", gateway=gateway, calibrator=calibrator,
-                             confidence_threshold=confidence_threshold)
+    def reason() -> InvestigationResult:
+        return run_investigation(question=question, candidates=candidates, evidence=evidence,
+                                 domain="web-research", gateway=gateway, calibrator=calibrator,
+                                 confidence_threshold=confidence_threshold)
+
+    result = reason()
+    asked: set[str] = {question}
+    for _ in range(max(0, rounds - 1)):
+        gaps = [ku.question for ku in (result.report.known_unknowns or [])
+                if ku.question and ku.question not in asked][:followups_per_round]
+        if not gaps:
+            break  # nothing new to chase → the loop has converged
+        before = len(evidence)
+        for gap in gaps:
+            asked.add(gap)
+            try:
+                evidence.extend(_gather_web_evidence(web_adapter, gap, limit, backend))
+            except AdapterError:
+                continue  # a follow-up that yields nothing just doesn't add evidence
+        if len(evidence) == before:
+            break  # no new evidence gathered → re-reasoning would be identical
+        result = reason()
+    return result
 
 
 @dataclass
