@@ -7,8 +7,10 @@ Runs on *your* machine (this is the part a cloud sandbox can't do for you). It l
 — preserving any existing servers and backing up the file first. Stdlib only.
 
 Usage:
-    python scripts/install_claude_mcp.py                      # install, profile=ollama net=live
-    python scripts/install_claude_mcp.py --reason-profile gemini
+    python scripts/install_claude_mcp.py                      # install, profile=deterministic (free, no model)
+    python scripts/install_claude_mcp.py --profile ollama     # use your local Ollama models
+    python scripts/install_claude_mcp.py --reason-profile gemini   # free-cloud reasoning tier
+    python scripts/install_claude_mcp.py --base-url http://localhost:8080/v1   # point at Hermes/custom endpoint
     python scripts/install_claude_mcp.py --print             # just show the JSON, change nothing
     python scripts/install_claude_mcp.py --config /path/to/other_client_config.json
 """
@@ -48,6 +50,10 @@ def build_entry(args) -> dict:
     env = {"OSINTINEL_INFERENCE_PROFILE": args.profile, "OSINTINEL_NET": args.net}
     if args.reason_profile:
         env["OSINTINEL_REASON_PROFILE"] = args.reason_profile
+    if args.base_url:
+        env["OSINTINEL_OPENAI_BASE_URL"] = args.base_url
+    if args.key_env:
+        env["OSINTINEL_OPENAI_KEY_ENV"] = args.key_env
     for extra in args.env or []:
         if "=" in extra:
             k, v = extra.split("=", 1)
@@ -58,9 +64,16 @@ def build_entry(args) -> dict:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Install the OSINTINEL MCP server into Claude Desktop.")
     p.add_argument("--name", default="osintinel", help="server key in the config")
-    p.add_argument("--profile", default="ollama", help="OSINTINEL_INFERENCE_PROFILE")
+    p.add_argument("--profile", default="deterministic",
+                   help="OSINTINEL_INFERENCE_PROFILE (deterministic|ollama|gemini|groq|openrouter|…)")
     p.add_argument("--net", default="live", help="OSINTINEL_NET (live|record|replay)")
     p.add_argument("--reason-profile", default=None, help="route the reasoning tier to a profile")
+    p.add_argument("--base-url", default=None,
+                   help="OSINTINEL_OPENAI_BASE_URL: retarget an OpenAI-compatible endpoint "
+                        "(custom Ollama port, remote box, or a Hermes-style harness)")
+    p.add_argument("--key-env", default=None,
+                   help="OSINTINEL_OPENAI_KEY_ENV: name of the env var holding the bearer token "
+                        "for the --base-url endpoint (omit for keyless local servers)")
     p.add_argument("--command", default=None, help="override the server command (absolute path)")
     p.add_argument("--env", action="append", help="extra KEY=VALUE env (repeatable)")
     p.add_argument("--config", default=None, help="config file path (defaults to Claude Desktop)")

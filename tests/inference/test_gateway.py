@@ -110,6 +110,23 @@ def test_per_tier_model_override_via_env(tmp_path, monkeypatch):
     assert gw.models["reason"] == "llama3.1:70b"
 
 
+def test_base_url_override_retargets_openai_endpoint(tmp_path, monkeypatch):
+    # point the OpenAI-compatible tiers at a custom endpoint (e.g. a Hermes harness) via env
+    monkeypatch.setenv("OSINTINEL_OPENAI_BASE_URL", "http://localhost:8080/v1")
+    monkeypatch.setenv("OSINTINEL_OPENAI_KEY_ENV", "HERMES_TOKEN")
+    gw = build_gateway(profile="ollama", cassette_dir=tmp_path, record=False)
+    reason = gw.providers["reason"]
+    assert reason.base_url == "http://localhost:8080/v1"
+    assert reason.key_env == "HERMES_TOKEN"
+    assert gateway_status("ollama")["base_url"] == "http://localhost:8080/v1"
+
+
+def test_base_url_override_ignored_for_non_openai_backend(monkeypatch):
+    # deterministic/anthropic/huggingface ignore base_url; the override must not switch backends
+    monkeypatch.setenv("OSINTINEL_OPENAI_BASE_URL", "http://localhost:8080/v1")
+    assert gateway_status("deterministic")["base_url"] is None
+
+
 def test_hybrid_reason_override_routes_only_reasoning_tier(tmp_path, monkeypatch):
     # local stack for embed/task, free-cloud profile for the reasoning tier (doc 11 §2)
     monkeypatch.setenv("OSINTINEL_REASON_PROFILE", "groq")

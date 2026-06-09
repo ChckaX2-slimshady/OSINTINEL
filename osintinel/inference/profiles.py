@@ -97,15 +97,39 @@ DEFAULT_PROFILE = "deterministic"
 
 def resolve_profile(name: str | None = None) -> Profile:
     """Return the named profile (default from ``OSINTINEL_INFERENCE_PROFILE``) with per-tier
-    model overrides from ``OSINTINEL_{REASON,SMALL,TASK,EMBED}_MODEL`` applied."""
+    model overrides from ``OSINTINEL_{REASON,SMALL,TASK,EMBED}_MODEL`` applied.
+
+    Any OpenAI-compatible endpoint can be retargeted without a code change via
+    ``OSINTINEL_OPENAI_BASE_URL`` (chat) / ``OSINTINEL_EMBED_BASE_URL`` (embeddings) and an
+    optional ``OSINTINEL_OPENAI_KEY_ENV`` (name of the env var holding the bearer token). This is
+    the knob for pointing the reasoning tiers at a self-hosted gateway — a custom Ollama/llama.cpp
+    port, a remote box, or an agentic harness such as Hermes that exposes an OpenAI-style API."""
     name = name or os.environ.get("OSINTINEL_INFERENCE_PROFILE", DEFAULT_PROFILE)
     if name not in PROFILES:
         raise ValueError(f"unknown inference profile {name!r}; choose from {sorted(PROFILES)}")
-    p = PROFILES[name]
-    return replace(
-        p,
-        reason_model=os.environ.get("OSINTINEL_REASON_MODEL", p.reason_model),
-        small_model=os.environ.get("OSINTINEL_SMALL_MODEL", p.small_model),
-        task_model=os.environ.get("OSINTINEL_TASK_MODEL", p.task_model),
-        embed_model=os.environ.get("OSINTINEL_EMBED_MODEL", p.embed_model),
+    p = replace(
+        PROFILES[name],
+        reason_model=os.environ.get("OSINTINEL_REASON_MODEL", PROFILES[name].reason_model),
+        small_model=os.environ.get("OSINTINEL_SMALL_MODEL", PROFILES[name].small_model),
+        task_model=os.environ.get("OSINTINEL_TASK_MODEL", PROFILES[name].task_model),
+        embed_model=os.environ.get("OSINTINEL_EMBED_MODEL", PROFILES[name].embed_model),
     )
+    return _apply_base_url_overrides(p)
+
+
+def _apply_base_url_overrides(p: Profile) -> Profile:
+    """Retarget OpenAI-compatible endpoints from the environment. No-op for backends that aren't
+    OpenAI-compatible (``deterministic``/``anthropic``/``huggingface``), which ignore ``base_url``."""
+    chat_base = os.environ.get("OSINTINEL_OPENAI_BASE_URL")
+    embed_base = os.environ.get("OSINTINEL_EMBED_BASE_URL")
+    key_env = os.environ.get("OSINTINEL_OPENAI_KEY_ENV")
+    changes: dict = {}
+    if chat_base and p.kind == "openai":
+        changes["base_url"] = chat_base
+        if key_env is not None:
+            changes["key_env"] = key_env or None
+    if embed_base and p.embed_kind == "openai":
+        changes["embed_base_url"] = embed_base
+        if key_env is not None:
+            changes["embed_key_env"] = key_env or None
+    return replace(p, **changes) if changes else p

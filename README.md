@@ -27,6 +27,9 @@ scrutinizing, and recursive evaluation.
 > no-network path is retained **as the test/replay mode** (record live once → replay in CI), not
 > the operating mode. Model & inference architecture: [`docs/11`](docs/11-model-inference-architecture.md).
 
+> **New here / picking it back up?** The [`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) is a one-page
+> map of every command, profile, env var, adapter, and front door — and how to reach each.
+
 **Phase 0 — Architecture: complete.** The full design corpus lives in [`docs/`](docs/).
 
 **Phase 1 — Core orchestration framework: implemented & runnable.** The nine-agent quorum,
