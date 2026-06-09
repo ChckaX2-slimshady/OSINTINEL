@@ -103,6 +103,7 @@ def main(argv: list[str] | None = None) -> int:
     p_serve = sub.add_parser("serve", help="launch the local web app (browser UI for investigations)")
     p_serve.add_argument("--port", type=int, default=8765)
     p_serve.add_argument("--host", default="127.0.0.1")
+    sub.add_parser("tui", help="launch the terminal UI (Textual) — full model control + mascot")
     sub.add_parser("mcp", help="run the MCP server (stdio) so Claude can drive OSINTINEL")
     sub.add_parser("research", help="autonomous web-research demo (gathers its own evidence, offline)")
     sub.add_parser("intel", help="free infra/threat adapters (Shodan InternetDB, URLScan, OTX) demo")
@@ -157,6 +158,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "serve":
         from ...interfaces.web import serve
         serve(port=args.port, host=args.host)
+        return 0
+
+    if args.command == "tui":
+        try:
+            from ...interfaces.tui import run_tui
+        except ModuleNotFoundError:
+            print("The TUI needs Textual. Install it with:  pip install -e \".[tui]\"")
+            return 1
+        run_tui()
         return 0
 
     if args.command == "mcp":

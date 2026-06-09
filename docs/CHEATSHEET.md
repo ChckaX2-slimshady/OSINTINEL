@@ -15,8 +15,10 @@ server** (so Claude Desktop — or any MCP client — can run investigations on 
 
 ```bash
 pip install -e .          # from the repo root
+pip install -e ".[tui]"   # …or include the terminal UI (adds Textual)
 osintinel verify          # smoke test: persist, reload, replay the ledger — proves it works
-osintinel serve           # browser UI at http://127.0.0.1:8765
+osintinel tui             # terminal console (animated mascot + full model control)
+osintinel serve           # …or the browser UI at http://127.0.0.1:8765
 ```
 
 ---
@@ -26,8 +28,15 @@ osintinel serve           # browser UI at http://127.0.0.1:8765
 | Door | Command | What it is | State |
 |------|---------|-----------|-------|
 | **CLI** | `osintinel <cmd>` | demos + diagnostics + the service entrypoints | per-run, optional ledger on disk |
+| **TUI** | `osintinel tui` | terminal UI (Textual): animated mascot, question form, **full per-tier model control**, results | runs in memory |
 | **Web app** | `osintinel serve [--port 8765] [--host 127.0.0.1]` | stdlib browser UI; ask a question, **pick the model**, see the result | runs held **in memory** (`RUNS` dict) |
 | **MCP server** | `osintinel mcp` | JSON-RPC stdio; tools `investigate` + `models_status` | driven by an MCP client (Claude Desktop, etc.) |
+
+> **TUI vs. web app:** the TUI (`osintinel tui`, needs `pip install -e ".[tui]"`) is the
+> terminal-native console — it exposes **every** model knob (per-tier reason/small/task/embed
+> models, the reason→profile and skeptic→profile decorrelation overrides, and a base-URL/key-env
+> endpoint override), which the web dropdown deliberately doesn't. The web app picks the whole
+> profile in one click; the TUI lets you edit each tier.
 
 > **Dashboard vs. web app:** `osintinel dashboard` writes a *read-only* HTML report of one
 > investigation (graph/timeline/confidence) — no inputs, no model picker. The **web app**
@@ -70,6 +79,7 @@ Installer flags: `--profile`, `--net`, `--reason-profile`, `--base-url`, `--key-
 | `independence` | embed-tier demo: detect illusory (syndicated) source independence |
 | `reason` | reason-tier demo: model explanations + adversarial critique |
 | `improve` | Phase 8 self-improvement: calibration + planner tuning across versions |
+| `tui` | launch the terminal UI (Textual) — animated mascot + full per-tier model control |
 | `serve [--port] [--host]` | launch the local web app |
 | `mcp` | run the MCP stdio server |
 | `research` | autonomous web-research demo (gathers its own evidence, offline) |

@@ -122,10 +122,11 @@ OSINTINEL/
 │   ├── service/                   # investigation input layer — run_investigation() over user input
 │   │
 │   └── interfaces/
-│       ├── cli/                   # `osintinel run|…|improve|serve|mcp` (front-door commands)
+│       ├── cli/                   # `osintinel run|…|improve|serve|tui|mcp` (front-door commands)
 │       ├── api/                   # read-only service: build_dashboard_data → JSON (REST contract) ✅
 │       ├── dashboard/             # self-contained offline HTML console (SVG graph/timeline/evolution) ✅
 │       ├── web/                   # local web app (`osintinel serve`) — browser UI, runs in memory ✅
+│       ├── tui/                   # terminal UI (`osintinel tui`, Textual) — mascot + per-tier model control ✅
 │       └── mcp/                   # MCP stdio server (`osintinel mcp`) — drive it from Claude ✅
 │
 ├── tests/                         # doc 09

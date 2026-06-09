@@ -162,18 +162,21 @@ pytest -q                      # unit + invariant + adapter + memory + geo + mod
 
 ### Using it on your own questions
 
-Beyond the demos, two **front doors** run your own investigations (pose a question, list the
+Beyond the demos, several **front doors** run your own investigations (pose a question, list the
 competing answers, provide evidence; the system frames hypotheses, judges relevance, runs the
 Skeptic gate, and returns a ranked, uncertainty-aware report):
 
 ```bash
-# 1) Local web app — a browser UI (dark "console" theme), runs kept in memory
+# 1) Terminal UI — animated mascot, then a console with FULL per-tier model control
+pip install -e ".[tui]" && osintinel tui
+
+# 2) Local web app — a browser UI (dark "console" theme), runs kept in memory
 osintinel serve                      # → open http://127.0.0.1:8765
 
-# 2) MCP server — drive it by chatting with Claude (Desktop or Code)
+# 3) MCP server — drive it by chatting with Claude (Desktop or Code)
 osintinel mcp                        # stdio MCP server exposing `investigate` + `models_status`
 
-# 3) Autonomous web research — the system gathers its own evidence (offline demo)
+# 4) Autonomous web research — the system gathers its own evidence (offline demo)
 osintinel research                   # search → fetch → extract → reason → ranked answer
 ```
 
@@ -246,7 +249,7 @@ reported. No network or model API key is required; Phase 1 is deterministic by d
 | **Autonomous web research (search/fetch/extract → evidence)** | `osintinel/adapters/web/` | [05](docs/05-adapters.md) |
 | **Free infra/threat-intel adapters (Shodan InternetDB · URLScan · OTX)** | `osintinel/adapters/{infrastructure,threat}` | [05](docs/05-adapters.md) |
 | **Free public-records adapters (OpenCorporates · SEC EDGAR · GLEIF)** | `osintinel/adapters/records/` | [05](docs/05-adapters.md) |
-| **Front doors: CLI · local web app · MCP server** | `osintinel/interfaces/{cli,web,mcp}` | [10](docs/10-repository-structure.md) |
+| **Front doors: CLI · terminal UI · local web app · MCP server** | `osintinel/interfaces/{cli,tui,web,mcp}` | [10](docs/10-repository-structure.md) |
 
 A later phase can swap the embedded `GraphStore` for a graph-native backend (SQLite/Neo4j)
 behind the same port; the ledger, schemas, constraints, and agent contracts are already the

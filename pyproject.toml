@@ -13,9 +13,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+tui = [
+    "textual>=0.80",
+]
 dev = [
     "pytest>=8",
     "hypothesis>=6",
+    "textual>=0.80",
 ]
 
 [project.scripts]
