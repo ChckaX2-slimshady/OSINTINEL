@@ -5,6 +5,7 @@ from __future__ import annotations
 from osintinel.interfaces.mcp import TOOLS, handle_request
 from osintinel.interfaces.web import (
     build_result_page,
+    model_label,
     parse_form,
     render_form,
     run_and_store,
@@ -36,6 +37,26 @@ def test_run_and_store_then_result_page_is_dashboard():
     page = build_result_page(rid)
     assert page and "<svg" in page and "New investigation" in page  # dashboard + banner
     assert build_result_page("nonexistent") is None
+
+
+def test_form_has_a_model_picker_with_every_profile():
+    html = render_form()
+    assert 'name="profile"' in html and "Launch default" in html
+    for name in ("deterministic", "ollama", "gemini"):
+        assert f'value="{name}"' in html
+
+
+def test_model_picker_label_recorded_on_the_result_page():
+    rid = run_and_store("Mast or turbine?", ["communications mast", "wind turbine"],
+                        parse_form({"question": ["x"], "candidates": ["x"],
+                                    "evidence": ["OSM | man_made=mast | 1"]})[2],
+                        profile="deterministic")
+    page = build_result_page(rid)
+    assert "model:" in page and "deterministic" in page
+
+
+def test_model_label_describes_deterministic_floor():
+    assert "no model" in model_label("deterministic")
 
 
 # -- live HTTP round-trip ----------------------------------------------------

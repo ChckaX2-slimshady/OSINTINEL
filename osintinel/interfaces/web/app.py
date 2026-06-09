@@ -2,8 +2,10 @@
 
 Pure functions (``render_form``, ``parse_form``, ``run_and_store``, ``build_result_page``) hold the
 logic and are unit-tested directly; ``serve`` just wires them to an HTTP handler. Runs live in an
-in-memory dict (the user opted to keep records in memory); the model profile is read from the
-environment via ``build_gateway`` so a configured local Ollama is used automatically.
+in-memory dict (the user opted to keep records in memory). The form has a **model picker** that
+selects the inference profile per run (or keeps the launch-time env default); the model that
+actually ran is shown on the result page. Cloud profiles still read their API key from the
+environment — the picker chooses the profile, not the secret.
 """
 
 from __future__ import annotations
@@ -12,18 +14,30 @@ import html
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from ...inference import build_gateway
+from ...inference import PROFILES, build_gateway, gateway_status
 from ...service import EvidenceInput, run_investigation
 from ..api import build_dashboard_data
 from ..dashboard import render_dashboard
 
 # In-memory run store (records kept in memory per the operator's choice).
 RUNS: dict[str, object] = {}
+RUN_MODELS: dict[str, str] = {}  # run_id -> human label of the model that ran it
 _MAX_RUNS = 50
 
 
 def _e(text) -> str:
     return html.escape(str(text), quote=True)
+
+
+def model_label(profile: str | None) -> str:
+    """Human one-liner for which model a run used (shown on the result page)."""
+    st = gateway_status(profile)  # profile=None ⇒ whatever the env resolves to
+    if st["kind"] == "deterministic":
+        return f"{st['profile']} — no model (free, offline)"
+    reason = st["tier_models"]["reason"]
+    override = st.get("reason_override")
+    suffix = f" · reasoning→{override}" if override else ""
+    return f"{st['profile']} · {reason}{suffix}"
 
 
 def parse_form(fields: dict[str, list[str]]) -> tuple[str, list[str], list[EvidenceInput]]:
@@ -47,22 +61,29 @@ def parse_form(fields: dict[str, list[str]]) -> tuple[str, list[str], list[Evide
 
 
 def run_and_store(question: str, candidates: list[str],
-                  evidence: list[EvidenceInput]) -> str:
-    """Run an investigation (using whatever model profile the env configures) and store it."""
+                  evidence: list[EvidenceInput], profile: str | None = None) -> str:
+    """Run an investigation and store it. ``profile`` selects the model from the UI; ``None``
+    falls back to whatever ``OSINTINEL_INFERENCE_PROFILE`` configured at launch."""
+    profile = profile if profile in PROFILES else None
     result = run_investigation(question=question, candidates=candidates, evidence=evidence,
-                               gateway=build_gateway())
+                               gateway=build_gateway(profile=profile))
     run_id = result.investigation.investigation_id
     RUNS[run_id] = result
+    RUN_MODELS[run_id] = model_label(profile)
     while len(RUNS) > _MAX_RUNS:
+        RUN_MODELS.pop(next(iter(RUNS)), None)
         RUNS.pop(next(iter(RUNS)))
     return run_id
 
 
-_BANNER = (
-    '<div style="background:#0b0e16;border-bottom:1px solid #222c44;padding:10px 24px;'
-    'font:13px system-ui;color:#8a96b0">'
-    '<a href="/" style="color:#3ddc84;text-decoration:none">&larr; New investigation</a>'
-    '&nbsp;·&nbsp; OSINTINEL — records kept in memory for this session</div>')
+def _banner(run_id: str) -> str:
+    model = RUN_MODELS.get(run_id, "")
+    chip = (f'&nbsp;·&nbsp; <span style="color:#3ddc84">model:</span> {_e(model)}'
+            if model else "")
+    return ('<div style="background:#0b0e16;border-bottom:1px solid #222c44;padding:10px 24px;'
+            'font:13px system-ui;color:#8a96b0">'
+            '<a href="/" style="color:#3ddc84;text-decoration:none">&larr; New investigation</a>'
+            f'&nbsp;·&nbsp; OSINTINEL — records kept in memory{chip}</div>')
 
 
 def build_result_page(run_id: str) -> str | None:
@@ -70,7 +91,19 @@ def build_result_page(run_id: str) -> str | None:
     if result is None:
         return None
     page = render_dashboard(build_dashboard_data(result))
-    return page.replace("<body>", "<body>\n" + _BANNER, 1)
+    return page.replace("<body>", "<body>\n" + _banner(run_id), 1)
+
+
+def _profile_options() -> str:
+    """A <select> of inference profiles. The first option keeps the launch-time env default."""
+    env_label = model_label(None)
+    opts = [f'<option value="" selected>Launch default — {_e(env_label)}</option>']
+    for name, p in PROFILES.items():
+        cost = "free" if p.free else "paid"
+        local = "local" if p.local else "cloud"
+        key = f", needs {p.key_env}" if p.key_env else ""
+        opts.append(f'<option value="{_e(name)}">{_e(name)} ({local}, {cost}{key})</option>')
+    return "\n".join(opts)
 
 
 def render_form(message: str = "") -> str:
@@ -94,11 +127,14 @@ def render_form(message: str = "") -> str:
         is configured to judge relevance)</span>
       <textarea name="evidence" rows="7"
         placeholder="OpenStreetMap | node tagged man_made=mast at the coordinate | 1&#10;Wikidata | radio relay station entity nearby | 1&#10;Local news | residents call it 'the turbine' | 2"></textarea></label>
+    <label>Model <span class="muted">(which inference profile runs this investigation)</span>
+      <select name="profile">{_profile_options()}</select></label>
     <button type="submit">Investigate</button>
   </form>
-  <p class="muted">Tip: set <code>OSINTINEL_INFERENCE_PROFILE=ollama</code> (and optionally
-    <code>OSINTINEL_REASON_PROFILE=gemini</code>) before launching to have local/free models judge
-    relevance, propose explanations, and critique. Without a model, tag evidence with a supports#.</p>
+  <p class="muted">Cloud profiles need their API key in the environment at launch (e.g.
+    <code>GEMINI_API_KEY</code>); the picker only chooses the profile. For local/free use,
+    run <code>ollama serve</code> and pick <code>ollama</code>. Without a model (deterministic),
+    tag each evidence line with a trailing <code>supports#</code>.</p>
 </main></body></html>"""
 
 
@@ -113,9 +149,9 @@ main{max-width:780px;margin:0 auto;padding:24px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;
 display:flex;flex-direction:column;gap:18px}
 label{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:14px}
-input,textarea{background:#0a0f1c;border:1px solid var(--line);border-radius:9px;color:var(--ink);
-padding:11px 12px;font:14px/1.5 system-ui;resize:vertical}
-input:focus,textarea:focus{outline:none;border-color:#3a7}
+input,textarea,select{background:#0a0f1c;border:1px solid var(--line);border-radius:9px;
+color:var(--ink);padding:11px 12px;font:14px/1.5 system-ui;resize:vertical}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#3a7}
 code{font-family:ui-monospace,Menlo,Consolas,monospace;color:#bcd}
 button{background:linear-gradient(160deg,#3ddc84,#2bb36a);color:#06121f;border:0;border-radius:10px;
 padding:13px;font-size:15px;font-weight:800;cursor:pointer}
@@ -157,7 +193,8 @@ class _Handler(BaseHTTPRequestHandler):
         if not question or len(candidates) < 1:
             self._send(400, render_form("Please provide a question and at least two answers."))
             return
-        run_id = run_and_store(question, candidates, evidence)
+        profile = (fields.get("profile", [""])[0] or "").strip() or None
+        run_id = run_and_store(question, candidates, evidence, profile=profile)
         self.send_response(303)
         self.send_header("Location", f"/run/{run_id}")
         self.end_headers()

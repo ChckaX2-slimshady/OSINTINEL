@@ -26,8 +26,13 @@ osintinel serve           # browser UI at http://127.0.0.1:8765
 | Door | Command | What it is | State |
 |------|---------|-----------|-------|
 | **CLI** | `osintinel <cmd>` | demos + diagnostics + the service entrypoints | per-run, optional ledger on disk |
-| **Web app** | `osintinel serve [--port 8765] [--host 127.0.0.1]` | stdlib browser UI; ask a question, see the result | runs held **in memory** (`RUNS` dict) |
+| **Web app** | `osintinel serve [--port 8765] [--host 127.0.0.1]` | stdlib browser UI; ask a question, **pick the model**, see the result | runs held **in memory** (`RUNS` dict) |
 | **MCP server** | `osintinel mcp` | JSON-RPC stdio; tools `investigate` + `models_status` | driven by an MCP client (Claude Desktop, etc.) |
+
+> **Dashboard vs. web app:** `osintinel dashboard` writes a *read-only* HTML report of one
+> investigation (graph/timeline/confidence) — no inputs, no model picker. The **web app**
+> (`osintinel serve`) is the interactive front door: it has the question form **and a model
+> dropdown**, then renders that same dashboard for the result.
 
 **One-command Claude Desktop install** (runs on *your* machine, not the cloud sandbox):
 

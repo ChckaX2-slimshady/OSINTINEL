@@ -6,6 +6,14 @@ memory (saving is opt-in). The request handlers delegate to small pure functions
 testable without binding a socket.
 """
 
-from .app import build_result_page, parse_form, render_form, run_and_store, serve
+from .app import (
+    build_result_page,
+    model_label,
+    parse_form,
+    render_form,
+    run_and_store,
+    serve,
+)
 
-__all__ = ["build_result_page", "parse_form", "render_form", "run_and_store", "serve"]
+__all__ = ["build_result_page", "model_label", "parse_form", "render_form", "run_and_store",
+           "serve"]
