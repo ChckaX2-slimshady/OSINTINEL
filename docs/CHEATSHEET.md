@@ -84,6 +84,7 @@ Installer flags: `--profile`, `--net`, `--reason-profile`, `--base-url`, `--key-
 | `tui` | launch the terminal UI (Textual) — animated mascot + full per-tier model control |
 | `serve [--port] [--host]` | launch the local web app |
 | `mcp` | run the MCP stdio server |
+| `history [--limit 20]` | list saved investigation runs (persisted to `~/.osintinel/runs`) |
 | `research` | autonomous web-research demo (gathers its own evidence, offline) |
 | `intel` | free infra/threat adapters demo (Shodan InternetDB, URLScan, OTX) |
 | `records` | free public-records adapters demo (OpenCorporates, SEC EDGAR, GLEIF) |
@@ -150,6 +151,19 @@ External calls go through a cassette transport with three modes via `OSINTINEL_N
 
 `OSINTINEL_RECORD=1` is the older equivalent of `record`. **API keys ride in HTTP headers and never
 enter cassettes** (the request key hashes only method + URL + body).
+
+### Safety & persistence env vars
+
+| Env var | Effect |
+|---------|--------|
+| `OSINTINEL_ALLOW_PRIVATE_NET=1` | disable the SSRF guard on the web-fetch path (only for trusted LAN targets) |
+| `OSINTINEL_HOME` | base dir for persisted run history (default `~/.osintinel`) |
+| `OSINTINEL_NO_PERSIST=1` | don't persist run summaries to disk (fully ephemeral session) |
+
+The autonomous web-fetch path refuses URLs that resolve to loopback/private/link-local/reserved
+addresses (so a malicious link can't reach your local Ollama or cloud metadata), and retries
+transient network failures with backoff. The SSRF guard is **off** for inference calls, so a local
+Ollama endpoint always works.
 
 ---
 

@@ -7,10 +7,13 @@ from .investigation import (
     autoresearch_investigation,
     run_investigation,
 )
+from .runstore import RunStore, persistence_enabled
 
 __all__ = [
     "EvidenceInput",
     "InvestigationSummary",
+    "RunStore",
     "autoresearch_investigation",
+    "persistence_enabled",
     "run_investigation",
 ]

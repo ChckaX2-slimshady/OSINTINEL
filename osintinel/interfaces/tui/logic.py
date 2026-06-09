@@ -18,7 +18,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 from ...inference import PROFILES, build_gateway, gateway_status
-from ...service import EvidenceInput, InvestigationSummary, run_investigation
+from ...service import EvidenceInput, InvestigationSummary, RunStore, run_investigation
+
+_STORE = RunStore()
 
 # model-panel attribute -> the env var the gateway already honors
 _FORM_ENV = {
@@ -180,7 +182,9 @@ def run_summary(question: str, candidates: list[str], evidence: list[EvidenceInp
     gateway = build_gateway_from_form(form)
     result = run_investigation(question=question, candidates=candidates, evidence=evidence,
                                gateway=gateway)
-    return InvestigationSummary.from_result(result)
+    summary = InvestigationSummary.from_result(result)
+    _STORE.save(summary, result.investigation.investigation_id, model=form.profile)
+    return summary
 
 
 def _bar(fraction: float, width: int = 16) -> str:

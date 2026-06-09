@@ -105,6 +105,8 @@ def main(argv: list[str] | None = None) -> int:
     p_serve.add_argument("--host", default="127.0.0.1")
     sub.add_parser("tui", help="launch the terminal UI (Textual) — full model control + mascot")
     sub.add_parser("mcp", help="run the MCP server (stdio) so Claude can drive OSINTINEL")
+    p_hist = sub.add_parser("history", help="list saved investigation runs (~/.osintinel/runs)")
+    p_hist.add_argument("--limit", type=int, default=20)
     sub.add_parser("research", help="autonomous web-research demo (gathers its own evidence, offline)")
     sub.add_parser("intel", help="free infra/threat adapters (Shodan InternetDB, URLScan, OTX) demo")
     sub.add_parser("records", help="free public-records adapters (OpenCorporates, SEC EDGAR, GLEIF) demo")
@@ -173,6 +175,9 @@ def main(argv: list[str] | None = None) -> int:
         from ...interfaces.mcp import serve_stdio
         serve_stdio()
         return 0
+
+    if args.command == "history":
+        return _history(args.limit)
 
     if args.command == "research":
         return _research()
@@ -274,6 +279,27 @@ def _intel() -> int:
     return 0
 
 
+def _history(limit: int) -> int:
+    """List persisted investigation runs (newest first)."""
+    import datetime as _dt
+
+    from ...service import RunStore
+
+    runs = RunStore().list(limit)
+    if not runs:
+        print("No saved runs yet. Run an investigation (osintinel tui / serve) — history persists "
+              "to ~/.osintinel/runs (set OSINTINEL_NO_PERSIST=1 to disable).")
+        return 0
+    print(f"{'when':19}  {'confidence':>10}  question → leading answer")
+    for r in runs:
+        when = _dt.datetime.fromtimestamp(r.get("saved_at", 0)).strftime("%Y-%m-%d %H:%M:%S")
+        conf = r.get("leader_confidence", 0.0)
+        q = (r.get("question") or "")[:48]
+        leader = (r.get("leader") or "")[:48]
+        print(f"{when}  {conf:>9.0%}  {q} → {leader}")
+    return 0
+
+
 def _research() -> int:
     """Autonomous web-research demo: the system gathers its own evidence, then reasons over it."""
     import tempfile
@@ -284,7 +310,9 @@ def _research() -> int:
 
     cdir = Path(__file__).resolve().parent.parent.parent / "adapters" / "_cassettes"
     cas = ContentAddressedStore(tempfile.mkdtemp())
-    web = WebSearchAdapter(HttpClient(Cassette(cdir / "web.json")), cas, backend="duckduckgo")
+    # untrusted open-web path: SSRF guard + polite throttle on (no-ops in offline replay)
+    web_http = HttpClient(Cassette(cdir / "web.json"), block_private_net=True, min_interval=1.0)
+    web = WebSearchAdapter(web_http, cas, backend="duckduckgo")
     question = "Bullington ridge communications mast"
     result = autoresearch_investigation(
         question=question, candidates=["communications mast", "wind turbine"],

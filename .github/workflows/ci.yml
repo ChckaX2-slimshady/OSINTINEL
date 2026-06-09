@@ -47,3 +47,5 @@ jobs:
         run: osintinel intel
       - name: Smoke-run the free public-records adapters
         run: osintinel records
+      - name: Smoke-run the run-history listing
+        run: osintinel history

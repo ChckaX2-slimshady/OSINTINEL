@@ -15,13 +15,15 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from ...inference import PROFILES, build_gateway, gateway_status
-from ...service import EvidenceInput, run_investigation
+from ...service import EvidenceInput, InvestigationSummary, RunStore, run_investigation
 from ..api import build_dashboard_data
 from ..dashboard import render_dashboard
 
-# In-memory run store (records kept in memory per the operator's choice).
+# Live results stay in memory for the dashboard render; a compact summary is also persisted to
+# ~/.osintinel/runs/ so history survives a restart (opt out with OSINTINEL_NO_PERSIST=1).
 RUNS: dict[str, object] = {}
 RUN_MODELS: dict[str, str] = {}  # run_id -> human label of the model that ran it
+_STORE = RunStore()
 _MAX_RUNS = 50
 
 
@@ -70,6 +72,7 @@ def run_and_store(question: str, candidates: list[str],
     run_id = result.investigation.investigation_id
     RUNS[run_id] = result
     RUN_MODELS[run_id] = model_label(profile)
+    _STORE.save(InvestigationSummary.from_result(result), run_id, model=model_label(profile))
     while len(RUNS) > _MAX_RUNS:
         RUN_MODELS.pop(next(iter(RUNS)), None)
         RUNS.pop(next(iter(RUNS)))

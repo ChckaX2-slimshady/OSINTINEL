@@ -16,10 +16,17 @@ import base64
 import hashlib
 import json
 import os
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
+
+# Status codes worth retrying (transient): throttling, timeouts, and 5xx server hiccups.
+_TRANSIENT_STATUS = {408, 425, 429, 500, 502, 503, 504}
+# Shared across clients so a per-host rate limit actually throttles the whole process.
+_LAST_REQUEST_AT: dict[str, float] = {}
 
 
 class AdapterError(RuntimeError):
@@ -76,13 +83,18 @@ class HttpClient:
     def __init__(self, cassette: Cassette, *, record: bool | None = None,
                  mode: str | None = None,
                  user_agent: str = "osintinel/0.4 (+research; contact via repo)",
-                 block_private_net: bool = False) -> None:
+                 block_private_net: bool = False, max_retries: int = 2,
+                 backoff_base: float = 0.5, min_interval: float = 0.0) -> None:
         self.cassette = cassette
         self.mode = self._resolve_mode(record, mode)
         self.user_agent = user_agent
         # SSRF guard for the *untrusted web* path: validate the target and every redirect hop.
         # Off by default so inference calls to a local/operator endpoint (Ollama) still work.
         self.block_private_net = block_private_net
+        self.max_retries = max_retries          # transient-failure retries (exp. backoff)
+        self.backoff_base = backoff_base
+        self.min_interval = min_interval        # polite per-host minimum seconds between requests
+        self._sleep = time.sleep                # injectable for tests
 
     @staticmethod
     def _resolve_mode(record: bool | None, mode: str | None) -> str:
@@ -147,18 +159,42 @@ class HttpClient:
         req_headers = {"User-Agent": self.user_agent, **(headers or {})}
         data = body.encode("utf-8") if body is not None else None
         req = urllib.request.Request(full_url, data=data, headers=req_headers, method=method)
-        try:
-            if self.block_private_net:
-                from .netguard import assert_public_url  # local import avoids an import cycle
 
-                assert_public_url(full_url)
-                opener = urllib.request.build_opener(_GuardedRedirectHandler())
-                with opener.open(req, timeout=30) as resp:  # noqa: S310 (guarded, recording only)
-                    return resp.read()
-            with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 (recording only)
-                return resp.read()
-        except Exception as exc:  # surfaced as data, never an unhandled crash
-            raise AdapterError(f"live fetch failed for {full_url}: {exc}") from exc
+        if self.block_private_net:
+            from .netguard import assert_public_url  # local import avoids an import cycle
+
+            assert_public_url(full_url)  # SSRF blocks are permanent — checked before any retry
+        self._respect_rate_limit(full_url)
+
+        last: Exception | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                return self._open(req)
+            except urllib.error.HTTPError as exc:
+                last = exc
+                if exc.code not in _TRANSIENT_STATUS:
+                    break  # 404/403/… won't get better by retrying
+            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                last = exc  # connection reset / DNS / timeout — transient
+            if attempt < self.max_retries:
+                self._sleep(self.backoff_base * (2 ** attempt))
+        raise AdapterError(f"live fetch failed for {full_url}: {last}") from last
+
+    def _open(self, req: urllib.request.Request) -> bytes:
+        opener = urllib.request.build_opener(_GuardedRedirectHandler()) \
+            if self.block_private_net else None
+        target = opener.open if opener is not None else urllib.request.urlopen
+        with target(req, timeout=30) as resp:  # noqa: S310 (guarded/recording only)
+            return resp.read()
+
+    def _respect_rate_limit(self, url: str) -> None:
+        if self.min_interval <= 0:
+            return
+        host = urllib.parse.urlparse(url).netloc
+        elapsed = time.monotonic() - _LAST_REQUEST_AT.get(host, 0.0)
+        if elapsed < self.min_interval:
+            self._sleep(self.min_interval - elapsed)
+        _LAST_REQUEST_AT[host] = time.monotonic()
 
     # -- (de)serialization -------------------------------------------------
     @staticmethod
