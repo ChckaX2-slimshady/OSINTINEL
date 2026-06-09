@@ -37,8 +37,8 @@ osintinel serve           # browser UI at http://127.0.0.1:8765
 **One-command Claude Desktop install** (runs on *your* machine, not the cloud sandbox):
 
 ```bash
-python scripts/install_claude_mcp.py                 # default profile=deterministic (free, no model)
-python scripts/install_claude_mcp.py --profile ollama # use your local Ollama models
+python scripts/install_claude_mcp.py                 # default profile=ollama (local models)
+python scripts/install_claude_mcp.py --profile deterministic  # free, no model, no network
 python scripts/install_claude_mcp.py --print          # show the JSON, change nothing
 ```
 

@@ -7,8 +7,8 @@ Runs on *your* machine (this is the part a cloud sandbox can't do for you). It l
 — preserving any existing servers and backing up the file first. Stdlib only.
 
 Usage:
-    python scripts/install_claude_mcp.py                      # install, profile=deterministic (free, no model)
-    python scripts/install_claude_mcp.py --profile ollama     # use your local Ollama models
+    python scripts/install_claude_mcp.py                      # install, profile=ollama (local models)
+    python scripts/install_claude_mcp.py --profile deterministic  # free, no model, no network
     python scripts/install_claude_mcp.py --reason-profile gemini   # free-cloud reasoning tier
     python scripts/install_claude_mcp.py --base-url http://localhost:8080/v1   # point at Hermes/custom endpoint
     python scripts/install_claude_mcp.py --print             # just show the JSON, change nothing
@@ -64,8 +64,8 @@ def build_entry(args) -> dict:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Install the OSINTINEL MCP server into Claude Desktop.")
     p.add_argument("--name", default="osintinel", help="server key in the config")
-    p.add_argument("--profile", default="deterministic",
-                   help="OSINTINEL_INFERENCE_PROFILE (deterministic|ollama|gemini|groq|openrouter|…)")
+    p.add_argument("--profile", default="ollama",
+                   help="OSINTINEL_INFERENCE_PROFILE (ollama|deterministic|gemini|groq|openrouter|…)")
     p.add_argument("--net", default="live", help="OSINTINEL_NET (live|record|replay)")
     p.add_argument("--reason-profile", default=None, help="route the reasoning tier to a profile")
     p.add_argument("--base-url", default=None,
