@@ -11,7 +11,9 @@ mutation leaks past a run.
 
 from __future__ import annotations
 
+import json
 import os
+import urllib.request
 from contextlib import contextmanager
 from dataclasses import dataclass
 
@@ -105,6 +107,51 @@ def status_lines(form: InferenceForm) -> str:
     if st["skeptic_override"]:
         rows.append(f"[b]skeptic[/b] →[i]{st['skeptic_override']}[/i]")
     return "\n".join(rows)
+
+
+def is_openai_profile(name: str) -> bool:
+    p = PROFILES.get(name)
+    return bool(p and p.kind == "openai")
+
+
+def effective_base_url(form: InferenceForm) -> str | None:
+    """The chat endpoint that will actually be used (profile base-URL + any override)."""
+    return status_from_form(form).get("base_url")
+
+
+def parse_model_ids(text: str) -> list[str]:
+    """Pull installed model names from an OpenAI ``/v1/models`` *or* Ollama ``/api/tags`` body."""
+    try:
+        data = json.loads(text)
+    except (ValueError, TypeError):
+        return []
+    out: list[str] = []
+    if isinstance(data, dict):
+        for row in data.get("data") or []:                      # OpenAI /v1/models → data[].id
+            if isinstance(row, dict) and row.get("id"):
+                out.append(str(row["id"]))
+        for row in data.get("models") or []:                    # Ollama /api/tags → models[].name
+            name = (row or {}).get("name") or (row or {}).get("model") if isinstance(row, dict) else None
+            if name:
+                out.append(str(name))
+    return list(dict.fromkeys(out))                             # de-dupe, keep order
+
+
+def _http_get(url: str, timeout: float = 1.5) -> str:
+    with urllib.request.urlopen(url, timeout=timeout) as resp:  # noqa: S310 (localhost only)
+        return resp.read().decode("utf-8")
+
+
+def list_installed_models(base_url: str | None, *, fetch=None) -> list[str]:
+    """Models installed at an OpenAI-compatible endpoint (e.g. local Ollama). ``[]`` on any error,
+    so a missing/stopped server never breaks the UI — it just falls back to the typed default."""
+    if not base_url:
+        return []
+    fetch = fetch or _http_get
+    try:
+        return parse_model_ids(fetch(base_url.rstrip("/") + "/models"))
+    except Exception:                                            # unreachable/timeout/garbage → none
+        return []
 
 
 def parse_candidates(text: str) -> list[str]:

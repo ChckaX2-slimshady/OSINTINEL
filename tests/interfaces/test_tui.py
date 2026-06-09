@@ -9,8 +9,11 @@ from osintinel.interfaces.tui.logic import (
     InferenceForm,
     format_summary,
     form_from_profile,
+    is_openai_profile,
+    list_installed_models,
     parse_candidates,
     parse_evidence,
+    parse_model_ids,
     profile_names,
     run_summary,
     status_from_form,
@@ -40,6 +43,35 @@ def test_parse_candidates_and_evidence():
     ev = parse_evidence("OSM | man_made=mast | 1\nbare line")
     assert (ev[0].source, ev[0].text, ev[0].supports) == ("OSM", "man_made=mast", 0)
     assert ev[1].source == "user" and ev[1].supports is None
+
+
+def test_parse_model_ids_handles_openai_and_ollama_shapes():
+    openai = '{"object":"list","data":[{"id":"dollamin:latest"},{"id":"nomic-embed-text"}]}'
+    ollama = '{"models":[{"name":"dollamin:latest"},{"model":"nomic-embed-text"}]}'
+    assert parse_model_ids(openai) == ["dollamin:latest", "nomic-embed-text"]
+    assert parse_model_ids(ollama) == ["dollamin:latest", "nomic-embed-text"]
+    assert parse_model_ids("not json") == []
+
+
+def test_list_installed_models_uses_models_endpoint_and_swallows_errors():
+    calls = []
+
+    def fake_fetch(url):
+        calls.append(url)
+        return '{"data":[{"id":"dollamin:latest"}]}'
+
+    assert list_installed_models("http://localhost:11434/v1", fetch=fake_fetch) == \
+        ["dollamin:latest"]
+    assert calls == ["http://localhost:11434/v1/models"]
+    assert list_installed_models(None) == []                       # no endpoint → none
+
+    def boom(url):
+        raise OSError("connection refused")
+    assert list_installed_models("http://localhost:11434/v1", fetch=boom) == []  # unreachable → none
+
+
+def test_is_openai_profile():
+    assert is_openai_profile("ollama") and not is_openai_profile("deterministic")
 
 
 def test_status_reflects_overrides_and_restores_env():
@@ -83,3 +115,29 @@ def test_tui_boots_and_runs_an_investigation_headless():
 
     text = asyncio.run(scenario())
     assert "Run failed" not in text and ("Leading answer" in text or "mast" in text.lower())
+
+
+def test_tui_detect_populates_tier_dropdowns(monkeypatch):
+    from textual.widgets import Select
+
+    from osintinel.interfaces.tui.app import OsintinelTUI
+
+    monkeypatch.setattr("osintinel.interfaces.tui.app.list_installed_models",
+                        lambda base, **_: ["dollamin:latest", "nomic-embed-text"])
+
+    async def scenario() -> None:
+        app = OsintinelTUI()
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.press("enter")
+            await pilot.pause()
+            screen = app.screen
+            screen.query_one("#profile", Select).value = "ollama"   # triggers auto-detect
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            # a detected model is now a valid choice for the reason tier
+            reason = screen.query_one("#reason_model", Select)
+            reason.value = "dollamin:latest"                        # raises if not an option
+            assert reason.value == "dollamin:latest"
+
+    asyncio.run(scenario())

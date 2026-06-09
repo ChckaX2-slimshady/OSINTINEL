@@ -36,7 +36,9 @@ osintinel serve           # …or the browser UI at http://127.0.0.1:8765
 > terminal-native console — it exposes **every** model knob (per-tier reason/small/task/embed
 > models, the reason→profile and skeptic→profile decorrelation overrides, and a base-URL/key-env
 > endpoint override), which the web dropdown deliberately doesn't. The web app picks the whole
-> profile in one click; the TUI lets you edit each tier.
+> profile in one click; the TUI lets you edit each tier. Pick the `ollama` profile (or hit
+> **Detect models**) and the tier dropdowns auto-populate with the models actually installed on
+> your machine — no typing model names, just choose `dollamin:latest` etc. per tier.
 
 > **Dashboard vs. web app:** `osintinel dashboard` writes a *read-only* HTML report of one
 > investigation (graph/timeline/confidence) — no inputs, no model picker. The **web app**

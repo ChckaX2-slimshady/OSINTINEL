@@ -19,8 +19,11 @@ from textual.widgets import Button, Footer, Header, Input, Select, Static, TextA
 
 from .logic import (
     InferenceForm,
+    effective_base_url,
     format_summary,
     form_from_profile,
+    is_openai_profile,
+    list_installed_models,
     parse_candidates,
     parse_evidence,
     profile_names,
@@ -29,12 +32,13 @@ from .logic import (
 )
 from .mascot import splash_frames
 
-_MODEL_FIELDS = [
-    ("reason_model", "reason model"), ("small_model", "small model"),
-    ("task_model", "task model"), ("embed_model", "embed model"),
-    ("reason_profile", "reason→profile"), ("skeptic_profile", "skeptic→profile"),
-    ("base_url", "base-url override"), ("key_env", "key env var"),
-]
+# tier model fields are dropdowns (auto-populated from the endpoint's installed models)
+_TIER_SELECTS = [("reason_model", "reason model"), ("small_model", "small model"),
+                 ("task_model", "task model"), ("embed_model", "embed model")]
+# the remaining knobs stay free-text
+_TEXT_INPUTS = [("reason_profile", "reason→profile"), ("skeptic_profile", "skeptic→profile"),
+                ("base_url", "base-url override"), ("key_env", "key env var")]
+_TIER_ATTRS = [a for a, _ in _TIER_SELECTS]
 
 
 class SplashScreen(Screen):
@@ -72,6 +76,7 @@ class ConsoleScreen(Screen):
 
     BINDINGS = [("ctrl+r", "run", "Investigate"), ("ctrl+q", "quit", "Quit")]
     last_summary: str = ""
+    _note: str = ""        # sticky detection banner shown above the live status
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -88,20 +93,29 @@ class ConsoleScreen(Screen):
                 ev.border_title = "evidence — source | text | supports#"
                 yield ev
 
-                yield Static("[b]Model[/b]  [dim]profile sets the tiers; edit any below[/dim]",
-                             classes="section")
+                yield Static("[b]Model[/b]  [dim]pick a profile; tiers populate from your "
+                             "installed models[/dim]", classes="section")
                 yield Select([(n, n) for n in profile_names()], value="deterministic",
                              allow_blank=False, id="profile")
                 form = form_from_profile("deterministic")
-                for i in range(0, len(_MODEL_FIELDS), 2):
+                for i in range(0, len(_TIER_SELECTS), 2):
                     with Horizontal(classes="pair"):
-                        for attr, label in _MODEL_FIELDS[i:i + 2]:
+                        for attr, label in _TIER_SELECTS[i:i + 2]:
+                            default = getattr(form, attr)
+                            sel = Select([(default, default)], value=default, allow_blank=False,
+                                         id=attr, classes="model")
+                            sel.border_title = label
+                            yield sel
+                for i in range(0, len(_TEXT_INPUTS), 2):
+                    with Horizontal(classes="pair"):
+                        for attr, label in _TEXT_INPUTS[i:i + 2]:
                             inp = Input(value=getattr(form, attr), id=attr, classes="model")
                             inp.border_title = label
                             yield inp
                 with Horizontal(classes="pair"):
                     yield Button("⌖  Investigate", variant="success", id="run")
-                    yield Button("↻  Refresh status", id="refresh")
+                    yield Button("↻  Detect models", id="detect")
+                    yield Button("↻  Status", id="refresh")
             with VerticalScroll(id="right"):
                 yield Static(status_lines(form), id="status")
                 yield Static("[dim]Pose a question and press Investigate (Ctrl+R).[/dim]",
@@ -109,28 +123,71 @@ class ConsoleScreen(Screen):
         yield Footer()
 
     # -- form helpers --------------------------------------------------------
-    def _form(self) -> InferenceForm:
-        get = lambda i: self.query_one(f"#{i}", Input).value  # noqa: E731
-        return InferenceForm(
-            profile=self.query_one("#profile", Select).value,
-            reason_model=get("reason_model"), small_model=get("small_model"),
-            task_model=get("task_model"), embed_model=get("embed_model"),
-            reason_profile=get("reason_profile"), skeptic_profile=get("skeptic_profile"),
-            base_url=get("base_url"), key_env=get("key_env"))
+    def _sel(self, ident: str) -> str:
+        v = self.query_one(f"#{ident}", Select).value
+        return v if isinstance(v, str) else ""
 
-    def _refresh_status(self) -> None:
-        self.query_one("#status", Static).update(status_lines(self._form()))
+    def _inp(self, ident: str) -> str:
+        return self.query_one(f"#{ident}", Input).value
+
+    def _form(self) -> InferenceForm:
+        return InferenceForm(
+            profile=self._sel("profile"),
+            reason_model=self._sel("reason_model"), small_model=self._sel("small_model"),
+            task_model=self._sel("task_model"), embed_model=self._sel("embed_model"),
+            reason_profile=self._inp("reason_profile"), skeptic_profile=self._inp("skeptic_profile"),
+            base_url=self._inp("base_url"), key_env=self._inp("key_env"))
+
+    def _refresh_status(self, note: str | None = None) -> None:
+        if note is not None:
+            self._note = note
+        body = status_lines(self._form())
+        self.query_one("#status", Static).update(f"{self._note}\n{body}" if self._note else body)
+
+    def _set_tier_options(self, attr: str, options: list[str], value: str) -> None:
+        """Repopulate a tier dropdown, always keeping ``value`` selectable."""
+        opts = list(dict.fromkeys([value, *options])) if value else list(dict.fromkeys(options))
+        sel = self.query_one(f"#{attr}", Select)
+        sel.set_options([(o, o) for o in opts])
+        sel.value = value if value in opts else (opts[0] if opts else Select.BLANK)
 
     @on(Select.Changed, "#profile")
     def _profile_changed(self, event: Select.Changed) -> None:
-        form = form_from_profile(str(event.value))
-        for attr in ("reason_model", "small_model", "task_model", "embed_model"):
-            self.query_one(f"#{attr}", Input).value = getattr(form, attr)
-        self._refresh_status()
+        name = str(event.value)
+        form = form_from_profile(name)
+        for attr in _TIER_ATTRS:
+            self._set_tier_options(attr, [], getattr(form, attr))  # reset to the profile default
+        self._refresh_status(note="")
+        if is_openai_profile(name):
+            self.detect_models()  # auto-pull the installed list when you choose a live endpoint
+
+    @on(Select.Changed, ".model")
+    def _tier_changed(self) -> None:
+        self._refresh_status()  # keep the status pane live as you pick per-tier models
 
     @on(Button.Pressed, "#refresh")
     def _on_refresh(self) -> None:
         self._refresh_status()
+
+    @on(Button.Pressed, "#detect")
+    def _on_detect(self) -> None:
+        self.detect_models()
+
+    @work(thread=True, exclusive=True, group="detect")
+    def detect_models(self) -> None:
+        base = effective_base_url(self._form())
+        models = list_installed_models(base)
+        self.app.call_from_thread(self._apply_detected, base, models)
+
+    def _apply_detected(self, base: str | None, models: list[str]) -> None:
+        if models:
+            for attr in _TIER_ATTRS:
+                self._set_tier_options(attr, models, self._sel(attr))
+            self._refresh_status(f"[green]✓ found {len(models)} model(s) at {base}[/green] — "
+                                 "pick one per tier")
+        else:
+            self._refresh_status(f"[yellow]no models detected at {base or '—'}[/yellow] — is "
+                                 "`ollama serve` running and a model pulled?")
 
     @on(Button.Pressed, "#run")
     def _on_run(self) -> None:
@@ -179,6 +236,7 @@ class OsintinelTUI(App):
     .section { margin: 1 0 0 0; color: #3ddc84; }
     Input { border: round $panel; border-title-align: left; }
     Input.model { width: 1fr; }
+    Select.model { width: 1fr; border: round $panel; border-title-align: left; }
     TextArea { height: 5; border: round $panel; }
     TextArea#candidates { height: 4; }
     .pair { height: auto; }
