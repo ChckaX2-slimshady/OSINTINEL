@@ -181,6 +181,31 @@ def test_tui_autonomous_toggle_routes_to_web_research(monkeypatch):
     assert "Leading answer" in text
 
 
+def test_tui_new_button_clears_the_form():
+    from textual.widgets import Checkbox, Input, TextArea
+
+    from osintinel.interfaces.tui.app import OsintinelTUI
+
+    async def scenario() -> tuple:
+        app = OsintinelTUI()
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.press("enter")
+            await pilot.pause()
+            s = app.screen
+            s.query_one("#question", Input).value = "old question"
+            s.query_one("#candidates", TextArea).text = "a\nb"
+            s.query_one("#autonomous", Checkbox).value = True
+            s._on_new()
+            await pilot.pause()
+            return (s.query_one("#question", Input).value,
+                    s.query_one("#candidates", TextArea).text,
+                    s.query_one("#autonomous", Checkbox).value)
+
+    q, cands, auto = asyncio.run(scenario())
+    assert q == "" and cands == "" and auto is False
+
+
 def test_tui_detect_populates_tier_dropdowns(monkeypatch):
     from textual.widgets import Select
 

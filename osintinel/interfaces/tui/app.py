@@ -117,6 +117,7 @@ class ConsoleScreen(Screen):
                             yield inp
                 with Horizontal(classes="pair"):
                     yield Button("⌖  Investigate", variant="success", id="run")
+                    yield Button("✚  New", id="new")
                     yield Button("↻  Detect models", id="detect")
                     yield Button("↻  Status", id="refresh")
             with VerticalScroll(id="right"):
@@ -171,6 +172,17 @@ class ConsoleScreen(Screen):
     @on(Button.Pressed, "#refresh")
     def _on_refresh(self) -> None:
         self._refresh_status()
+
+    @on(Button.Pressed, "#new")
+    def _on_new(self) -> None:
+        """Clear the investigation fields for a fresh run (keeps the model setup)."""
+        self.query_one("#question", Input).value = ""
+        self.query_one("#candidates", TextArea).text = ""
+        self.query_one("#evidence", TextArea).text = ""
+        self.query_one("#autonomous", Checkbox).value = False
+        self.query_one("#summary", Static).update(
+            "[dim]New investigation — pose a question and press Investigate (Ctrl+R).[/dim]")
+        self.query_one("#question", Input).focus()
 
     @on(Button.Pressed, "#detect")
     def _on_detect(self) -> None:
