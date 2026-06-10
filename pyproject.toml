@@ -5,12 +5,30 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "osintinel"
 version = "0.1.0"
-description = "Open Source Intelligence Sentinel — Autonomous Evidence Intelligence Operating System"
+description = "Open Source Intelligence Sentinel — a local-first, free, multi-agent OSINT reasoning engine"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "ChckaX2-slimshady" }]
+keywords = ["osint", "intelligence", "investigation", "epistemics", "multi-agent", "local-first"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "pydantic>=2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ChckaX2-slimshady/OSINTENAL"
+Repository = "https://github.com/ChckaX2-slimshady/OSINTENAL"
 
 [project.optional-dependencies]
 tui = [
@@ -20,6 +38,7 @@ dev = [
     "pytest>=8",
     "hypothesis>=6",
     "textual>=0.80",
+    "build>=1",
 ]
 
 [project.scripts]
@@ -27,6 +46,10 @@ osintinel = "osintinel.interfaces.cli.main:main"
 
 [tool.setuptools.packages.find]
 include = ["osintinel*"]
+
+[tool.setuptools.package-data]
+# ship the recorded cassettes so the offline demos work from an installed wheel
+"osintinel.adapters" = ["_cassettes/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
