@@ -50,6 +50,24 @@ def registrable_domain(url: str) -> str:
     return ".".join(parts[-2:]) if len(parts) >= 2 else (host or "web")
 
 
+_STOPWORDS = frozenset(
+    "a an the is are was were be been being am did do does of to in on for and or that this these "
+    "those through with by as at from into about how what why who whom when where which would could "
+    "should will shall can may might have has had it its their there here not no than then so if".split())
+
+
+def to_search_query(text: str, max_terms: int = 8) -> str:
+    """Turn a natural-language question into a keyword search query (drop stopwords/punctuation).
+
+    Open-web search engines match keywords, not full sentences — passing the raw question returns
+    little or nothing. ``"did Albert Pike write a letter detailing a new world order?"`` →
+    ``"Albert Pike write letter detailing new world order"``. Falls back to the original text if
+    everything was filtered out."""
+    words = re.findall(r"[A-Za-z0-9']+", text)
+    keep = [w for w in words if len(w) > 1 and w.lower() not in _STOPWORDS]
+    return " ".join(keep[:max_terms]) or text.strip()
+
+
 class WebSearchAdapter(ReferenceAdapter):
     id = "web.research"
     capabilities = ["web.search", "web.fetch"]

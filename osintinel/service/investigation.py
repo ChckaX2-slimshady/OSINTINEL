@@ -159,14 +159,29 @@ def autoresearch_investigation(*, question: str, candidates: list[str] | None = 
                                web_adapter, limit: int = 5, backend: str | None = None,
                                gateway=None, calibrator=None, ledger=None,
                                confidence_threshold: float = 0.7, rounds: int = 1,
-                               followups_per_round: int = 2) -> InvestigationResult:
+                               followups_per_round: int = 2, backends: list[str] | None = None,
+                               query_transform=None) -> InvestigationResult:
     """Autonomous research: the web adapter gathers evidence, the loop reasons over it, and — when
     ``rounds > 1`` — the investigation *continues itself*, turning the Epistemology agent's
-    **known-unknowns** into follow-up searches and re-reasoning over the growing evidence. This is
-    the difference between one-shot retrieval and an agent that notices what it still doesn't know
-    and goes looking. ``candidates`` may be omitted when a model is present (the reason tier
-    proposes competing answers from the first results)."""
-    evidence = _gather_web_evidence(web_adapter, question, limit, backend)
+    **known-unknowns** into follow-up searches and re-reasoning over the growing evidence.
+
+    ``backends`` searches several engines per query (e.g. DuckDuckGo for diverse domains *and*
+    Wikipedia for reliable content) so hypotheses get independent corroboration; ``query_transform``
+    pre-processes each query (e.g. keyword extraction). Both default to off, preserving the
+    single-backend recorded demos. Search failures degrade to "no evidence" rather than crashing."""
+    backends = backends if backends is not None else ([backend] if backend else [None])
+
+    def gather(query: str) -> list[EvidenceInput]:
+        q = query_transform(query) if query_transform else query
+        out: list[EvidenceInput] = []
+        for be in backends:
+            try:
+                out.extend(_gather_web_evidence(web_adapter, q, limit, be))
+            except AdapterError:
+                continue  # a backend that's down/blocked just contributes nothing
+        return out
+
+    evidence = gather(question)
 
     if not candidates:
         if gateway is not None:
@@ -190,10 +205,7 @@ def autoresearch_investigation(*, question: str, candidates: list[str] | None = 
         before = len(evidence)
         for gap in gaps:
             asked.add(gap)
-            try:
-                evidence.extend(_gather_web_evidence(web_adapter, gap, limit, backend))
-            except AdapterError:
-                continue  # a follow-up that yields nothing just doesn't add evidence
+            evidence.extend(gather(gap))
         if len(evidence) == before:
             break  # no new evidence gathered → re-reasoning would be identical
         result = reason()

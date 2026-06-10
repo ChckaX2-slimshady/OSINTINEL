@@ -245,9 +245,14 @@ class ConsoleScreen(Screen):
         try:
             if autonomous:
                 summary = run_autoresearch(question, form, candidates=candidates or None)
+                text = format_summary(summary)
+                if not summary.sources:  # the search came up empty — say so, don't shrug silently
+                    text = ("[yellow]⚠ No web evidence found for that query — the ranking below is "
+                            "uninformed (flat confidence). Try fewer, more keyword-like terms, or "
+                            "check your network.[/yellow]\n\n" + text)
             else:
                 summary = run_summary(question, candidates, evidence, form)
-            text = format_summary(summary)
+                text = format_summary(summary)
         except Exception as exc:  # network/model failures surface as data, never a crash
             text = f"[red]Run failed:[/red] {exc}\n[dim]Tip: autonomous mode needs network; the " \
                    "deterministic profile needs no model.[/dim]"

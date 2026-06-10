@@ -212,11 +212,15 @@ def run_autoresearch(question: str, form: InferenceForm, *, candidates: list[str
     """Autonomous investigation: gather evidence from the open web, let the reason model frame
     competing answers, chase the known-unknowns for more (and contrary) evidence, run the Skeptic
     gauntlet, and return the insights that survived. ``web_adapter`` is injectable for tests."""
+    from ...adapters.web.search import to_search_query
+
     gateway = build_gateway_from_form(form)
     adapter = web_adapter if web_adapter is not None else _live_web_adapter(backend)
     result = autoresearch_investigation(
         question=question, candidates=candidates or None, web_adapter=adapter,
-        limit=limit, gateway=gateway, rounds=rounds)
+        limit=limit, gateway=gateway, rounds=rounds,
+        backends=["duckduckgo", "wikipedia"],  # diverse domains + reliable content
+        query_transform=to_search_query)       # natural questions → keyword search
     summary = InvestigationSummary.from_result(result)
     _STORE.save(summary, result.investigation.investigation_id, model=form.profile)
     return summary

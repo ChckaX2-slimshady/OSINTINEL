@@ -115,8 +115,8 @@ def test_run_autoresearch_gathers_its_own_evidence():
     web = _FakeWeb()
     summary = run_autoresearch("Is the tower a mast?", InferenceForm(profile="deterministic"),
                                candidates=["mast", "turbine"], web_adapter=web)
-    assert web.queries and web.queries[0] == "Is the tower a mast?"  # it searched on its own
-    assert summary.ranked  # and produced ranked insights from gathered evidence
+    assert web.queries and web.queries[0] == "tower mast"  # natural question → keyword search
+    assert summary.ranked and summary.sources  # gathered evidence and listed its sources
 
 
 # -- headless app boot -------------------------------------------------------

@@ -84,3 +84,10 @@ def test_autoresearch_summary_is_serializable(tmp_path):
                                    web_adapter=web)
     s = InvestigationSummary.from_result(r)
     assert s.leader == "communications mast" and s.ranked
+
+
+def test_to_search_query_keywordizes_a_question():
+    from osintinel.adapters.web.search import to_search_query
+    q = to_search_query("did Albert Pike write a letter detailing a new world order?")
+    assert q == "Albert Pike write letter detailing new world order"
+    assert to_search_query("the a of to") == "the a of to"   # all-stopwords → original
