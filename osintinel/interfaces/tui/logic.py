@@ -18,7 +18,13 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 from ...inference import PROFILES, build_gateway, gateway_status
-from ...service import EvidenceInput, InvestigationSummary, RunStore, run_investigation
+from ...service import (
+    EvidenceInput,
+    InvestigationSummary,
+    RunStore,
+    autoresearch_investigation,
+    run_investigation,
+)
 
 _STORE = RunStore()
 
@@ -182,6 +188,35 @@ def run_summary(question: str, candidates: list[str], evidence: list[EvidenceInp
     gateway = build_gateway_from_form(form)
     result = run_investigation(question=question, candidates=candidates, evidence=evidence,
                                gateway=gateway)
+    summary = InvestigationSummary.from_result(result)
+    _STORE.save(summary, result.investigation.investigation_id, model=form.profile)
+    return summary
+
+
+def _live_web_adapter(backend: str):
+    """A web-research adapter wired for live, SSRF-guarded, polite open-web fetches."""
+    import tempfile
+    from pathlib import Path
+
+    from ...adapters import Cassette, ContentAddressedStore, HttpClient, WebSearchAdapter
+
+    cas = ContentAddressedStore(tempfile.mkdtemp())
+    http = HttpClient(Cassette(Path(tempfile.mkdtemp()) / "web.json"), mode="live",
+                      block_private_net=True, min_interval=1.0)
+    return WebSearchAdapter(http, cas, backend=backend)
+
+
+def run_autoresearch(question: str, form: InferenceForm, *, candidates: list[str] | None = None,
+                     rounds: int = 3, limit: int = 5, backend: str = "wikipedia",
+                     web_adapter=None) -> InvestigationSummary:
+    """Autonomous investigation: gather evidence from the open web, let the reason model frame
+    competing answers, chase the known-unknowns for more (and contrary) evidence, run the Skeptic
+    gauntlet, and return the insights that survived. ``web_adapter`` is injectable for tests."""
+    gateway = build_gateway_from_form(form)
+    adapter = web_adapter if web_adapter is not None else _live_web_adapter(backend)
+    result = autoresearch_investigation(
+        question=question, candidates=candidates or None, web_adapter=adapter,
+        limit=limit, gateway=gateway, rounds=rounds)
     summary = InvestigationSummary.from_result(result)
     _STORE.save(summary, result.investigation.investigation_id, model=form.profile)
     return summary

@@ -15,7 +15,7 @@ from textual import on, work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Input, Select, Static, TextArea
+from textual.widgets import Button, Checkbox, Footer, Header, Input, Select, Static, TextArea
 
 from .logic import (
     InferenceForm,
@@ -27,6 +27,7 @@ from .logic import (
     parse_candidates,
     parse_evidence,
     profile_names,
+    run_autoresearch,
     run_summary,
     status_lines,
 )
@@ -92,6 +93,8 @@ class ConsoleScreen(Screen):
                 ev = TextArea(id="evidence")
                 ev.border_title = "evidence — source | text | supports#"
                 yield ev
+                yield Checkbox("Autonomous — gather evidence from the open web (needs network; "
+                               "ignores the evidence box)", id="autonomous")
 
                 yield Static("[b]Model[/b]  [dim]pick a profile; tiers populate from your "
                              "installed models[/dim]", classes="section")
@@ -196,25 +199,36 @@ class ConsoleScreen(Screen):
     def action_run(self) -> None:
         question = self.query_one("#question", Input).value.strip()
         candidates = parse_candidates(self.query_one("#candidates", TextArea).text)
-        if not question or not candidates:
+        autonomous = self.query_one("#autonomous", Checkbox).value
+        if not question:
+            self.query_one("#summary", Static).update("[red]Provide a question.[/red]")
+            return
+        if not autonomous and not candidates:
             self.query_one("#summary", Static).update(
-                "[red]Provide a question and at least one competing answer.[/red]")
+                "[red]Provide at least one competing answer, or tick Autonomous to let it "
+                "gather its own evidence.[/red]")
             return
         evidence = parse_evidence(self.query_one("#evidence", TextArea).text)
         self.query_one("#run", Button).disabled = True
-        self.query_one("#summary", Static).update("⏳  [b]investigating…[/b]  "
-                                                  "[dim]quorum: synthesis → skeptic → "
-                                                  "confidence → epistemology[/dim]")
+        self.query_one("#summary", Static).update(
+            "🌐  [b]researching the open web…[/b]  [dim]search → fetch → frame answers → chase "
+            "known-unknowns → skeptic gate[/dim]" if autonomous else
+            "⏳  [b]investigating…[/b]  [dim]quorum: synthesis → skeptic → confidence → "
+            "epistemology[/dim]")
         self._refresh_status()
-        self._investigate(question, candidates, evidence, self._form())
+        self._investigate(question, candidates, evidence, self._form(), autonomous)
 
     @work(thread=True, exclusive=True)
-    def _investigate(self, question, candidates, evidence, form) -> None:
+    def _investigate(self, question, candidates, evidence, form, autonomous) -> None:
         try:
-            text = format_summary(run_summary(question, candidates, evidence, form))
+            if autonomous:
+                summary = run_autoresearch(question, form, candidates=candidates or None)
+            else:
+                summary = run_summary(question, candidates, evidence, form)
+            text = format_summary(summary)
         except Exception as exc:  # network/model failures surface as data, never a crash
-            text = f"[red]Run failed:[/red] {exc}\n[dim]Tip: the deterministic profile " \
-                   "needs no model/network.[/dim]"
+            text = f"[red]Run failed:[/red] {exc}\n[dim]Tip: autonomous mode needs network; the " \
+                   "deterministic profile needs no model.[/dim]"
         self.app.call_from_thread(self._show, text)
 
     def _show(self, text: str) -> None:

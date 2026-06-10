@@ -91,6 +91,34 @@ def test_run_summary_deterministic_and_format():
     assert "Leading answer" in out and "Ranked hypotheses" in out
 
 
+class _FakeWeb:
+    """A web adapter that returns one fresh independent evidence item per search (no network)."""
+
+    def __init__(self):
+        self.queries = []
+
+    def acquire(self, capability, arguments, provenance):
+        from osintinel.core.schemas import AcquisitionMethod, AgentName, EvidenceObject, Provenance
+        self.queries.append(arguments["query"])
+        n = len(self.queries)
+        prov = Provenance(source=f"src{n}", acquisition_method=AcquisitionMethod.SCRAPE,
+                          agent_responsible=AgentName.ACQUISITION, confidence=0.7,
+                          investigation_id="t")
+        prov.url = f"https://ex{n}.test/p"
+        return [EvidenceObject(kind="web_page", summary=f"evidence about {arguments['query']}",
+                               structured={"independence_group": f"ex{n}.test", "url": prov.url},
+                               provenance=prov)]
+
+
+def test_run_autoresearch_gathers_its_own_evidence():
+    from osintinel.interfaces.tui.logic import run_autoresearch
+    web = _FakeWeb()
+    summary = run_autoresearch("Is the tower a mast?", InferenceForm(profile="deterministic"),
+                               candidates=["mast", "turbine"], web_adapter=web)
+    assert web.queries and web.queries[0] == "Is the tower a mast?"  # it searched on its own
+    assert summary.ranked  # and produced ranked insights from gathered evidence
+
+
 # -- headless app boot -------------------------------------------------------
 def test_tui_boots_and_runs_an_investigation_headless():
     from textual.widgets import Input, TextArea
@@ -115,6 +143,42 @@ def test_tui_boots_and_runs_an_investigation_headless():
 
     text = asyncio.run(scenario())
     assert "Run failed" not in text and ("Leading answer" in text or "mast" in text.lower())
+
+
+def test_tui_autonomous_toggle_routes_to_web_research(monkeypatch):
+    from textual.widgets import Checkbox, Input
+
+    from osintinel.interfaces.tui.app import OsintinelTUI
+    from osintinel.service import InvestigationSummary
+
+    used = {}
+
+    def fake_research(question, form, **kw):
+        used["question"] = question
+        return InvestigationSummary(question=question, leader="a mast", leader_confidence=0.6,
+                                    leader_class="HYPOTHESIS",
+                                    ranked=[{"statement": "a mast", "confidence": 0.6,
+                                             "class": "HYPOTHESIS"}])
+
+    monkeypatch.setattr("osintinel.interfaces.tui.app.run_autoresearch", fake_research)
+
+    async def scenario() -> str:
+        app = OsintinelTUI()
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.press("enter")
+            await pilot.pause()
+            s = app.screen
+            s.query_one("#question", Input).value = "What is on the ridge?"
+            s.query_one("#autonomous", Checkbox).value = True   # no competing answers needed
+            s.action_run()
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            return s.last_summary
+
+    text = asyncio.run(scenario())
+    assert used.get("question") == "What is on the ridge?"   # the web-research path was taken
+    assert "Leading answer" in text
 
 
 def test_tui_detect_populates_tier_dropdowns(monkeypatch):

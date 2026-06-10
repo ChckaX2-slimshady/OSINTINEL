@@ -28,7 +28,7 @@ osintinel serve           # …or the browser UI at http://127.0.0.1:8765
 | Door | Command | What it is | State |
 |------|---------|-----------|-------|
 | **CLI** | `osintinel <cmd>` | demos + diagnostics + the service entrypoints | per-run, optional ledger on disk |
-| **TUI** | `osintinel tui` | terminal UI (Textual): animated mascot, question form, **full per-tier model control**, results | runs in memory |
+| **TUI** | `osintinel tui` | terminal UI (Textual): mascot, question form, **full per-tier model control**, an **Autonomous** toggle (it researches the web for its own evidence), results | persisted to `~/.osintinel` |
 | **Web app** | `osintinel serve [--port 8765] [--host 127.0.0.1]` | stdlib browser UI; ask a question, **pick the model**, see the result | runs held **in memory** (`RUNS` dict) |
 | **MCP server** | `osintinel mcp` | JSON-RPC stdio; tools `investigate` + `models_status` | driven by an MCP client (Claude Desktop, etc.) |
 

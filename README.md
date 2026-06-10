@@ -167,7 +167,8 @@ competing answers, provide evidence; the system frames hypotheses, judges releva
 Skeptic gate, and returns a ranked, uncertainty-aware report):
 
 ```bash
-# 1) Terminal UI — animated mascot, then a console with FULL per-tier model control
+# 1) Terminal UI — mascot, FULL per-tier model control, and an "Autonomous" toggle that
+#    sends it to research the open web for its own (and contrary) evidence
 pip install -e ".[tui]" && osintinel tui
 
 # 2) Local web app — a browser UI (dark "console" theme), runs kept in memory
