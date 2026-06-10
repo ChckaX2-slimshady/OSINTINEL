@@ -230,3 +230,24 @@ def test_tui_detect_populates_tier_dropdowns(monkeypatch):
             assert reason.value == "dollamin:latest"
 
     asyncio.run(scenario())
+
+
+def test_photo_report_reads_geotag_and_computes_sun(tmp_path):
+    from osintinel.adapters.media.exif import write_exif_jpeg
+    from osintinel.interfaces.tui.logic import photo_report
+
+    jpg = tmp_path / "shot.jpg"
+    jpg.write_bytes(write_exif_jpeg(make="Canon", model="EOS 80D",
+                                    datetime_original="2021:06:21 14:30:00",
+                                    lat=51.0153, lon=-1.3253, altitude_m=118.0))
+    out = photo_report(str(jpg))
+    assert "Geotag" in out and "51.0153" in out and "Sun at capture" in out
+    assert "shadows point" in out
+
+
+def test_photo_report_handles_non_image(tmp_path):
+    from osintinel.interfaces.tui.logic import photo_report
+    f = tmp_path / "notjpg.txt"
+    f.write_text("hello")
+    assert "No EXIF" in photo_report(str(f))
+    assert "Can't read" in photo_report(str(tmp_path / "missing.jpg"))

@@ -83,10 +83,14 @@ def _banner(run_id: str) -> str:
     model = RUN_MODELS.get(run_id, "")
     chip = (f'&nbsp;·&nbsp; <span style="color:#3ddc84">model:</span> {_e(model)}'
             if model else "")
+    result = RUNS.get(run_id)
+    sources = InvestigationSummary.from_result(result).sources if result is not None else []
+    src_chip = (f'&nbsp;·&nbsp; <span style="color:#3ddc84">tools/sources:</span> '
+                f'{_e(", ".join(s["source"] for s in sources))}' if sources else "")
     return ('<div style="background:#0b0e16;border-bottom:1px solid #222c44;padding:10px 24px;'
             'font:13px system-ui;color:#8a96b0">'
             '<a href="/" style="color:#3ddc84;text-decoration:none">&larr; New investigation</a>'
-            f'&nbsp;·&nbsp; OSINTINEL — records kept in memory{chip}</div>')
+            f'&nbsp;·&nbsp; OSINTINEL — records kept in memory{chip}{src_chip}</div>')
 
 
 def build_result_page(run_id: str) -> str | None:

@@ -26,6 +26,7 @@ from .logic import (
     list_installed_models,
     parse_candidates,
     parse_evidence,
+    photo_report,
     profile_names,
     run_autoresearch,
     run_summary,
@@ -95,6 +96,10 @@ class ConsoleScreen(Screen):
                 yield ev
                 yield Checkbox("Autonomous — gather evidence from the open web (needs network; "
                                "ignores the evidence box)", id="autonomous")
+                photo = Input(placeholder="/path/to/photo.jpg — EXIF geotag + sun/shadow analysis",
+                              id="photo")
+                photo.border_title = "photo (optional)"
+                yield photo
 
                 yield Static("[b]Model[/b]  [dim]pick a profile; tiers populate from your "
                              "installed models[/dim]", classes="section")
@@ -179,6 +184,7 @@ class ConsoleScreen(Screen):
         self.query_one("#question", Input).value = ""
         self.query_one("#candidates", TextArea).text = ""
         self.query_one("#evidence", TextArea).text = ""
+        self.query_one("#photo", Input).value = ""
         self.query_one("#autonomous", Checkbox).value = False
         self.query_one("#summary", Static).update(
             "[dim]New investigation — pose a question and press Investigate (Ctrl+R).[/dim]")
@@ -209,6 +215,10 @@ class ConsoleScreen(Screen):
         self.action_run()
 
     def action_run(self) -> None:
+        photo = self.query_one("#photo", Input).value.strip()
+        if photo:  # a photo path takes priority — analyze its EXIF + sun geometry
+            self._show(photo_report(photo))
+            return
         question = self.query_one("#question", Input).value.strip()
         candidates = parse_candidates(self.query_one("#candidates", TextArea).text)
         autonomous = self.query_one("#autonomous", Checkbox).value

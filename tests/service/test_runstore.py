@@ -34,3 +34,16 @@ def test_save_is_best_effort_on_unwritable_base(tmp_path):
     clash.write_text("not a dir")
     store = RunStore(base=clash)
     assert store.save(_summary("x?"), "run-x") is None
+
+
+def test_summary_lists_tools_and_sources():
+    from osintinel.service import run_investigation
+    from osintinel.service.investigation import EvidenceInput, InvestigationSummary
+    result = run_investigation(
+        question="Mast or turbine?", candidates=["mast", "turbine"],
+        evidence=[EvidenceInput(text="man_made=mast", source="OpenStreetMap", supports=0),
+                  EvidenceInput(text="radio relay nearby", source="Wikidata", supports=0)])
+    summary = InvestigationSummary.from_result(result)
+    names = {s["source"] for s in summary.sources}
+    assert {"OpenStreetMap", "Wikidata"} <= names
+    assert all("tool" in s and "count" in s for s in summary.sources)

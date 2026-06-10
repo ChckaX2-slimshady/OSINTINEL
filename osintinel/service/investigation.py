@@ -211,6 +211,7 @@ class InvestigationSummary:
     ranked: list[dict] = field(default_factory=list)
     known_unknowns: list[str] = field(default_factory=list)
     next_steps: list[str] = field(default_factory=list)
+    sources: list[dict] = field(default_factory=list)  # [{source, tool, count}] — what was used
 
     @classmethod
     def from_result(cls, result: InvestigationResult) -> "InvestigationSummary":
@@ -219,8 +220,15 @@ class InvestigationSummary:
                    "class": rh.epistemic_class.value}
                   for s in cps for rh in s.ranked_hypotheses]
         leader = ranked[0] if ranked else {"statement": "—", "confidence": 0.0, "class": "—"}
+        tallies: dict[tuple[str, str], int] = {}
+        for ev in result.state.evidence.values():
+            prov = ev.provenance
+            tool = prov.tool_used or prov.acquisition_method.value
+            tallies[(prov.source, tool)] = tallies.get((prov.source, tool), 0) + 1
+        sources = [{"source": s, "tool": t, "count": n}
+                   for (s, t), n in sorted(tallies.items(), key=lambda kv: -kv[1])]
         return cls(
             question=result.investigation.objective, leader=leader["statement"],
             leader_confidence=leader["confidence"], leader_class=leader["class"], ranked=ranked,
             known_unknowns=[ku.question for ku in (result.report.known_unknowns or [])],
-            next_steps=list(result.report.recommended_next_investigations))
+            next_steps=list(result.report.recommended_next_investigations), sources=sources)
