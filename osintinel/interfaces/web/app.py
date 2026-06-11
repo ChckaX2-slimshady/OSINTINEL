@@ -220,7 +220,8 @@ async function detect(){
     const r = await fetch('/api/detect?profile='+encodeURIComponent(prof())+'&base='+encodeURIComponent(base));
     const j = await r.json(); const dl = $('#models_dl'); dl.innerHTML = '';
     (j.models||[]).forEach(m => { const o = document.createElement('option'); o.value = m; dl.appendChild(o); });
-    s.textContent = (j.models && j.models.length) ? ('\\u2713 found '+j.models.length+' \\u2014 pick per tier') : 'no models detected (is the endpoint running?)';
+    if (j.models && j.models.length) { TIERS.forEach(t => { $('[name='+t+']').value = ''; }); }  // clear so the dropdown shows
+    s.textContent = (j.models && j.models.length) ? ('\\u2713 found '+j.models.length+' \\u2014 tap a field to pick') : 'no models detected (is the endpoint running?)';
   }catch(e){ s.textContent = 'detect failed'; }
 }
 </script>""" % _profile_defaults_js()
@@ -413,11 +414,14 @@ def detect_models(qs: dict[str, list[str]]) -> dict:
 class _Handler(BaseHTTPRequestHandler):
     def _send(self, code: int, body: str, ctype: str = "text/html; charset=utf-8") -> None:
         data = body.encode("utf-8")
-        self.send_response(code)
-        self.send_header("Content-Type", ctype)
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        try:
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # the client navigated away / timed out mid-response — harmless
 
     def log_message(self, *args):
         pass
@@ -476,9 +480,12 @@ class _Handler(BaseHTTPRequestHandler):
         except Exception as exc:  # network/model failure → a clear page, never a 500
             self._send(502, render_form(f"Run failed: {exc}"))
             return
-        self.send_response(303)
-        self.send_header("Location", f"/run/{run_id}")
-        self.end_headers()
+        try:  # the run is already saved to History — a dropped client mustn't crash the thread
+            self.send_response(303)
+            self.send_header("Location", f"/run/{run_id}")
+            self.end_headers()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
 
 def _lan_ip() -> str | None:

@@ -246,7 +246,46 @@ def _agents(data: DashboardData) -> str:
 
 _TABS = [("overview", "Overview"), ("graph", "Knowledge Graph"),
          ("timeline", "Timeline &amp; Replay"), ("confidence", "Confidence Evolution"),
-         ("sources", "Sources"), ("agents", "Agents")]
+         ("sources", "Sources"), ("agents", "Agents"), ("adapters", "Adapters")]
+
+_STATUS_COLOR = {"live": "#3ddc84", "planned": "#4aa3df", "gated": "#7e8aa2"}
+_STATUS_LABEL = {"live": "live", "planned": "planned", "gated": "license-gated"}
+
+
+def _adapters_section() -> str:
+    from ...adapters.catalog import BASIC, SUPPLEMENTAL, counts
+
+    def tables(cats) -> str:
+        out = []
+        for c in cats:
+            rows = "".join(
+                f"<tr><td>{_e(t.name)}</td><td><code>{_e(t.capability)}</code></td>"
+                f'<td><span class="chip" style="--c:{_STATUS_COLOR[t.status]}">'
+                f'{_STATUS_LABEL[t.status]}</span></td>'
+                f'<td class="muted">{_e(t.note)}</td></tr>' for t in c.tools)
+            out.append(f'<div class="panel"><h3>{_e(c.title)}</h3><table class="tbl"><thead><tr>'
+                       f'<th>Tool</th><th>Capability</th><th>Status</th><th>Notes</th></tr></thead>'
+                       f"<tbody>{rows}</tbody></table></div>")
+        return "".join(out)
+
+    cnt = counts()
+    return f"""
+    <section id="sec-adapters" class="tab">
+      <div class="panel"><h3>Adapter &amp; tool catalog</h3>
+        <div class="legendbar">
+          <span class="lg"><i style="background:#3ddc84"></i>{cnt['live']} live</span>
+          <span class="lg"><i style="background:#4aa3df"></i>{cnt['planned']} planned</span>
+          <span class="lg"><i style="background:#7e8aa2"></i>{cnt['gated']} license-gated</span></div>
+        <p class="muted">Lawful, public-source by default. Commercial tools are <b>off</b> unless
+          credentials <em>and</em> an authorization attestation are supplied; none are functionally
+          integrated. The autonomous loop currently combs the <b>live</b> web tools.</p></div>
+      <div class="panel" style="background:none;border:none;padding:0"><h3 class="muted">Basic
+        framework — free, lawful, public-source</h3></div>
+      {tables(BASIC)}
+      <div class="panel" style="background:none;border:none;padding:0"><h3 class="muted">Supplemental
+        framework — license-gated, off by default</h3></div>
+      {tables(SUPPLEMENTAL)}
+    </section>"""
 
 
 def _ladder_bar() -> str:
@@ -264,7 +303,7 @@ def render_dashboard(data: DashboardData) -> str:
     nav = "".join(
         f'<label class="navbtn" for="tab-{tid}">{label}</label>' for tid, label in _TABS)
     body = (_overview(data) + _graph_svg(data) + _timeline(data) + _confidence(data)
-            + _sources(data) + _agents(data))
+            + _sources(data) + _agents(data) + _adapters_section())
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -324,13 +363,15 @@ main{padding:18px 24px 40px}
 #tab-timeline:checked~main #sec-timeline,
 #tab-confidence:checked~main #sec-confidence,
 #tab-sources:checked~main #sec-sources,
-#tab-agents:checked~main #sec-agents{display:block}
+#tab-agents:checked~main #sec-agents,
+#tab-adapters:checked~main #sec-adapters{display:block}
 #tab-overview:checked~nav label[for=tab-overview],
 #tab-graph:checked~nav label[for=tab-graph],
 #tab-timeline:checked~nav label[for=tab-timeline],
 #tab-confidence:checked~nav label[for=tab-confidence],
 #tab-sources:checked~nav label[for=tab-sources],
-#tab-agents:checked~nav label[for=tab-agents]{background:var(--panel);color:var(--ink);
+#tab-agents:checked~nav label[for=tab-agents],
+#tab-adapters:checked~nav label[for=tab-adapters]{background:var(--panel);color:var(--ink);
 border-color:var(--line);border-bottom-color:var(--panel)}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;
 margin-bottom:16px}

@@ -82,7 +82,7 @@ def test_navigation_is_css_only_no_javascript(data):
     html = render_dashboard(data)
     # tabs must work with zero JS (sandboxed previews strip <script>)
     assert "<script" not in html.lower()
-    assert html.count('class="tabradio"') == 6  # one hidden radio per tab
+    assert html.count('class="tabradio"') == 7  # one hidden radio per tab (incl. Adapters)
     assert ":checked~main" in html              # CSS drives panel visibility
 
 
@@ -99,3 +99,13 @@ def test_write_dashboard_emits_file(demo_result, tmp_path):
 
 def test_dashboard_json_helper(demo_result):
     assert dashboard_json(demo_result).startswith("{")
+
+
+def test_adapters_tab_lists_basic_and_supplemental_tools(data):
+    html = render_dashboard(data)
+    assert 'id="sec-adapters"' in html and "Adapter &amp; tool catalog" in html
+    for live in ("Shodan InternetDB", "OpenCorporates", "Wayback", "Nominatim"):
+        assert live in html                       # basic, live tools
+    for gated in ("Maltego", "PimEyes", "Recorded Future"):
+        assert gated in html                      # supplemental, license-gated
+    assert "license-gated" in html
