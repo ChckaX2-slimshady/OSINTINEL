@@ -196,3 +196,11 @@ def test_mcp_investigate_autonomous_routes_to_web_research(monkeypatch):
     text = resp["result"]["content"][0]["text"]
     assert seen["q"] == "Who built the ridge mast?" and seen["rounds"] == 2
     assert "Ranked hypotheses" in text and resp["result"].get("isError") in (None, False)
+
+
+def test_form_wears_the_dashboard_console_chrome():
+    from osintinel.interfaces.web import render_form
+    h = render_form()
+    assert "Investigation Console" in h and 'class="ladder"' in h
+    for rung in ("information", "hypothesis", "insight"):  # the epistemic-ladder bar
+        assert f">{rung}<" in h

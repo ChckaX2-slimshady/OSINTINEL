@@ -181,8 +181,13 @@ class HttpClient:
         raise AdapterError(f"live fetch failed for {full_url}: {last}") from last
 
     def _open(self, req: urllib.request.Request) -> bytes:
-        opener = urllib.request.build_opener(_GuardedRedirectHandler()) \
-            if self.block_private_net else None
+        handlers = []
+        proxy = os.environ.get("OSINTINEL_HTTP_PROXY")  # privacy: route fetches via a proxy/Tor
+        if proxy:
+            handlers.append(urllib.request.ProxyHandler({"http": proxy, "https": proxy}))
+        if self.block_private_net:
+            handlers.append(_GuardedRedirectHandler())
+        opener = urllib.request.build_opener(*handlers) if handlers else None
         target = opener.open if opener is not None else urllib.request.urlopen
         with target(req, timeout=30) as resp:  # noqa: S310 (guarded/recording only)
             return resp.read()

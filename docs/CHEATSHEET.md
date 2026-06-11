@@ -157,6 +157,7 @@ enter cassettes** (the request key hashes only method + URL + body).
 | Env var | Effect |
 |---------|--------|
 | `OSINTINEL_ALLOW_PRIVATE_NET=1` | disable the SSRF guard on the web-fetch path (only for trusted LAN targets) |
+| `OSINTINEL_HTTP_PROXY=http://host:port` | route all adapter web fetches through a proxy (privacy/anonymity; e.g. a Tor→HTTP bridge) |
 | `OSINTINEL_HOME` | base dir for persisted run history (default `~/.osintinel`) |
 | `OSINTINEL_NO_PERSIST=1` | don't persist run summaries to disk (fully ephemeral session) |
 

@@ -30,7 +30,10 @@ from ...service import (
 )
 from ...service.photo import analyze_photo, osm_url
 from ..api import build_dashboard_data
+from ..api.service import TIER_COLORS
 from ..dashboard import render_dashboard
+
+_LADDER = ["INFORMATION", "CONNECTION", "SPECULATION", "EXTRAPOLATION", "HYPOTHESIS", "INSIGHT"]
 
 RUNS: dict[str, object] = {}
 RUN_MODELS: dict[str, str] = {}
@@ -131,13 +134,22 @@ def _page(title: str, body: str) -> str:
             f'<title>{_e(title)}</title><style>{_CSS}</style></head><body>{body}</body></html>')
 
 
+def _ladder_bar() -> str:
+    """The epistemic ladder — the dashboard's signature: colour *is* the tier."""
+    seg = "".join(f'<span style="background:{TIER_COLORS.get(k, "#7e8aa2")}">{k.lower()}</span>'
+                  for k in _LADDER)
+    return f'<div class="ladder">{seg}</div>'
+
+
 def _nav(active: str = "") -> str:
+    """Console chrome shared with the dashboard: branded header + epistemic-ladder bar."""
     def link(href: str, label: str, key: str) -> str:
         cls = ' class="on"' if key == active else ""
         return f'<a href="{href}"{cls}>{label}</a>'
-    return ('<header><span class="logo">&#9678;</span><b>OSINTINEL</b>'
-            '<span class="grow"></span>'
-            f'{link("/", "✚ New", "new")}{link("/history", "History", "history")}</header>')
+    return (f'<header class="top"><div class="brand"><span class="logo">&#9678;</span> OSINTINEL '
+            f'<span class="muted">/ Investigation Console</span></div>'
+            f'<div class="navlinks">{link("/", "✚ New", "new")}'
+            f'{link("/history", "History", "history")}</div></header>{_ladder_bar()}')
 
 
 def render_form(message: str = "") -> str:
@@ -299,10 +311,17 @@ _CSS = """
 *{box-sizing:border-box}
 body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#16203a 0,var(--bg) 60%);
 color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--line)}
-header b{font-weight:800} .logo{color:var(--accent);font-size:18px} .grow{flex:1}
-header a{color:var(--mut);text-decoration:none;font-size:14px;font-weight:600;padding:6px 10px;
-border-radius:8px} header a.on,header a:hover{color:var(--accent);background:#0e1626}
+.top{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 20px;
+border-bottom:1px solid var(--line);background:rgba(10,13,22,.6);backdrop-filter:blur(6px);
+flex-wrap:wrap}
+.brand{font-weight:700;letter-spacing:.5px;font-size:16px} .logo{color:var(--accent)}
+.navlinks{display:flex;gap:8px}
+.navlinks a{color:var(--mut);text-decoration:none;font-size:14px;font-weight:600;padding:6px 12px;
+border-radius:8px} .navlinks a.on,.navlinks a:hover{color:var(--accent);background:#0e1626}
+.ladder{display:flex;gap:6px;padding:10px 20px;font-size:11px;letter-spacing:.5px;
+text-transform:uppercase;flex-wrap:wrap;border-bottom:1px solid var(--line);background:rgba(10,13,22,.4)}
+.ladder span{flex:1 1 110px;text-align:center;padding:8px 10px;color:#06121f;font-weight:700;
+border-radius:6px;opacity:.95;min-width:88px}
 .hl{color:var(--accent)} .muted{color:var(--mut);font-weight:400;font-size:13px}
 main{max-width:820px;margin:0 auto;padding:20px}
 h2{font-size:18px;margin:6px 0 14px}
@@ -462,12 +481,28 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
 
+def _lan_ip() -> str | None:
+    """Best-effort LAN IP (no traffic actually sent — just picks the route's source address)."""
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+    except OSError:
+        return None
+    finally:
+        s.close()
+
+
 def serve(port: int = 8765, host: str = "127.0.0.1") -> None:
     server = ThreadingHTTPServer((host, port), _Handler)
-    where = "all interfaces" if host == "0.0.0.0" else host
-    print(f"OSINTINEL web app on http://{host}:{port}  ({where}; Ctrl+C to stop)")
+    print(f"OSINTINEL web app on http://{host}:{port}  (Ctrl+C to stop)")
     if host == "0.0.0.0":
-        print("  reachable from your phone on the same wifi at  http://<this-machine-ip>:%d" % port)
+        ip = _lan_ip()
+        if ip:
+            print(f"  on your phone (same wifi):  http://{ip}:{port}")
+        else:
+            print("  on your phone (same wifi):  http://<this-machine-ip>:%d" % port)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
