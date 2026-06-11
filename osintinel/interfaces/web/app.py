@@ -25,8 +25,8 @@ from ...service import (
     EvidenceInput,
     InvestigationSummary,
     RunStore,
-    autoresearch_investigation,
     run_investigation,
+    run_web_research,
 )
 from ...service.photo import analyze_photo, osm_url
 from ..api import build_dashboard_data
@@ -44,10 +44,10 @@ _OVERRIDE_ENV = {
     "reason_profile": "OSINTINEL_REASON_PROFILE", "skeptic_profile": "OSINTINEL_SKEPTIC_PROFILE",
     "base_url": "OSINTINEL_OPENAI_BASE_URL", "key_env": "OSINTINEL_OPENAI_KEY_ENV",
 }
-_ADVANCED = [("reason_model", "reason model"), ("small_model", "small model"),
-             ("task_model", "task model"), ("embed_model", "embed model"),
-             ("reason_profile", "reason→profile"), ("skeptic_profile", "skeptic→profile"),
-             ("base_url", "base-url override"), ("key_env", "key env var")]
+_TIER_FIELDS = [("reason_model", "reason model"), ("small_model", "small model"),
+                ("task_model", "task model"), ("embed_model", "embed model")]
+_EXTRA_FIELDS = [("reason_profile", "reason→profile"), ("skeptic_profile", "skeptic→profile"),
+                 ("base_url", "base-url override"), ("key_env", "key env var")]
 
 
 def _e(text) -> str:
@@ -101,17 +101,6 @@ def _applied(overrides: dict | None):
             os.environ.pop(env, None) if prev is None else os.environ.__setitem__(env, prev)
 
 
-def _live_web_adapter():
-    import tempfile
-    from pathlib import Path
-
-    from ...adapters import Cassette, ContentAddressedStore, HttpClient, WebSearchAdapter
-    cas = ContentAddressedStore(tempfile.mkdtemp())
-    http = HttpClient(Cassette(Path(tempfile.mkdtemp()) / "web.json"), mode="live",
-                      block_private_net=True, min_interval=1.0)
-    return WebSearchAdapter(http, cas, backend="wikipedia")
-
-
 def run_and_store(question: str, candidates: list[str], evidence: list[EvidenceInput],
                   profile: str | None = None, *, autonomous: bool = False,
                   overrides: dict | None = None) -> str:
@@ -120,11 +109,8 @@ def run_and_store(question: str, candidates: list[str], evidence: list[EvidenceI
     with _applied(overrides):
         gateway = build_gateway(profile=profile)
         if autonomous:
-            from ...adapters.web.search import to_search_query
-            result = autoresearch_investigation(
-                question=question, candidates=candidates or None, web_adapter=_live_web_adapter(),
-                limit=5, gateway=gateway, rounds=3, backends=["duckduckgo", "wikipedia"],
-                query_transform=to_search_query)
+            result = run_web_research(question, candidates=candidates or None, gateway=gateway,
+                                      rounds=3)
         else:
             result = run_investigation(question=question, candidates=candidates,
                                        evidence=evidence, gateway=gateway)
@@ -155,9 +141,17 @@ def _nav(active: str = "") -> str:
 
 
 def render_form(message: str = "") -> str:
+    from ...inference import resolve_profile
     note = f'<p class="msg">{_e(message)}</p>' if message else ""
-    adv = "\n".join(
-        f'<label class="adv">{_e(label)}<input name="{attr}"></label>' for attr, label in _ADVANCED)
+    d = resolve_profile(None)  # launch-default tier models prefill the dropdowns
+    defaults = {"reason_model": d.reason_model, "small_model": d.small_model,
+                "task_model": d.task_model, "embed_model": d.embed_model}
+    tiers = "\n".join(
+        f'<label class="adv">{_e(label)}<input name="{attr}" list="models_dl" '
+        f'value="{_e(defaults[attr])}"></label>' for attr, label in _TIER_FIELDS)
+    extra = "\n".join(
+        f'<label class="adv">{_e(label)}<input name="{attr}"></label>'
+        for attr, label in _EXTRA_FIELDS)
     body = f"""{_nav("new")}
 <main>{note}
   <form method="post" action="/investigate" enctype="multipart/form-data" class="card">
@@ -173,19 +167,51 @@ def render_form(message: str = "") -> str:
       <span>Autonomous — research the open web for evidence (needs network; ignores the evidence box)</span></label>
     <label>Photo <span class="muted">(optional JPEG — EXIF geotag + sun/shadow read)</span>
       <input type="file" name="photo" accept="image/jpeg,.jpg,.jpeg"></label>
-    <label>Model <span class="muted">(inference profile)</span>
-      <select name="profile">{_profile_options()}</select></label>
-    <details><summary>Advanced model control</summary>
-      <div class="advgrid">{adv}</div>
-      <p class="muted">Leave blank to use the profile defaults. Per-tier model names, decorrelation
-        profiles, and an OpenAI-compatible base-URL / key env var.</p></details>
+    <label>Model profile <select name="profile">{_profile_options()}</select></label>
+    <div class="advgrid">{tiers}</div>
+    <datalist id="models_dl"></datalist>
+    <div class="row"><button type="button" class="ghost" onclick="detect()">↻ Detect installed
+      models</button><span id="detstat" class="muted"></span></div>
+    <details><summary>Advanced (decorrelation profiles + endpoint override)</summary>
+      <div class="advgrid">{extra}</div></details>
     <button type="submit">⌖ Investigate</button>
   </form>
-  <p class="muted">Local/free: run <code>ollama serve</code> and pick <code>ollama</code>. Cloud
-    profiles read their key from the environment at launch. No model (deterministic)? Tag each
-    evidence line with a trailing <code>supports#</code>.</p>
-</main>"""
+  <p class="muted">Pick a profile (its tier defaults fill in), or <b>Detect</b> to choose from the
+    models installed on this machine. Local/free: run <code>ollama serve</code> + pick
+    <code>ollama</code>. No model (deterministic)? Tag each evidence line with <code>supports#</code>.</p>
+</main>{_FORM_JS}"""
     return _page("OSINTINEL — New investigation", body)
+
+
+def _profile_defaults_js() -> str:
+    import json
+
+    from ...inference import resolve_profile
+    pd = {}
+    for name in [""] + list(PROFILES):
+        p = resolve_profile(name or None)
+        pd[name] = {"reason_model": p.reason_model, "small_model": p.small_model,
+                    "task_model": p.task_model, "embed_model": p.embed_model}
+    return json.dumps(pd)
+
+
+_FORM_JS = """<script>
+const PD = %s, TIERS = ['reason_model','small_model','task_model','embed_model'];
+const $ = s => document.querySelector(s), prof = () => $('[name=profile]').value;
+$('[name=profile]').addEventListener('change', () => {
+  const d = PD[prof()] || PD['']; TIERS.forEach(t => { $('[name='+t+']').value = d[t]; });
+});
+async function detect(){
+  const s = $('#detstat'); s.textContent = 'detecting…';
+  const base = ($('[name=base_url]').value || '').trim();
+  try{
+    const r = await fetch('/api/detect?profile='+encodeURIComponent(prof())+'&base='+encodeURIComponent(base));
+    const j = await r.json(); const dl = $('#models_dl'); dl.innerHTML = '';
+    (j.models||[]).forEach(m => { const o = document.createElement('option'); o.value = m; dl.appendChild(o); });
+    s.textContent = (j.models && j.models.length) ? ('\\u2713 found '+j.models.length+' \\u2014 pick per tier') : 'no models detected (is the endpoint running?)';
+  }catch(e){ s.textContent = 'detect failed'; }
+}
+</script>""" % _profile_defaults_js()
 
 
 def _profile_options() -> str:
@@ -290,8 +316,11 @@ input[type=file]{padding:9px;font-size:14px} input[type=checkbox]{width:auto}
 .check{flex-direction:row;align-items:flex-start;gap:10px;font-weight:500}
 .check input{margin-top:3px}
 details summary{cursor:pointer;color:var(--mut);font-size:14px;font-weight:600}
-.advgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.advgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .adv{font-weight:500;font-size:12px;color:var(--mut)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.ghost{background:#0e1626;color:var(--accent);border:1px solid var(--line);font-weight:700;
+padding:10px 14px;font-size:14px;width:auto}
 code{font-family:ui-monospace,Menlo,Consolas,monospace;color:#bcd}
 button{background:linear-gradient(160deg,#3ddc84,#2bb36a);color:#06121f;border:0;border-radius:10px;
 padding:15px;font-size:16px;font-weight:800;cursor:pointer}
@@ -348,6 +377,20 @@ def _overrides_from(fields: dict[str, list[str]]) -> dict:
     return {attr: (fields.get(attr, [""])[0] or "").strip() for attr in _OVERRIDE_ENV}
 
 
+def detect_models(qs: dict[str, list[str]]) -> dict:
+    """Models installed at the chosen profile's endpoint (or an explicit base) — for the form's
+    Detect button. Resolves the base server-side so no endpoint URLs sit in the page."""
+    from ...inference import list_installed_models, resolve_profile
+    base = (qs.get("base", [""])[0] or "").strip()
+    if not base:
+        profile = (qs.get("profile", [""])[0] or "").strip() or None
+        try:
+            base = resolve_profile(profile).base_url or ""
+        except ValueError:
+            base = ""
+    return {"models": list_installed_models(base)}
+
+
 class _Handler(BaseHTTPRequestHandler):
     def _send(self, code: int, body: str, ctype: str = "text/html; charset=utf-8") -> None:
         data = body.encode("utf-8")
@@ -366,6 +409,10 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(200, render_form())
         elif path == "/history":
             self._send(200, render_history())
+        elif path == "/api/detect":
+            import json
+            qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            self._send(200, json.dumps(detect_models(qs)), "application/json")
         elif path == "/health":
             self._send(200, "ok", "text/plain")
         elif path.startswith("/run/"):

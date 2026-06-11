@@ -5,15 +5,14 @@ from __future__ import annotations
 import asyncio
 import os
 
+from osintinel.inference import list_installed_models, parse_model_ids
 from osintinel.interfaces.tui.logic import (
     InferenceForm,
     format_summary,
     form_from_profile,
     is_openai_profile,
-    list_installed_models,
     parse_candidates,
     parse_evidence,
-    parse_model_ids,
     profile_names,
     run_summary,
     status_from_form,

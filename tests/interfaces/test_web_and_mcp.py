@@ -162,3 +162,37 @@ def test_web_photo_result_renders_geotag_and_sun():
                           lat=51.0153, lon=-1.3253, altitude_m=118.0)
     h = render_photo_result(analyze_photo(jpg), "shot.jpg")
     assert "Geotag" in h and "51.0153" in h and "shadows point" in h
+
+
+def test_render_form_has_detect_per_tier_and_js():
+    from osintinel.interfaces.web import render_form
+    h = render_form()
+    assert 'onclick="detect()"' in h and 'id="models_dl"' in h and 'list="models_dl"' in h
+    assert "<script>" in h and 'name="reason_model"' in h and 'name="embed_model"' in h
+    assert "http://" not in h and "https://" not in h  # endpoint URLs resolved server-side
+
+
+def test_detect_models_resolves_profile_base(monkeypatch):
+    from osintinel.interfaces.web import detect_models
+    monkeypatch.setattr("osintinel.inference.list_installed_models",
+                        lambda base: ["dollamin:latest", "nomic-embed-text"] if base else [])
+    assert detect_models({"profile": ["ollama"]})["models"] == ["dollamin:latest", "nomic-embed-text"]
+    assert detect_models({"profile": ["deterministic"]})["models"] == []  # no endpoint → none
+
+
+def test_mcp_investigate_autonomous_routes_to_web_research(monkeypatch):
+    seen = {}
+
+    def fake_research(question, candidates=None, gateway=None, rounds=3, web_adapter=None):
+        seen["q"], seen["rounds"] = question, rounds
+        from osintinel.service import run_investigation
+        return run_investigation(question=question, candidates=candidates or ["yes", "no"],
+                                 evidence=[], gateway=gateway)
+
+    monkeypatch.setattr("osintinel.interfaces.mcp.server.run_web_research", fake_research)
+    resp = handle_request({"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": {
+        "name": "investigate",
+        "arguments": {"question": "Who built the ridge mast?", "autonomous": True, "rounds": 2}}})
+    text = resp["result"]["content"][0]["text"]
+    assert seen["q"] == "Who built the ridge mast?" and seen["rounds"] == 2
+    assert "Ranked hypotheses" in text and resp["result"].get("isError") in (None, False)

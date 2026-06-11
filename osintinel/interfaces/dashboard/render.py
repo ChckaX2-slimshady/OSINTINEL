@@ -369,4 +369,18 @@ ul{margin:6px 0 0;padding-left:18px}li{margin:3px 0}
 .abar-fill{height:100%;background:linear-gradient(90deg,#4aa3df,#3ddc84);border-radius:6px}
 .abar span{position:absolute;right:8px;top:0;line-height:20px;font-size:11px}
 .foot{color:var(--mut);font-size:12px;padding:16px 24px;border-top:1px solid var(--line)}
+/* mobile: stack the header, let wide tables scroll, keep the knowledge graph tall & readable */
+@media(max-width:600px){
+  .top{flex-direction:column;align-items:flex-start;gap:6px;padding:12px 16px}
+  .meta{font-size:11.5px}
+  .kpis{padding:12px 16px;gap:10px;grid-template-columns:repeat(auto-fit,minmax(108px,1fr))}
+  .kpi-val{font-size:20px}
+  .ladder{padding:8px 16px;gap:4px}.ladder span{flex-basis:88px;min-width:78px;padding:7px 6px}
+  .nav{padding:8px 12px 0;flex-wrap:nowrap;overflow-x:auto}
+  .navbtn{padding:8px 12px;font-size:12px}
+  main{padding:12px 16px 32px}.panel{padding:14px}
+  .tbl{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+  .arow{grid-template-columns:1fr;gap:4px}.abar{height:16px}
+  .spark{width:210px}.graph{min-height:300px}
+}
 """

@@ -8,6 +8,7 @@ testable without binding a socket.
 
 from .app import (
     build_result_page,
+    detect_models,
     model_label,
     parse_form,
     parse_multipart,
@@ -18,5 +19,5 @@ from .app import (
     serve,
 )
 
-__all__ = ["build_result_page", "model_label", "parse_form", "parse_multipart", "render_form",
-           "render_history", "render_photo_result", "run_and_store", "serve"]
+__all__ = ["build_result_page", "detect_models", "model_label", "parse_form", "parse_multipart",
+           "render_form", "render_history", "render_photo_result", "run_and_store", "serve"]

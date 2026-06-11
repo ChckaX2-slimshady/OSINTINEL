@@ -13,7 +13,12 @@ import sys
 from typing import Any
 
 from ...inference import build_gateway, gateway_status
-from ...service import EvidenceInput, InvestigationSummary, run_investigation
+from ...service import (
+    EvidenceInput,
+    InvestigationSummary,
+    run_investigation,
+    run_web_research,
+)
 
 PROTOCOL_VERSION = "2024-11-05"
 
@@ -21,20 +26,28 @@ TOOLS: list[dict] = [
     {
         "name": "investigate",
         "description": (
-            "Run a multi-agent OSINTINEL investigation over a question, the competing answers to "
-            "weigh, and any evidence you provide. Returns ranked hypotheses with confidence, "
-            "preserved alternatives, known unknowns, and recommended next steps. Uses the "
-            "configured local/free models to judge evidence relevance, propose additional "
-            "explanations, and critique the leader."),
+            "Run a multi-agent OSINTINEL investigation: weigh competing answers against evidence, "
+            "with a Skeptic gate, source-independence checks, and confidence math, returning ranked "
+            "hypotheses (alternatives preserved), known unknowns, the tools/sources used, and next "
+            "steps. Set autonomous=true to have it research the open web for its own (and contrary) "
+            "evidence first — a full autonomous OSINT investigation that derives *insights, not "
+            "conclusions*, which a plain language model can't reproduce."),
         "inputSchema": {
             "type": "object",
             "properties": {
                 "question": {"type": "string", "description": "The investigative question."},
                 "candidates": {"type": "array", "items": {"type": "string"},
-                               "description": "Competing answers to weigh (2+)."},
+                               "description": "Competing answers to weigh (optional when "
+                                              "autonomous — the model proposes them)."},
+                "autonomous": {"type": "boolean",
+                               "description": "Gather evidence from the open web first "
+                                              "(iterative; needs network). Default false."},
+                "rounds": {"type": "integer",
+                           "description": "Autonomous research rounds (default 3): each chases the "
+                                          "investigation's known-unknowns for more evidence."},
                 "evidence": {
                     "type": "array",
-                    "description": "Evidence items to weigh.",
+                    "description": "Evidence items to weigh (ignored when autonomous).",
                     "items": {"type": "object", "properties": {
                         "text": {"type": "string"},
                         "source": {"type": "string"},
@@ -42,7 +55,7 @@ TOOLS: list[dict] = [
                                      "description": "1-based index of the answer it supports "
                                                     "(optional; omit to let a model judge)."}}}},
             },
-            "required": ["question", "candidates"],
+            "required": ["question"],
         },
     },
     {
@@ -67,6 +80,11 @@ def _format_summary(s: InvestigationSummary) -> str:
              "Ranked hypotheses (competing alternatives preserved):"]
     for h in s.ranked:
         lines.append(f"  - {h['confidence']:.0%}  [{h['class']}]  {h['statement']}")
+    if s.sources:
+        lines += ["", "Tools / sources used:"]
+        for src in s.sources:
+            times = f" x{src['count']}" if src["count"] > 1 else ""
+            lines.append(f"  - {src['source']} ({src['tool']}{times})")
     if s.known_unknowns:
         lines += ["", "Known unknowns:"] + [f"  - {q}" for q in s.known_unknowns]
     if s.next_steps:
@@ -77,6 +95,10 @@ def _format_summary(s: InvestigationSummary) -> str:
 def _investigate(args: dict) -> str:
     question = args["question"]
     candidates = list(args.get("candidates") or [])
+    if args.get("autonomous"):
+        result = run_web_research(question=question, candidates=candidates or None,
+                                  gateway=build_gateway(), rounds=int(args.get("rounds", 3)))
+        return _format_summary(InvestigationSummary.from_result(result))
     evidence = [EvidenceInput(text=e.get("text", ""), source=e.get("source", "user"),
                               supports=(e["supports"] - 1) if isinstance(e.get("supports"), int)
                               else None)

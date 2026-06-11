@@ -7,6 +7,7 @@ ledger-recorded calls, and record/replay over the same cassette transport the ad
 """
 
 from .config import anthropic_available, build_gateway, gateway_status
+from .discovery import list_installed_models, parse_model_ids
 from .gateway import Embedder, Provider, TieredGateway
 from .profiles import DEFAULT_PROFILE, PROFILES, Profile, resolve_profile
 from .types import ChatMessage, ChatRequest, EmbeddingResult, ModelResponse, Usage
@@ -26,5 +27,7 @@ __all__ = [
     "anthropic_available",
     "build_gateway",
     "gateway_status",
+    "list_installed_models",
+    "parse_model_ids",
     "resolve_profile",
 ]

@@ -17,13 +17,13 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Checkbox, Footer, Header, Input, Select, Static, TextArea
 
+from ...inference import list_installed_models
 from .logic import (
     InferenceForm,
     effective_base_url,
     format_summary,
     form_from_profile,
     is_openai_profile,
-    list_installed_models,
     parse_candidates,
     parse_evidence,
     photo_report,
