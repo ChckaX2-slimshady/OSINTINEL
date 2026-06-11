@@ -35,7 +35,7 @@ def test_run_and_store_then_result_page_is_dashboard():
                         parse_form({"question": ["x"], "candidates": ["x"],
                                     "evidence": ["OSM | man_made=mast | 1"]})[2])
     page = build_result_page(rid)
-    assert page and "<svg" in page and "New investigation" in page  # dashboard + banner
+    assert page and "<svg" in page and "resultnav" in page  # dashboard + result nav banner
     assert build_result_page("nonexistent") is None
 
 
@@ -120,3 +120,45 @@ def test_mcp_unknown_tool_and_method():
 
 def test_mcp_notification_returns_no_response():
     assert handle_request({"jsonrpc": "2.0", "method": "notifications/initialized"}) is None
+
+
+# -- OSINTINEL Web (comprehensive console) ------------------------------------
+def test_render_form_has_autonomous_and_photo_and_advanced():
+    from osintinel.interfaces.web import render_form
+    h = render_form()
+    for token in ('name="autonomous"', 'type="file"', 'name="photo"',
+                  'name="reason_model"', 'enctype="multipart/form-data"'):
+        assert token in h
+    assert "http://" not in h and "https://" not in h  # form stays self-contained/offline
+
+
+def test_parse_multipart_extracts_fields_and_file():
+    from osintinel.interfaces.web import parse_multipart
+    boundary = b"BOUND"
+    body = (b'--BOUND\r\nContent-Disposition: form-data; name="question"\r\n\r\nWhat?\r\n'
+            b'--BOUND\r\nContent-Disposition: form-data; name="photo"; filename="a.jpg"\r\n'
+            b'Content-Type: image/jpeg\r\n\r\n\xff\xd8data\r\n'
+            b'--BOUND--\r\n')
+    fields, files = parse_multipart(body, boundary)
+    assert fields["question"] == ["What?"]
+    assert files["photo"][0] == "a.jpg" and files["photo"][1] == b"\xff\xd8data"
+
+
+def test_render_history_lists_saved_runs():
+    from osintinel.interfaces.web import parse_form, render_history, run_and_store
+    run_and_store("Mast or turbine?", ["mast", "turbine"],
+                  parse_form({"question": ["x"], "candidates": ["x"],
+                              "evidence": ["OSM | man_made=mast | 1"]})[2], profile="deterministic")
+    h = render_history()
+    assert "History" in h and "Mast or turbine?" in h
+
+
+def test_web_photo_result_renders_geotag_and_sun():
+    from osintinel.adapters.media.exif import write_exif_jpeg
+    from osintinel.interfaces.web import render_photo_result
+    from osintinel.service.photo import analyze_photo
+    jpg = write_exif_jpeg(make="Canon", model="EOS 80D",
+                          datetime_original="2021:06:21 14:30:00",
+                          lat=51.0153, lon=-1.3253, altitude_m=118.0)
+    h = render_photo_result(analyze_photo(jpg), "shot.jpg")
+    assert "Geotag" in h and "51.0153" in h and "shadows point" in h

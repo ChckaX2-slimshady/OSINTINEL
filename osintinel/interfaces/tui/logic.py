@@ -263,46 +263,37 @@ def format_summary(s: InvestigationSummary) -> str:
 def photo_report(path: str) -> str:
     """Read a JPEG's EXIF and, if it's geotagged + timestamped, compute the sun/shadow geometry —
     a real 'what does this photo reveal' read for the front door."""
-    from datetime import datetime, timezone
     from pathlib import Path
 
-    from ...adapters.compute.solar import _shadow_azimuth, solar_position
-    from ...adapters.media.exif import parse_exif
+    from ...service.photo import analyze_photo, osm_url
 
     try:
         data = Path(path).expanduser().read_bytes()
     except OSError as exc:
         return f"[red]Can't read {path}:[/red] {exc}"
-    exif = parse_exif(data)
-    if not exif:
+    a = analyze_photo(data)
+    if not a["ok"]:
         return ("[yellow]No EXIF metadata found.[/yellow] The reader handles JPEG with EXIF — "
                 "iPhone HEIC won't parse, so export/convert to JPEG first.")
 
     lines = [f"[b]Photo analysis[/b]  [dim]{path}[/dim]", ""]
-    cam = " ".join(p for p in (exif.get("make"), exif.get("model")) if p)
-    if cam:
-        lines.append(f"[b]Camera[/b]   {cam}")
-    when_str = exif.get("datetime_original")
-    if when_str:
-        lines.append(f"[b]Captured[/b] {when_str}")
-    gps = exif.get("gps")
+    if a["camera"]:
+        lines.append(f"[b]Camera[/b]   {a['camera']}")
+    if a["captured"]:
+        lines.append(f"[b]Captured[/b] {a['captured']}")
+    gps = a["gps"]
     if not gps:
         lines += ["", "[yellow]No GPS tag — this image isn't geotagged.[/yellow]"]
         return "\n".join(lines)
 
     lat, lon = gps["lat"], gps["lon"]
-    alt = f"  ·  alt {gps['altitude_m']} m" if "altitude_m" in gps else ""
+    alt = f"  ·  alt {gps['altitude_m']} m" if gps.get("altitude_m") is not None else ""
     lines += ["", f"[b green]▸ Geotag[/b green]  {lat}, {lon}{alt}",
-              f"   [dim]https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=16/{lat}/{lon}[/dim]"]
-    if when_str:
-        try:
-            when = datetime.strptime(when_str, "%Y:%m:%d %H:%M:%S").replace(tzinfo=timezone.utc)
-            elev, az = solar_position(lat, lon, when)
-            shadow = _shadow_azimuth(az)
-            lines += ["", "[b]Sun at capture (UTC)[/b]",
-                      f"   elevation [b]{elev:.1f}°[/b], azimuth {az:.1f}°  →  "
-                      f"shadows point [b]{shadow:.1f}°[/b]",
-                      "   [dim]cross-check: do the shadows in the photo match that bearing?[/dim]"]
-        except ValueError:
-            pass
+              f"   [dim]{osm_url(lat, lon)}[/dim]"]
+    sun = a["sun"]
+    if sun:
+        lines += ["", "[b]Sun at capture (UTC)[/b]",
+                  f"   elevation [b]{sun['elevation']}°[/b], azimuth {sun['azimuth']}°  →  "
+                  f"shadows point [b]{sun['shadow']}°[/b]",
+                  "   [dim]cross-check: do the shadows in the photo match that bearing?[/dim]"]
     return "\n".join(lines)

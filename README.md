@@ -171,8 +171,9 @@ Skeptic gate, and returns a ranked, uncertainty-aware report):
 #    sends it to research the open web for its own (and contrary) evidence
 pip install -e ".[tui]" && osintinel tui
 
-# 2) Local web app — a browser UI (dark "console" theme), runs kept in memory
-osintinel serve                      # → open http://127.0.0.1:8765
+# 2) OSINTINEL Web — responsive browser console (form + autonomous + photo upload +
+#    per-tier model control + dashboard + history); --host 0.0.0.0 to use it from your phone
+osintinel serve                      # → http://127.0.0.1:8765   (or --host 0.0.0.0 for LAN/phone)
 
 # 3) MCP server — drive it by chatting with Claude (Desktop or Code)
 osintinel mcp                        # stdio MCP server exposing `investigate` + `models_status`
