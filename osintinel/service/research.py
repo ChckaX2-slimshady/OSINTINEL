@@ -25,11 +25,13 @@ def live_web_adapter(backend: str = "wikipedia"):
 
 
 def run_web_research(question: str, *, candidates: list[str] | None = None, gateway=None,
-                     rounds: int = 3, limit: int = 5, web_adapter=None) -> InvestigationResult:
-    """Run an autonomous, multi-source, iterative investigation and return the full result."""
+                     rounds: int = 3, limit: int = 5, web_adapter=None,
+                     backends: list[str] | None = None) -> InvestigationResult:
+    """Run an autonomous, multi-source, iterative investigation and return the full result.
+    ``backends`` selects which open-web engines to comb (default DuckDuckGo + Wikipedia)."""
     from ..adapters.web.search import to_search_query
     adapter = web_adapter if web_adapter is not None else live_web_adapter()
     return autoresearch_investigation(
         question=question, candidates=candidates or None, web_adapter=adapter, limit=limit,
-        gateway=gateway, rounds=rounds, backends=["duckduckgo", "wikipedia"],
+        gateway=gateway, rounds=rounds, backends=backends or ["duckduckgo", "wikipedia"],
         query_transform=to_search_query)

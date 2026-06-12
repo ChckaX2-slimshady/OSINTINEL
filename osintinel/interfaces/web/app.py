@@ -106,14 +106,14 @@ def _applied(overrides: dict | None):
 
 def run_and_store(question: str, candidates: list[str], evidence: list[EvidenceInput],
                   profile: str | None = None, *, autonomous: bool = False,
-                  overrides: dict | None = None) -> str:
+                  overrides: dict | None = None, backends: list[str] | None = None) -> str:
     """Run an investigation (or, when ``autonomous``, autonomous web research) and store it."""
     profile = profile if profile in PROFILES else None
     with _applied(overrides):
         gateway = build_gateway(profile=profile)
         if autonomous:
             result = run_web_research(question, candidates=candidates or None, gateway=gateway,
-                                      rounds=3)
+                                      rounds=3, backends=backends or None)
         else:
             result = run_investigation(question=question, candidates=candidates,
                                        evidence=evidence, gateway=gateway)
@@ -152,6 +152,12 @@ def _nav(active: str = "") -> str:
             f'{link("/history", "History", "history")}</div></header>{_ladder_bar()}')
 
 
+def _live_tools_line() -> str:
+    from ...adapters.catalog import BASIC
+    live = [t.name.split(" (")[0] for c in BASIC for t in c.tools if t.status == "live"]
+    return f'<b>{len(live)} live tools</b> available: ' + _e(", ".join(live))
+
+
 def render_form(message: str = "") -> str:
     from ...inference import resolve_profile
     note = f'<p class="msg">{_e(message)}</p>' if message else ""
@@ -177,6 +183,14 @@ def render_form(message: str = "") -> str:
         placeholder="OpenStreetMap | node tagged man_made=mast | 1&#10;Wikidata | radio relay nearby | 1"></textarea></label>
     <label class="check"><input type="checkbox" name="autonomous" value="on">
       <span>Autonomous — research the open web for evidence (needs network; ignores the evidence box)</span></label>
+    <fieldset class="adapters"><legend>Sources to comb <span class="muted">(autonomous mode)</span></legend>
+      <label class="check"><input type="checkbox" name="backend" value="duckduckgo" checked>
+        <span>DuckDuckGo <span class="muted">— diverse domains</span></span></label>
+      <label class="check"><input type="checkbox" name="backend" value="wikipedia" checked>
+        <span>Wikipedia <span class="muted">— reliable reference</span></span></label>
+      <p class="muted">{_live_tools_line()} &middot; full catalog on the result's <b>Adapters</b> tab.
+        Structured tools (Shodan, records, archives) need structured inputs — coming to the loop.</p>
+    </fieldset>
     <label>Photo <span class="muted">(optional JPEG — EXIF geotag + sun/shadow read)</span>
       <input type="file" name="photo" accept="image/jpeg,.jpg,.jpeg"></label>
     <label>Model profile <select name="profile">{_profile_options()}</select></label>
@@ -335,6 +349,9 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#3a7}
 input[type=file]{padding:9px;font-size:14px} input[type=checkbox]{width:auto}
 .check{flex-direction:row;align-items:flex-start;gap:10px;font-weight:500}
 .check input{margin-top:3px}
+.adapters{border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;
+flex-direction:column;gap:8px;margin:0}
+.adapters legend{font-size:13px;font-weight:700;padding:0 6px;color:var(--accent)}
 details summary{cursor:pointer;color:var(--mut);font-size:14px;font-weight:600}
 .advgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .adv{font-weight:500;font-size:12px;color:var(--mut)}
@@ -474,9 +491,11 @@ class _Handler(BaseHTTPRequestHandler):
                 "Provide at least one competing answer, or tick Autonomous."))
             return
         profile = (fields.get("profile", [""])[0] or "").strip() or None
+        backends = [b for b in fields.get("backend", []) if b] or None
         try:
             run_id = run_and_store(question, candidates, evidence, profile=profile,
-                                   autonomous=autonomous, overrides=_overrides_from(fields))
+                                   autonomous=autonomous, overrides=_overrides_from(fields),
+                                   backends=backends)
         except Exception as exc:  # network/model failure → a clear page, never a 500
             self._send(502, render_form(f"Run failed: {exc}"))
             return

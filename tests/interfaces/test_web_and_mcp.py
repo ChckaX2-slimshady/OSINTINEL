@@ -204,3 +204,11 @@ def test_form_wears_the_dashboard_console_chrome():
     assert "Investigation Console" in h and 'class="ladder"' in h
     for rung in ("information", "hypothesis", "insight"):  # the epistemic-ladder bar
         assert f">{rung}<" in h
+
+
+def test_cockpit_form_has_source_selector_and_live_tools():
+    from osintinel.interfaces.web import render_form
+    h = render_form()
+    assert "Sources to comb" in h and 'name="backend"' in h
+    assert 'value="duckduckgo"' in h and 'value="wikipedia"' in h
+    assert "live tools" in h and "Adapters" in h  # the arsenal is visible on the cockpit
