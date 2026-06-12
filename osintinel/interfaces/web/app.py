@@ -106,14 +106,15 @@ def _applied(overrides: dict | None):
 
 def run_and_store(question: str, candidates: list[str], evidence: list[EvidenceInput],
                   profile: str | None = None, *, autonomous: bool = False,
-                  overrides: dict | None = None, backends: list[str] | None = None) -> str:
+                  overrides: dict | None = None, backends: list[str] | None = None,
+                  corroborate: bool = True) -> str:
     """Run an investigation (or, when ``autonomous``, autonomous web research) and store it."""
     profile = profile if profile in PROFILES else None
     with _applied(overrides):
         gateway = build_gateway(profile=profile)
         if autonomous:
             result = run_web_research(question, candidates=candidates or None, gateway=gateway,
-                                      rounds=3, backends=backends or None)
+                                      rounds=3, backends=backends or None, corroborate=corroborate)
         else:
             result = run_investigation(question=question, candidates=candidates,
                                        evidence=evidence, gateway=gateway)
@@ -188,8 +189,11 @@ def render_form(message: str = "") -> str:
         <span>DuckDuckGo <span class="muted">— diverse domains</span></span></label>
       <label class="check"><input type="checkbox" name="backend" value="wikipedia" checked>
         <span>Wikipedia <span class="muted">— reliable reference</span></span></label>
-      <p class="muted">{_live_tools_line()} &middot; full catalog on the result's <b>Adapters</b> tab.
-        Structured tools (Shodan, records, archives) need structured inputs — coming to the loop.</p>
+      <label class="check"><input type="checkbox" name="corroborate" value="on" checked>
+        <span>Corroborate entities <span class="muted">— auto-fire crt.sh · Shodan InternetDB ·
+        Wayback on any IP / domain / URL in the question</span></span></label>
+      <p class="muted">{_live_tools_line()} &middot; full catalog on the result's <b>Adapters</b>
+        tab. Commercial tools (Maltego, PimEyes, …) stay off — they need your credentials.</p>
     </fieldset>
     <label>Photo <span class="muted">(optional JPEG — EXIF geotag + sun/shadow read)</span>
       <input type="file" name="photo" accept="image/jpeg,.jpg,.jpeg"></label>
@@ -495,7 +499,7 @@ class _Handler(BaseHTTPRequestHandler):
         try:
             run_id = run_and_store(question, candidates, evidence, profile=profile,
                                    autonomous=autonomous, overrides=_overrides_from(fields),
-                                   backends=backends)
+                                   backends=backends, corroborate=bool(fields.get("corroborate")))
         except Exception as exc:  # network/model failure → a clear page, never a 500
             self._send(502, render_form(f"Run failed: {exc}"))
             return

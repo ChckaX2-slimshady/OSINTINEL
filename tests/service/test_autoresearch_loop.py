@@ -46,3 +46,17 @@ def test_followups_are_driven_by_known_unknowns():
         assert set(web.queries[1:]) <= set(gaps)     # follow-ups were exactly the known-unknowns
     else:
         assert web.queries == ["Is the tower a mast?"]  # nothing unknown → converged in one pass
+
+
+def test_entity_extraction_finds_ip_domain_url():
+    from osintinel.service.research import _entities
+    ips, domains, urls = _entities("scan 8.8.8.8 and example.com see https://archive.org/x please")
+    assert "8.8.8.8" in ips
+    assert "example.com" in domains
+    assert any("archive.org" in u for u in urls)
+    assert "999.1.1.1" not in _entities("bad 999.1.1.1")[0]  # invalid octet rejected
+
+
+def test_corroborate_no_entities_is_a_noop():
+    from osintinel.service.research import corroborate_entities
+    assert corroborate_entities("no entities in this plain question") == []

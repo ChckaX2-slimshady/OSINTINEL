@@ -160,7 +160,8 @@ def autoresearch_investigation(*, question: str, candidates: list[str] | None = 
                                gateway=None, calibrator=None, ledger=None,
                                confidence_threshold: float = 0.7, rounds: int = 1,
                                followups_per_round: int = 2, backends: list[str] | None = None,
-                               query_transform=None) -> InvestigationResult:
+                               query_transform=None,
+                               extra_evidence: list[EvidenceInput] | None = None) -> InvestigationResult:
     """Autonomous research: the web adapter gathers evidence, the loop reasons over it, and — when
     ``rounds > 1`` — the investigation *continues itself*, turning the Epistemology agent's
     **known-unknowns** into follow-up searches and re-reasoning over the growing evidence.
@@ -181,7 +182,7 @@ def autoresearch_investigation(*, question: str, candidates: list[str] | None = 
                 continue  # a backend that's down/blocked just contributes nothing
         return out
 
-    evidence = gather(question)
+    evidence = list(extra_evidence or []) + gather(question)  # corroboration stage + web search
 
     if not candidates:
         if gateway is not None:
