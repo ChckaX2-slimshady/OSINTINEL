@@ -48,7 +48,8 @@ BASIC: list[Category] = [
         Tool("Shodan InternetDB", "infra.exposure", "live", "no key"),
         Tool("URLScan.io", "infra.urlscan", "live", "no key"),
         Tool("Amass / Subfinder", "infra.subdomains", "planned", "subdomain enumeration"),
-        Tool("DNS / ASN intelligence", "infra.dns / infra.asn", "planned", ""),
+        Tool("DNS over HTTPS (Google)", "infra.dns", "live", "no key"),
+        Tool("ASN / network (RIPEstat)", "infra.asn", "live", "no key"),
     ]),
     Category("Threat intelligence", [
         Tool("AlienVault OTX", "threat.intel", "live", "free key"),
@@ -63,7 +64,7 @@ BASIC: list[Category] = [
         Tool("Wayback Machine", "archive.snapshot / archive.timemap", "live", "no key"),
         Tool("Wikidata", "reference.encyclopedic", "live", "no key"),
         Tool("Archive.today", "archive.snapshot", "planned", ""),
-        Tool("Wikimedia Commons", "archive.media", "planned", ""),
+        Tool("Wikimedia Commons", "archive.media", "live", "no key; open-licensed media"),
     ]),
     Category("Media & documents", [
         Tool("EXIF codec (built-in)", "media.exif", "live", "geotag + camera/time"),

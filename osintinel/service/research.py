@@ -19,7 +19,7 @@ _IP = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 _URL = re.compile(r"https?://[^\s)<>\"']+")
 _DOMAIN = re.compile(r"\b(?:[a-z0-9-]+\.)+[a-z]{2,}\b", re.IGNORECASE)
 # free, keyless adapters the autonomous loop can fire on an entity it finds
-CORROBORATORS = ("infra.exposure", "infra.certs", "archive.snapshot")
+CORROBORATORS = ("infra.exposure", "infra.certs", "infra.dns", "infra.asn", "archive.snapshot")
 
 
 def live_web_adapter(backend: str = "wikipedia"):
@@ -45,9 +45,11 @@ def corroborate_entities(text: str, *, want=CORROBORATORS) -> list[EvidenceInput
     """Fire the free keyless adapters on any IP/domain/URL found in ``text`` — the corroboration
     stage of an autonomous run. Each adapter failure is swallowed (the entity just adds nothing)."""
     from ..adapters import (
+        AsnAdapter,
         Cassette,
         CertTransparencyAdapter,
         ContentAddressedStore,
+        DnsAdapter,
         HttpClient,
         ShodanInternetDBAdapter,
         WaybackAdapter,
@@ -75,8 +77,12 @@ def corroborate_entities(text: str, *, want=CORROBORATORS) -> list[EvidenceInput
     jobs = []
     if "infra.exposure" in want:
         jobs += [(ShodanInternetDBAdapter(http()), "infra.exposure", {"ip": ip}) for ip in ips]
+    if "infra.asn" in want:
+        jobs += [(AsnAdapter(http()), "infra.asn", {"ip": ip}) for ip in ips]
     if "infra.certs" in want:
         jobs += [(CertTransparencyAdapter(http()), "infra.certs", {"domain": d}) for d in domains]
+    if "infra.dns" in want:
+        jobs += [(DnsAdapter(http()), "infra.dns", {"domain": d}) for d in domains]
     if "archive.snapshot" in want:
         cas = ContentAddressedStore(tempfile.mkdtemp())
         jobs += [(WaybackAdapter(http(), cas), "archive.snapshot", {"url": u, "limit": 3})
