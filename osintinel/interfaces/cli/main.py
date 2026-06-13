@@ -105,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
     p_serve.add_argument("--host", default="127.0.0.1")
     sub.add_parser("tui", help="launch the terminal UI (Textual) — full model control + mascot")
     sub.add_parser("mcp", help="run the MCP server (stdio) so Claude can drive OSINTINEL")
+    sub.add_parser("doctor", help="preflight: check Python, deps, model endpoint, and persistence")
     p_hist = sub.add_parser("history", help="list saved investigation runs (~/.osintinel/runs)")
     p_hist.add_argument("--limit", type=int, default=20)
     sub.add_parser("research", help="autonomous web-research demo (gathers its own evidence, offline)")
@@ -176,6 +177,9 @@ def main(argv: list[str] | None = None) -> int:
         serve_stdio()
         return 0
 
+    if args.command == "doctor":
+        return _doctor()
+
     if args.command == "history":
         return _history(args.limit)
 
@@ -240,7 +244,9 @@ def _intel() -> int:
     from pathlib import Path
 
     from ...adapters import (
+        AsnAdapter,
         Cassette,
+        DnsAdapter,
         HttpClient,
         OTXAdapter,
         ShodanInternetDBAdapter,
@@ -264,6 +270,10 @@ def _intel() -> int:
     runs = [
         ("Shodan InternetDB", ShodanInternetDBAdapter(client()).acquire(
             "infra.exposure", {"ip": ip}, prov())),
+        ("DNS over HTTPS", DnsAdapter(client()).acquire(
+            "infra.dns", {"domain": domain}, prov())),
+        ("RIPEstat ASN", AsnAdapter(client()).acquire(
+            "infra.asn", {"ip": ip}, prov())),
         ("URLScan.io", UrlscanAdapter(client()).acquire(
             "infra.urlscan", {"domain": domain}, prov())),
         ("AlienVault OTX", OTXAdapter(client()).acquire(
@@ -274,9 +284,31 @@ def _intel() -> int:
         print(f"  [{name}] {ev.summary}")
         print(f"      source group: {ev.structured['independence_group']} · "
               f"tool: {ev.provenance.tool_used} · license: {ev.provenance.license_note}")
-    print("\nAll free / lawful (Shodan InternetDB & URLScan search need no key; OTX uses a free "
-          "key). Live: OSINTINEL_NET=live, keys via URLSCAN_API_KEY / OTX_API_KEY.")
+    print("\nAll free / lawful (Shodan InternetDB, DNS-over-HTTPS, RIPEstat & URLScan search need "
+          "no key; OTX uses a free key). Live: OSINTINEL_NET=live, keys via "
+          "URLSCAN_API_KEY / OTX_API_KEY.")
     return 0
+
+
+def _doctor() -> int:
+    """Preflight the environment so first-run problems surface as clear guidance, not tracebacks."""
+    from ...service import diagnostics_ok, run_diagnostics
+
+    glyph = {"ok": "✓", "warn": "!", "fail": "✗"}
+    checks = run_diagnostics()
+    print("\n=== OSINTINEL — doctor (environment preflight) ===")
+    for c in checks:
+        print(f"  [{glyph.get(c.status, '?')}] {c.name:18} {c.detail}")
+    ok = diagnostics_ok(checks)
+    warns = sum(1 for c in checks if c.status == "warn")
+    if ok and not warns:
+        print("\nAll green. Try:  osintinel serve   (→ http://127.0.0.1:8765)")
+    elif ok:
+        print(f"\nReady to run ({warns} optional warning(s) above — the deterministic floor still "
+              "works). Try:  osintinel serve")
+    else:
+        print("\nSomething essential is missing (see ✗ above). Fix it, then re-run: osintinel doctor")
+    return 0 if ok else 1
 
 
 def _history(limit: int) -> int:

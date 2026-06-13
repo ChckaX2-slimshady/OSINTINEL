@@ -11,9 +11,7 @@ mutation leaks past a run.
 
 from __future__ import annotations
 
-import json
 import os
-import urllib.request
 from contextlib import contextmanager
 from dataclasses import dataclass
 
@@ -121,41 +119,6 @@ def effective_base_url(form: InferenceForm) -> str | None:
     return status_from_form(form).get("base_url")
 
 
-def parse_model_ids(text: str) -> list[str]:
-    """Pull installed model names from an OpenAI ``/v1/models`` *or* Ollama ``/api/tags`` body."""
-    try:
-        data = json.loads(text)
-    except (ValueError, TypeError):
-        return []
-    out: list[str] = []
-    if isinstance(data, dict):
-        for row in data.get("data") or []:                      # OpenAI /v1/models → data[].id
-            if isinstance(row, dict) and row.get("id"):
-                out.append(str(row["id"]))
-        for row in data.get("models") or []:                    # Ollama /api/tags → models[].name
-            name = (row or {}).get("name") or (row or {}).get("model") if isinstance(row, dict) else None
-            if name:
-                out.append(str(name))
-    return list(dict.fromkeys(out))                             # de-dupe, keep order
-
-
-def _http_get(url: str, timeout: float = 1.5) -> str:
-    with urllib.request.urlopen(url, timeout=timeout) as resp:  # noqa: S310 (localhost only)
-        return resp.read().decode("utf-8")
-
-
-def list_installed_models(base_url: str | None, *, fetch=None) -> list[str]:
-    """Models installed at an OpenAI-compatible endpoint (e.g. local Ollama). ``[]`` on any error,
-    so a missing/stopped server never breaks the UI — it just falls back to the typed default."""
-    if not base_url:
-        return []
-    fetch = fetch or _http_get
-    try:
-        return parse_model_ids(fetch(base_url.rstrip("/") + "/models"))
-    except Exception:                                            # unreachable/timeout/garbage → none
-        return []
-
-
 def parse_candidates(text: str) -> list[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
 
@@ -187,6 +150,22 @@ def run_summary(question: str, candidates: list[str], evidence: list[EvidenceInp
     return summary
 
 
+def run_autoresearch(question: str, form: InferenceForm, *, candidates: list[str] | None = None,
+                     rounds: int = 3, web_adapter=None) -> InvestigationSummary:
+    """Autonomous investigation via the shared research entrypoint: gather evidence from the open
+    web (diverse domains + keyword search), frame competing answers, chase the known-unknowns for
+    more (and contrary) evidence, run the Skeptic gauntlet, return the surviving insights.
+    ``web_adapter`` is injectable for tests."""
+    from ...service import run_web_research
+
+    gateway = build_gateway_from_form(form)
+    result = run_web_research(question, candidates=candidates or None, gateway=gateway,
+                              rounds=rounds, web_adapter=web_adapter)
+    summary = InvestigationSummary.from_result(result)
+    _STORE.save(summary, result.investigation.investigation_id, model=form.profile)
+    return summary
+
+
 def _bar(fraction: float, width: int = 16) -> str:
     filled = max(0, min(width, round(fraction * width)))
     return "█" * filled + "░" * (width - filled)
@@ -210,7 +189,51 @@ def format_summary(s: InvestigationSummary) -> str:
     if s.known_unknowns:
         lines += ["", "[b yellow]Known unknowns[/b yellow]"]
         lines += [f"  • {k}" for k in s.known_unknowns]
+    if s.sources:
+        lines += ["", "[b]Tools / sources used[/b]"]
+        for src in s.sources:
+            times = f" ×{src['count']}" if src["count"] > 1 else ""
+            lines.append(f"  [cyan]·[/cyan] {src['source']}  [dim]({src['tool']}{times})[/dim]")
     if s.next_steps:
         lines += ["", "[b]Recommended next steps[/b]"]
         lines += [f"  [green]→[/green] {n}" for n in s.next_steps]
+    return "\n".join(lines)
+
+
+def photo_report(path: str) -> str:
+    """Read a JPEG's EXIF and, if it's geotagged + timestamped, compute the sun/shadow geometry —
+    a real 'what does this photo reveal' read for the front door."""
+    from pathlib import Path
+
+    from ...service.photo import analyze_photo, osm_url
+
+    try:
+        data = Path(path).expanduser().read_bytes()
+    except OSError as exc:
+        return f"[red]Can't read {path}:[/red] {exc}"
+    a = analyze_photo(data)
+    if not a["ok"]:
+        return ("[yellow]No EXIF metadata found.[/yellow] The reader handles JPEG with EXIF — "
+                "iPhone HEIC won't parse, so export/convert to JPEG first.")
+
+    lines = [f"[b]Photo analysis[/b]  [dim]{path}[/dim]", ""]
+    if a["camera"]:
+        lines.append(f"[b]Camera[/b]   {a['camera']}")
+    if a["captured"]:
+        lines.append(f"[b]Captured[/b] {a['captured']}")
+    gps = a["gps"]
+    if not gps:
+        lines += ["", "[yellow]No GPS tag — this image isn't geotagged.[/yellow]"]
+        return "\n".join(lines)
+
+    lat, lon = gps["lat"], gps["lon"]
+    alt = f"  ·  alt {gps['altitude_m']} m" if gps.get("altitude_m") is not None else ""
+    lines += ["", f"[b green]▸ Geotag[/b green]  {lat}, {lon}{alt}",
+              f"   [dim]{osm_url(lat, lon)}[/dim]"]
+    sun = a["sun"]
+    if sun:
+        lines += ["", "[b]Sun at capture (UTC)[/b]",
+                  f"   elevation [b]{sun['elevation']}°[/b], azimuth {sun['azimuth']}°  →  "
+                  f"shadows point [b]{sun['shadow']}°[/b]",
+                  "   [dim]cross-check: do the shadows in the photo match that bearing?[/dim]"]
     return "\n".join(lines)

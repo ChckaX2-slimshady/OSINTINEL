@@ -41,6 +41,12 @@ class RunStore:
     def base(self) -> Path:
         return ((self._explicit or default_home()) / "runs")
 
+    @property
+    def dash_base(self) -> Path:
+        """Where rendered dashboards live — a sibling of ``runs`` so the compact, evidence-free
+        index stays separate from the full operator-facing report HTML."""
+        return ((self._explicit or default_home()) / "dashboards")
+
     def save(self, summary, run_id: str, *, model: str | None = None) -> Path | None:
         if not persistence_enabled():
             return None
@@ -74,3 +80,31 @@ class RunStore:
             return json.loads((self.base / f"{run_id}.json").read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return None
+
+    # -- rendered dashboards (so a run's full report survives a restart) --------
+    def save_dashboard(self, run_id: str, html: str) -> Path | None:
+        """Persist a run's fully rendered, self-contained dashboard so its History link still
+        reconstructs the report after the server restarts. Best-effort; honors the opt-out.
+
+        Unlike the compact summary, this HTML carries the rendered report (evidence summaries,
+        graph) — it's the operator's own record, written outside the firewalled digest the Memory
+        and self-improvement systems read."""
+        if not persistence_enabled():
+            return None
+        try:
+            base = self.dash_base
+            base.mkdir(parents=True, exist_ok=True)
+            path = base / f"{run_id}.html"
+            path.write_text(html, encoding="utf-8")
+            return path
+        except OSError:
+            return None
+
+    def load_dashboard(self, run_id: str) -> str | None:
+        try:
+            return (self.dash_base / f"{run_id}.html").read_text(encoding="utf-8")
+        except OSError:
+            return None
+
+    def has_dashboard(self, run_id: str) -> bool:
+        return (self.dash_base / f"{run_id}.html").is_file()

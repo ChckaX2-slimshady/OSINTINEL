@@ -1,11 +1,39 @@
 {
+  "0e0022676a5c67ce531b77dc1cdccc54db79d0ec8fa7656e479b1525bbe53403": {
+    "text": "{\"Status\": 0, \"Answer\": [{\"name\": \"windreach-telecom.example.\", \"type\": 1, \"TTL\": 300, \"data\": \"203.0.113.10\"}]}",
+    "url": "https://dns.google/resolve"
+  },
+  "21db6a5e45886e01c2f23be5c5174c6d4f7e292a06bb41648944617d27a11552": {
+    "text": "{\"data\": {\"asns\": [\"64500\"], \"prefix\": \"203.0.113.0/24\"}}",
+    "url": "https://stat.ripe.net/data/network-info/data.json"
+  },
+  "400ad62cc79f591bfe91bd67d9a216a4e527641a3d7f32823eb8d92d0421f3de": {
+    "text": "{\"Status\": 0, \"Answer\": [{\"name\": \"windreach-telecom.example.\", \"type\": 15, \"TTL\": 300, \"data\": \"10 mail.windreach-telecom.example.\"}]}",
+    "url": "https://dns.google/resolve"
+  },
   "41d4edc404636ed8b348bbee9299d95d39993c916500aa6014ea5927ee78c9f7": {
     "text": "{\"results\": [{\"task\": {\"url\": \"https://windreach-telecom.example/\"}, \"page\": {\"url\": \"https://windreach-telecom.example/\", \"asnname\": \"EXAMPLE-AS\"}}, {\"task\": {\"url\": \"https://login.windreach-telecom.example/\"}, \"page\": {\"url\": \"https://login.windreach-telecom.example/\", \"asnname\": \"EXAMPLE-AS\"}}]}",
     "url": "https://urlscan.io/api/v1/search/"
   },
+  "69beafdfc677babc7b08578c2e43b303da15a636396b95c15cad09818114ab17": {
+    "text": "{\"Status\": 0, \"Answer\": [{\"name\": \"windreach-telecom.example.\", \"type\": 2, \"TTL\": 3600, \"data\": \"ns1.windreach-telecom.example.\"}]}",
+    "url": "https://dns.google/resolve"
+  },
+  "87d9022d47eb2218ff624c0f6f49591b3ae3b14e75bfb5004c9b0a4a8ec2ce26": {
+    "text": "{\"data\": {\"holder\": \"WINDREACH-AS, Example\"}}",
+    "url": "https://stat.ripe.net/data/as-overview/data.json"
+  },
+  "8b640da8991d7044a8b693a1b645b748db188fb709faf24fb07a8a3d12b0591e": {
+    "text": "{\"Status\": 0, \"Answer\": [{\"name\": \"windreach-telecom.example.\", \"type\": 16, \"TTL\": 300, \"data\": \"v=spf1 -all\"}]}",
+    "url": "https://dns.google/resolve"
+  },
   "9b747de88b378c2b84af7483e03d581749e7171f0d06e756ec958dcfd2b481e1": {
     "text": "{\"ip\": \"203.0.113.10\", \"ports\": [22, 80, 443], \"cpes\": [\"cpe:/a:nginx:nginx\"], \"hostnames\": [\"mast.windreach-telecom.example\"], \"tags\": [\"self-signed\"], \"vulns\": [\"CVE-2023-44487\"]}",
     "url": "https://internetdb.shodan.io/203.0.113.10"
+  },
+  "aa6efe5bb5bce894f614c87066ff56968d363e71ea28bf8a87f6a4f5eda03901": {
+    "text": "{\"Status\": 0, \"Answer\": []}",
+    "url": "https://dns.google/resolve"
   },
   "e2f7a50f8be52855f693735e6f51fc7f08317dd274573b4ec830e1dbd6a5f903": {
     "text": "{\"pulse_info\": {\"count\": 1, \"pulses\": [{\"name\": \"Telecom infrastructure scanning campaign\", \"tags\": [\"scanning\", \"telecom\"]}]}}",

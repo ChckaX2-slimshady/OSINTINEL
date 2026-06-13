@@ -6,12 +6,14 @@ never enter the ledger. Supplemental commercial sources live in ``commercial/``,
 and off by default.
 """
 
-from .archives import WaybackAdapter, WikidataAdapter
+from .archives import WaybackAdapter, WikidataAdapter, WikimediaCommonsAdapter
 from .base import Adapter, AdapterError, RawArtifact, RawHit, ReferenceAdapter
 from .compute import SolarGeometryAdapter
 from .geospatial import NominatimAdapter, OverpassAdapter
 from .infrastructure import (
+    AsnAdapter,
     CertTransparencyAdapter,
+    DnsAdapter,
     ShodanInternetDBAdapter,
     UrlscanAdapter,
 )
@@ -28,8 +30,10 @@ __all__ = [
     "Adapter",
     "AdapterError",
     "AdapterRegistry",
+    "AsnAdapter",
     "Cassette",
     "CertTransparencyAdapter",
+    "DnsAdapter",
     "GLEIFAdapter",
     "OTXAdapter",
     "OpenCorporatesAdapter",
@@ -49,4 +53,5 @@ __all__ = [
     "WaybackAdapter",
     "WebSearchAdapter",
     "WikidataAdapter",
+    "WikimediaCommonsAdapter",
 ]

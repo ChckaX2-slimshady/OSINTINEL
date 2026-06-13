@@ -63,3 +63,25 @@ def test_min_interval_throttles_same_host(tmp_path):
     client.get_bytes("https://throttle.example/a")
     client.get_bytes("https://throttle.example/b")  # second hit within the window → sleeps
     assert any(s > 0 for s in slept)
+
+
+def test_proxy_env_installs_proxy_handler(tmp_path, monkeypatch):
+    import urllib.request
+    monkeypatch.setenv("OSINTINEL_HTTP_PROXY", "http://127.0.0.1:8118")
+    client = _client(tmp_path)
+    captured = {}
+
+    class _Resp:
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self): return b"ok"
+
+    def fake_build_opener(*handlers):
+        captured["handlers"] = handlers
+        opener = type("O", (), {})()
+        opener.open = lambda req, timeout=30: _Resp()
+        return opener
+
+    monkeypatch.setattr(urllib.request, "build_opener", fake_build_opener)
+    assert client.get_bytes("https://example.com/x") == b"ok"
+    assert any(isinstance(h, urllib.request.ProxyHandler) for h in captured["handlers"])

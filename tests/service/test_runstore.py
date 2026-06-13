@@ -21,6 +21,23 @@ def test_save_and_list_roundtrip(tmp_path):
     assert store.load("missing") is None
 
 
+def test_dashboard_html_roundtrip_and_presence(tmp_path):
+    store = RunStore(base=tmp_path)
+    assert store.has_dashboard("run-1") is False
+    assert store.load_dashboard("run-1") is None
+    path = store.save_dashboard("run-1", "<html>report</html>")
+    assert path is not None and path.suffix == ".html"
+    assert store.has_dashboard("run-1") is True
+    assert store.load_dashboard("run-1") == "<html>report</html>"
+
+
+def test_dashboard_persistence_honors_opt_out(tmp_path, monkeypatch):
+    monkeypatch.setenv("OSINTINEL_NO_PERSIST", "1")
+    store = RunStore(base=tmp_path)
+    assert store.save_dashboard("run-x", "<html>x</html>") is None
+    assert store.has_dashboard("run-x") is False
+
+
 def test_opt_out_disables_persistence(tmp_path, monkeypatch):
     monkeypatch.setenv("OSINTINEL_NO_PERSIST", "1")
     store = RunStore(base=tmp_path)
@@ -34,3 +51,16 @@ def test_save_is_best_effort_on_unwritable_base(tmp_path):
     clash.write_text("not a dir")
     store = RunStore(base=clash)
     assert store.save(_summary("x?"), "run-x") is None
+
+
+def test_summary_lists_tools_and_sources():
+    from osintinel.service import run_investigation
+    from osintinel.service.investigation import EvidenceInput, InvestigationSummary
+    result = run_investigation(
+        question="Mast or turbine?", candidates=["mast", "turbine"],
+        evidence=[EvidenceInput(text="man_made=mast", source="OpenStreetMap", supports=0),
+                  EvidenceInput(text="radio relay nearby", source="Wikidata", supports=0)])
+    summary = InvestigationSummary.from_result(result)
+    names = {s["source"] for s in summary.sources}
+    assert {"OpenStreetMap", "Wikidata"} <= names
+    assert all("tool" in s and "count" in s for s in summary.sources)

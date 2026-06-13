@@ -14,8 +14,10 @@ OpenAI-compatible endpoint. Three ways to drive it: the **CLI**, a **local web a
 server** (so Claude Desktop — or any MCP client — can run investigations on your machine).
 
 ```bash
-pip install -e .          # from the repo root
+./scripts/setup.sh        # macOS/Linux: venv + install + preflight (add --tui / --serve)
+pip install -e .          # …or by hand (use a venv: python3 -m venv .venv && source .venv/bin/activate)
 pip install -e ".[tui]"   # …or include the terminal UI (adds Textual)
+osintinel doctor          # preflight: Python, deps, model endpoint, persistence
 osintinel verify          # smoke test: persist, reload, replay the ledger — proves it works
 osintinel tui             # terminal console (animated mascot + full model control)
 osintinel serve           # …or the browser UI at http://127.0.0.1:8765
@@ -28,9 +30,9 @@ osintinel serve           # …or the browser UI at http://127.0.0.1:8765
 | Door | Command | What it is | State |
 |------|---------|-----------|-------|
 | **CLI** | `osintinel <cmd>` | demos + diagnostics + the service entrypoints | per-run, optional ledger on disk |
-| **TUI** | `osintinel tui` | terminal UI (Textual): animated mascot, question form, **full per-tier model control**, results | runs in memory |
-| **Web app** | `osintinel serve [--port 8765] [--host 127.0.0.1]` | stdlib browser UI; ask a question, **pick the model**, see the result | runs held **in memory** (`RUNS` dict) |
-| **MCP server** | `osintinel mcp` | JSON-RPC stdio; tools `investigate` + `models_status` | driven by an MCP client (Claude Desktop, etc.) |
+| **TUI** | `osintinel tui` | terminal UI (Textual): mascot, question form, **full per-tier model control**, an **Autonomous** toggle (it researches the web for its own evidence), results | persisted to `~/.osintinel` |
+| **Web app** | `osintinel serve [--port 8765] [--host 0.0.0.0]` | **OSINTINEL Web** — responsive console: full form (question · answers · evidence · **Autonomous** · **photo upload** · profile + **per-tier model detection**), the **epistemic-ladder dashboard** (knowledge graph, replay, confidence) mobile-polished, **History**. `--host 0.0.0.0` → use it from your phone at `http://<machine-ip>:8765` | in memory + persisted history |
+| **MCP server** | `osintinel mcp` | JSON-RPC stdio; `investigate` (set `autonomous:true` → full autonomous web investigation) + `models_status` | driven by an MCP client (Claude Desktop, etc.) |
 
 > **TUI vs. web app:** the TUI (`osintinel tui`, needs `pip install -e ".[tui]"`) is the
 > terminal-native console — it exposes **every** model knob (per-tier reason/small/task/embed
@@ -67,6 +69,7 @@ Installer flags: `--profile`, `--net`, `--reason-profile`, `--base-url`, `--key-
 
 | Command | Does |
 |---------|------|
+| `doctor` | preflight the environment: Python, deps, model endpoint, network mode, persistence |
 | `run [--json] [--max-iterations N]` | run the bundled demo investigation |
 | `report` | run the demo and print the insight report |
 | `verify [--ledger PATH]` | persist → reload → replay the ledger; verify byte-identical integrity |
@@ -157,6 +160,7 @@ enter cassettes** (the request key hashes only method + URL + body).
 | Env var | Effect |
 |---------|--------|
 | `OSINTINEL_ALLOW_PRIVATE_NET=1` | disable the SSRF guard on the web-fetch path (only for trusted LAN targets) |
+| `OSINTINEL_HTTP_PROXY=http://host:port` | route all adapter web fetches through a proxy (privacy/anonymity; e.g. a Tor→HTTP bridge) |
 | `OSINTINEL_HOME` | base dir for persisted run history (default `~/.osintinel`) |
 | `OSINTINEL_NO_PERSIST=1` | don't persist run summaries to disk (fully ephemeral session) |
 
@@ -194,8 +198,10 @@ requires credentials **and** `OSINTINEL_ATTEST_AUTHORIZED=1`. `osintinel adapter
 
 ## Where the records live
 
-- **Web app & MCP runs:** held **in memory** for now (an in-process `RUNS` dict) — nothing persists
-  across a restart by design.
+- **Web app & MCP runs:** the live result is held **in memory** (an in-process `RUNS` dict), but the
+  web app also writes each run's **compact summary** to `~/.osintinel/runs` *and* its **fully rendered,
+  self-contained dashboard** to `~/.osintinel/dashboards`, so a History link still opens the full
+  report after a restart (`OSINTINEL_NO_PERSIST=1` disables both).
 - **Ledger:** a hash-chained, append-only JSONL event log; `osintinel verify` proves a run replays
   byte-identically. Heavy bytes (images, fetched pages) go to a **content-addressed store (CAS)**,
   off the ledger.

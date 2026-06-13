@@ -15,18 +15,20 @@ from textual import on, work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Input, Select, Static, TextArea
+from textual.widgets import Button, Checkbox, Footer, Header, Input, Select, Static, TextArea
 
+from ...inference import list_installed_models
 from .logic import (
     InferenceForm,
     effective_base_url,
     format_summary,
     form_from_profile,
     is_openai_profile,
-    list_installed_models,
     parse_candidates,
     parse_evidence,
+    photo_report,
     profile_names,
+    run_autoresearch,
     run_summary,
     status_lines,
 )
@@ -92,6 +94,12 @@ class ConsoleScreen(Screen):
                 ev = TextArea(id="evidence")
                 ev.border_title = "evidence — source | text | supports#"
                 yield ev
+                yield Checkbox("Autonomous — gather evidence from the open web (needs network; "
+                               "ignores the evidence box)", id="autonomous")
+                photo = Input(placeholder="/path/to/photo.jpg — EXIF geotag + sun/shadow analysis",
+                              id="photo")
+                photo.border_title = "photo (optional)"
+                yield photo
 
                 yield Static("[b]Model[/b]  [dim]pick a profile; tiers populate from your "
                              "installed models[/dim]", classes="section")
@@ -114,6 +122,7 @@ class ConsoleScreen(Screen):
                             yield inp
                 with Horizontal(classes="pair"):
                     yield Button("⌖  Investigate", variant="success", id="run")
+                    yield Button("✚  New", id="new")
                     yield Button("↻  Detect models", id="detect")
                     yield Button("↻  Status", id="refresh")
             with VerticalScroll(id="right"):
@@ -169,6 +178,18 @@ class ConsoleScreen(Screen):
     def _on_refresh(self) -> None:
         self._refresh_status()
 
+    @on(Button.Pressed, "#new")
+    def _on_new(self) -> None:
+        """Clear the investigation fields for a fresh run (keeps the model setup)."""
+        self.query_one("#question", Input).value = ""
+        self.query_one("#candidates", TextArea).text = ""
+        self.query_one("#evidence", TextArea).text = ""
+        self.query_one("#photo", Input).value = ""
+        self.query_one("#autonomous", Checkbox).value = False
+        self.query_one("#summary", Static).update(
+            "[dim]New investigation — pose a question and press Investigate (Ctrl+R).[/dim]")
+        self.query_one("#question", Input).focus()
+
     @on(Button.Pressed, "#detect")
     def _on_detect(self) -> None:
         self.detect_models()
@@ -194,27 +215,47 @@ class ConsoleScreen(Screen):
         self.action_run()
 
     def action_run(self) -> None:
+        photo = self.query_one("#photo", Input).value.strip()
+        if photo:  # a photo path takes priority — analyze its EXIF + sun geometry
+            self._show(photo_report(photo))
+            return
         question = self.query_one("#question", Input).value.strip()
         candidates = parse_candidates(self.query_one("#candidates", TextArea).text)
-        if not question or not candidates:
+        autonomous = self.query_one("#autonomous", Checkbox).value
+        if not question:
+            self.query_one("#summary", Static).update("[red]Provide a question.[/red]")
+            return
+        if not autonomous and not candidates:
             self.query_one("#summary", Static).update(
-                "[red]Provide a question and at least one competing answer.[/red]")
+                "[red]Provide at least one competing answer, or tick Autonomous to let it "
+                "gather its own evidence.[/red]")
             return
         evidence = parse_evidence(self.query_one("#evidence", TextArea).text)
         self.query_one("#run", Button).disabled = True
-        self.query_one("#summary", Static).update("⏳  [b]investigating…[/b]  "
-                                                  "[dim]quorum: synthesis → skeptic → "
-                                                  "confidence → epistemology[/dim]")
+        self.query_one("#summary", Static).update(
+            "🌐  [b]researching the open web…[/b]  [dim]search → fetch → frame answers → chase "
+            "known-unknowns → skeptic gate[/dim]" if autonomous else
+            "⏳  [b]investigating…[/b]  [dim]quorum: synthesis → skeptic → confidence → "
+            "epistemology[/dim]")
         self._refresh_status()
-        self._investigate(question, candidates, evidence, self._form())
+        self._investigate(question, candidates, evidence, self._form(), autonomous)
 
     @work(thread=True, exclusive=True)
-    def _investigate(self, question, candidates, evidence, form) -> None:
+    def _investigate(self, question, candidates, evidence, form, autonomous) -> None:
         try:
-            text = format_summary(run_summary(question, candidates, evidence, form))
+            if autonomous:
+                summary = run_autoresearch(question, form, candidates=candidates or None)
+                text = format_summary(summary)
+                if not summary.sources:  # the search came up empty — say so, don't shrug silently
+                    text = ("[yellow]⚠ No web evidence found for that query — the ranking below is "
+                            "uninformed (flat confidence). Try fewer, more keyword-like terms, or "
+                            "check your network.[/yellow]\n\n" + text)
+            else:
+                summary = run_summary(question, candidates, evidence, form)
+                text = format_summary(summary)
         except Exception as exc:  # network/model failures surface as data, never a crash
-            text = f"[red]Run failed:[/red] {exc}\n[dim]Tip: the deterministic profile " \
-                   "needs no model/network.[/dim]"
+            text = f"[red]Run failed:[/red] {exc}\n[dim]Tip: autonomous mode needs network; the " \
+                   "deterministic profile needs no model.[/dim]"
         self.app.call_from_thread(self._show, text)
 
     def _show(self, text: str) -> None:

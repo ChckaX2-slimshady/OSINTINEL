@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from ..infrastructure.dns import DnsAdapter
+from ..infrastructure.ripestat import AsnAdapter
 from ..infrastructure.shodan_internetdb import ShodanInternetDBAdapter
 from ..infrastructure.urlscan import UrlscanAdapter
 from ..threat.otx import OTXAdapter
@@ -50,6 +52,28 @@ def build() -> None:
     entries[request_key("GET", otx_url, None, None)] = {
         "url": otx_url, "text": json.dumps({"indicator": DOMAIN, "type": "domain",
                                             "data": otx_data}) and json.dumps(otx_data)}
+
+    # --- DNS over HTTPS (Google) --------------------------------------------
+    dns = DnsAdapter.__new__(DnsAdapter)
+    dns_answers = {
+        "A": [{"name": f"{DOMAIN}.", "type": 1, "TTL": 300, "data": IP}],
+        "AAAA": [],
+        "MX": [{"name": f"{DOMAIN}.", "type": 15, "TTL": 300, "data": f"10 mail.{DOMAIN}."}],
+        "NS": [{"name": f"{DOMAIN}.", "type": 2, "TTL": 3600, "data": f"ns1.{DOMAIN}."}],
+        "TXT": [{"name": f"{DOMAIN}.", "type": 16, "TTL": 300, "data": "v=spf1 -all"}],
+    }
+    for rtype, ans in dns_answers.items():
+        entries[request_key("GET", dns.API, {"name": DOMAIN, "type": rtype})] = {
+            "url": dns.API, "text": json.dumps({"Status": 0, "Answer": ans})}
+
+    # --- RIPEstat ASN / network (fictional AS for the demo entity) -----------
+    asn = AsnAdapter.__new__(AsnAdapter)
+    entries[request_key("GET", asn.NETWORK_INFO, {"resource": IP})] = {
+        "url": asn.NETWORK_INFO,
+        "text": json.dumps({"data": {"asns": ["64500"], "prefix": "203.0.113.0/24"}})}
+    entries[request_key("GET", asn.AS_OVERVIEW, {"resource": "AS64500"})] = {
+        "url": asn.AS_OVERVIEW,
+        "text": json.dumps({"data": {"holder": "WINDREACH-AS, Example"}})}
 
     path = HERE / "intel.json"
     path.write_text(json.dumps(entries, indent=2, sort_keys=True) + "\n", encoding="utf-8")

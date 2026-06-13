@@ -35,8 +35,30 @@ def test_run_and_store_then_result_page_is_dashboard():
                         parse_form({"question": ["x"], "candidates": ["x"],
                                     "evidence": ["OSM | man_made=mast | 1"]})[2])
     page = build_result_page(rid)
-    assert page and "<svg" in page and "New investigation" in page  # dashboard + banner
+    assert page and "<svg" in page and "resultnav" in page  # dashboard + result nav banner
     assert build_result_page("nonexistent") is None
+
+
+def test_result_page_survives_restart_from_persisted_dashboard(tmp_path, monkeypatch):
+    # Persisted dashboards live under $OSINTINEL_HOME — isolate to tmp so the test is hermetic.
+    monkeypatch.setenv("OSINTINEL_HOME", str(tmp_path))
+    from osintinel.interfaces.web import app as webapp
+    from osintinel.interfaces.web import render_history
+
+    rid = run_and_store("Mast or turbine?", ["communications mast", "wind turbine"],
+                        parse_form({"question": ["x"], "candidates": ["x"],
+                                    "evidence": ["OSM | man_made=mast | 1"]})[2],
+                        profile="deterministic")
+    assert (tmp_path / "dashboards" / f"{rid}.html").is_file()
+
+    # Simulate a server restart: the in-memory run is gone, only disk remains.
+    webapp.RUNS.clear()
+    webapp.RUN_MODELS.clear()
+    page = build_result_page(rid)
+    assert page and "<svg" in page and "resultnav" in page   # full dashboard, reconstructed
+    # …and History still links to it (not a dead, unclickable row).
+    history = render_history()
+    assert f"/run/{rid}" in history
 
 
 def test_form_has_a_model_picker_with_every_profile():
@@ -120,3 +142,95 @@ def test_mcp_unknown_tool_and_method():
 
 def test_mcp_notification_returns_no_response():
     assert handle_request({"jsonrpc": "2.0", "method": "notifications/initialized"}) is None
+
+
+# -- OSINTINEL Web (comprehensive console) ------------------------------------
+def test_render_form_has_autonomous_and_photo_and_advanced():
+    from osintinel.interfaces.web import render_form
+    h = render_form()
+    for token in ('name="autonomous"', 'type="file"', 'name="photo"',
+                  'name="reason_model"', 'enctype="multipart/form-data"'):
+        assert token in h
+    assert "http://" not in h and "https://" not in h  # form stays self-contained/offline
+
+
+def test_parse_multipart_extracts_fields_and_file():
+    from osintinel.interfaces.web import parse_multipart
+    boundary = b"BOUND"
+    body = (b'--BOUND\r\nContent-Disposition: form-data; name="question"\r\n\r\nWhat?\r\n'
+            b'--BOUND\r\nContent-Disposition: form-data; name="photo"; filename="a.jpg"\r\n'
+            b'Content-Type: image/jpeg\r\n\r\n\xff\xd8data\r\n'
+            b'--BOUND--\r\n')
+    fields, files = parse_multipart(body, boundary)
+    assert fields["question"] == ["What?"]
+    assert files["photo"][0] == "a.jpg" and files["photo"][1] == b"\xff\xd8data"
+
+
+def test_render_history_lists_saved_runs():
+    from osintinel.interfaces.web import parse_form, render_history, run_and_store
+    run_and_store("Mast or turbine?", ["mast", "turbine"],
+                  parse_form({"question": ["x"], "candidates": ["x"],
+                              "evidence": ["OSM | man_made=mast | 1"]})[2], profile="deterministic")
+    h = render_history()
+    assert "History" in h and "Mast or turbine?" in h
+
+
+def test_web_photo_result_renders_geotag_and_sun():
+    from osintinel.adapters.media.exif import write_exif_jpeg
+    from osintinel.interfaces.web import render_photo_result
+    from osintinel.service.photo import analyze_photo
+    jpg = write_exif_jpeg(make="Canon", model="EOS 80D",
+                          datetime_original="2021:06:21 14:30:00",
+                          lat=51.0153, lon=-1.3253, altitude_m=118.0)
+    h = render_photo_result(analyze_photo(jpg), "shot.jpg")
+    assert "Geotag" in h and "51.0153" in h and "shadows point" in h
+
+
+def test_render_form_has_detect_per_tier_and_js():
+    from osintinel.interfaces.web import render_form
+    h = render_form()
+    assert 'onclick="detect()"' in h and 'id="models_dl"' in h and 'list="models_dl"' in h
+    assert "<script>" in h and 'name="reason_model"' in h and 'name="embed_model"' in h
+    assert "http://" not in h and "https://" not in h  # endpoint URLs resolved server-side
+
+
+def test_detect_models_resolves_profile_base(monkeypatch):
+    from osintinel.interfaces.web import detect_models
+    monkeypatch.setattr("osintinel.inference.list_installed_models",
+                        lambda base: ["dollamin:latest", "nomic-embed-text"] if base else [])
+    assert detect_models({"profile": ["ollama"]})["models"] == ["dollamin:latest", "nomic-embed-text"]
+    assert detect_models({"profile": ["deterministic"]})["models"] == []  # no endpoint → none
+
+
+def test_mcp_investigate_autonomous_routes_to_web_research(monkeypatch):
+    seen = {}
+
+    def fake_research(question, candidates=None, gateway=None, rounds=3, web_adapter=None):
+        seen["q"], seen["rounds"] = question, rounds
+        from osintinel.service import run_investigation
+        return run_investigation(question=question, candidates=candidates or ["yes", "no"],
+                                 evidence=[], gateway=gateway)
+
+    monkeypatch.setattr("osintinel.interfaces.mcp.server.run_web_research", fake_research)
+    resp = handle_request({"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": {
+        "name": "investigate",
+        "arguments": {"question": "Who built the ridge mast?", "autonomous": True, "rounds": 2}}})
+    text = resp["result"]["content"][0]["text"]
+    assert seen["q"] == "Who built the ridge mast?" and seen["rounds"] == 2
+    assert "Ranked hypotheses" in text and resp["result"].get("isError") in (None, False)
+
+
+def test_form_wears_the_dashboard_console_chrome():
+    from osintinel.interfaces.web import render_form
+    h = render_form()
+    assert "Investigation Console" in h and 'class="ladder"' in h
+    for rung in ("information", "hypothesis", "insight"):  # the epistemic-ladder bar
+        assert f">{rung}<" in h
+
+
+def test_cockpit_form_has_source_selector_and_live_tools():
+    from osintinel.interfaces.web import render_form
+    h = render_form()
+    assert "Sources to comb" in h and 'name="backend"' in h
+    assert 'value="duckduckgo"' in h and 'value="wikipedia"' in h
+    assert "live tools" in h and "Adapters" in h  # the arsenal is visible on the cockpit
