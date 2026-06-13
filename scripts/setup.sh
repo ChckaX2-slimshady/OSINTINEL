@@ -19,7 +19,8 @@ for arg in "$@"; do
     --tui)   EXTRAS="dev,tui" ;;
     --serve) WANT_SERVE=1 ;;
     -h|--help)
-      grep '^#' "$0" | sed 's/^# \{0,1\}//' | sed '/setup.sh/q'; exit 0 ;;
+      # print the header comment block (skip the shebang), stop at the first non-comment line
+      awk 'NR==1{next} /^#/{sub(/^# ?/,""); print; next} {exit}' "$0"; exit 0 ;;
     *) echo "unknown option: $arg (try --help)"; exit 2 ;;
   esac
 done

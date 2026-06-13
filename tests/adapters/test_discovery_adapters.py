@@ -153,3 +153,16 @@ def test_catalog_marks_new_tools_live():
     from osintinel.adapters.catalog import BASIC
     live = {t.capability for c in BASIC for t in c.tools if t.status == "live"}
     assert {"infra.dns", "infra.asn", "archive.media"} <= live
+
+
+def test_reference_registry_lists_new_adapters():
+    # `osintinel adapters` builds this registry — the new live adapters must be discoverable there.
+    import tempfile
+
+    from osintinel.adapters import ContentAddressedStore
+    from osintinel.scenarios.archive_slice import build_registry
+
+    reg = build_registry(ContentAddressedStore(tempfile.mkdtemp()))
+    assert reg.by_capability("infra.dns")[0].id == "infra.dns"
+    assert reg.by_capability("infra.asn")[0].id == "infra.ripestat"
+    assert reg.by_capability("archive.media")[0].id == "archive.commons"

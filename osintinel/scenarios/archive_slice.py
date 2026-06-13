@@ -26,14 +26,17 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..adapters import (
+    AsnAdapter,
     Cassette,
     CertTransparencyAdapter,
     ContentAddressedStore,
+    DnsAdapter,
     HttpClient,
     NominatimAdapter,
     OverpassAdapter,
     WaybackAdapter,
     WikidataAdapter,
+    WikimediaCommonsAdapter,
 )
 from ..adapters.registry import AdapterRegistry
 from ..agents.base import AgentContext
@@ -89,6 +92,9 @@ def build_registry(cas: ContentAddressedStore, *, record: bool = False) -> Adapt
     reg.register(NominatimAdapter(client("nominatim")), effectiveness=0.6)
     reg.register(WikidataAdapter(client("wikidata")), effectiveness=0.7)
     reg.register(CertTransparencyAdapter(client("crtsh")), effectiveness=0.6)
+    reg.register(DnsAdapter(client("dns")), effectiveness=0.66)
+    reg.register(AsnAdapter(client("ripestat")), effectiveness=0.64)
+    reg.register(WikimediaCommonsAdapter(client("commons"), cas), effectiveness=0.55)
     return reg
 
 

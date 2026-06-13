@@ -244,7 +244,9 @@ def _intel() -> int:
     from pathlib import Path
 
     from ...adapters import (
+        AsnAdapter,
         Cassette,
+        DnsAdapter,
         HttpClient,
         OTXAdapter,
         ShodanInternetDBAdapter,
@@ -268,6 +270,10 @@ def _intel() -> int:
     runs = [
         ("Shodan InternetDB", ShodanInternetDBAdapter(client()).acquire(
             "infra.exposure", {"ip": ip}, prov())),
+        ("DNS over HTTPS", DnsAdapter(client()).acquire(
+            "infra.dns", {"domain": domain}, prov())),
+        ("RIPEstat ASN", AsnAdapter(client()).acquire(
+            "infra.asn", {"ip": ip}, prov())),
         ("URLScan.io", UrlscanAdapter(client()).acquire(
             "infra.urlscan", {"domain": domain}, prov())),
         ("AlienVault OTX", OTXAdapter(client()).acquire(
@@ -278,8 +284,9 @@ def _intel() -> int:
         print(f"  [{name}] {ev.summary}")
         print(f"      source group: {ev.structured['independence_group']} · "
               f"tool: {ev.provenance.tool_used} · license: {ev.provenance.license_note}")
-    print("\nAll free / lawful (Shodan InternetDB & URLScan search need no key; OTX uses a free "
-          "key). Live: OSINTINEL_NET=live, keys via URLSCAN_API_KEY / OTX_API_KEY.")
+    print("\nAll free / lawful (Shodan InternetDB, DNS-over-HTTPS, RIPEstat & URLScan search need "
+          "no key; OTX uses a free key). Live: OSINTINEL_NET=live, keys via "
+          "URLSCAN_API_KEY / OTX_API_KEY.")
     return 0
 
 
