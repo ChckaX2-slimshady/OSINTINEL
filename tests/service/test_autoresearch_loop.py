@@ -60,3 +60,34 @@ def test_entity_extraction_finds_ip_domain_url():
 def test_corroborate_no_entities_is_a_noop():
     from osintinel.service.research import corroborate_entities
     assert corroborate_entities("no entities in this plain question") == []
+
+
+def test_corroborate_fires_dns_on_a_domain(monkeypatch):
+    # The corroboration stage wires the free DNS adapter onto any domain it finds. We patch the
+    # adapter symbol (imported inside the function) so the test stays offline.
+    calls = []
+
+    class _FakeDns:
+        def __init__(self, client):
+            pass
+
+        def acquire(self, capability, arguments, provenance):
+            calls.append((capability, arguments))
+            prov = Provenance(source="Google Public DNS (DoH)",
+                              acquisition_method=AcquisitionMethod.API,
+                              agent_responsible=AgentName.ACQUISITION, confidence=0.7,
+                              investigation_id="web-research")
+            prov.url = "https://dns.google/resolve?name=example.com"
+            return [EvidenceObject(kind="dns_records", summary="DNS for example.com: A×1",
+                                   structured={"independence_group": "dns"}, provenance=prov)]
+
+    monkeypatch.setattr("osintinel.adapters.DnsAdapter", _FakeDns)
+    from osintinel.service.research import corroborate_entities
+    out = corroborate_entities("look into example.com please", want=("infra.dns",))
+    assert calls == [("infra.dns", {"domain": "example.com"})]
+    assert out and out[0].group == "dns" and out[0].kind == "dns_records"
+
+
+def test_dns_and_asn_are_in_the_corroborator_set():
+    from osintinel.service.research import CORROBORATORS
+    assert {"infra.dns", "infra.asn"} <= set(CORROBORATORS)
