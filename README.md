@@ -126,8 +126,22 @@ free/local-first, with deterministic record/replay as the test mode.
 
 ### Quickstart
 
+**macOS / Linux, one command** (creates an isolated venv, installs, runs the preflight):
+
 ```bash
+./scripts/setup.sh             # add --tui for the terminal UI, --serve to launch the web app
+```
+
+> Homebrew's Python (including 3.14) marks itself *externally managed* (PEP 668) and refuses a bare
+> `pip install`, so a virtualenv is the supported path — the script handles it. If a dependency has
+> no wheel for a brand-new interpreter, create the venv with `python3.13` and re-run.
+
+Or do it by hand:
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"        # Python 3.11+; runtime dep: pydantic v2 (model providers use stdlib HTTP)
+osintinel doctor               # preflight: Python, deps, model endpoint, persistence — clear guidance
 
 # Models are free to run. Fully local & private via Ollama (recommended):
 #   ollama serve && ollama pull qwen2.5:14b-instruct qwen2.5:3b-instruct nomic-embed-text

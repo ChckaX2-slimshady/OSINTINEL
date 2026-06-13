@@ -14,8 +14,10 @@ OpenAI-compatible endpoint. Three ways to drive it: the **CLI**, a **local web a
 server** (so Claude Desktop — or any MCP client — can run investigations on your machine).
 
 ```bash
-pip install -e .          # from the repo root
+./scripts/setup.sh        # macOS/Linux: venv + install + preflight (add --tui / --serve)
+pip install -e .          # …or by hand (use a venv: python3 -m venv .venv && source .venv/bin/activate)
 pip install -e ".[tui]"   # …or include the terminal UI (adds Textual)
+osintinel doctor          # preflight: Python, deps, model endpoint, persistence
 osintinel verify          # smoke test: persist, reload, replay the ledger — proves it works
 osintinel tui             # terminal console (animated mascot + full model control)
 osintinel serve           # …or the browser UI at http://127.0.0.1:8765
@@ -67,6 +69,7 @@ Installer flags: `--profile`, `--net`, `--reason-profile`, `--base-url`, `--key-
 
 | Command | Does |
 |---------|------|
+| `doctor` | preflight the environment: Python, deps, model endpoint, network mode, persistence |
 | `run [--json] [--max-iterations N]` | run the bundled demo investigation |
 | `report` | run the demo and print the insight report |
 | `verify [--ledger PATH]` | persist → reload → replay the ledger; verify byte-identical integrity |
@@ -195,8 +198,10 @@ requires credentials **and** `OSINTINEL_ATTEST_AUTHORIZED=1`. `osintinel adapter
 
 ## Where the records live
 
-- **Web app & MCP runs:** held **in memory** for now (an in-process `RUNS` dict) — nothing persists
-  across a restart by design.
+- **Web app & MCP runs:** the live result is held **in memory** (an in-process `RUNS` dict), but the
+  web app also writes each run's **compact summary** to `~/.osintinel/runs` *and* its **fully rendered,
+  self-contained dashboard** to `~/.osintinel/dashboards`, so a History link still opens the full
+  report after a restart (`OSINTINEL_NO_PERSIST=1` disables both).
 - **Ledger:** a hash-chained, append-only JSONL event log; `osintinel verify` proves a run replays
   byte-identically. Heavy bytes (images, fetched pages) go to a **content-addressed store (CAS)**,
   off the ledger.

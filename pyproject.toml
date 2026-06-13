@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Security",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
@@ -27,8 +28,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ChckaX2-slimshady/OSINTENAL"
-Repository = "https://github.com/ChckaX2-slimshady/OSINTENAL"
+Homepage = "https://github.com/ChckaX2-slimshady/OSINTINEL"
+Repository = "https://github.com/ChckaX2-slimshady/OSINTINEL"
 
 [project.optional-dependencies]
 tui = [
