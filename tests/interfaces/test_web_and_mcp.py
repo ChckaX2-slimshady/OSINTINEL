@@ -39,6 +39,28 @@ def test_run_and_store_then_result_page_is_dashboard():
     assert build_result_page("nonexistent") is None
 
 
+def test_result_page_survives_restart_from_persisted_dashboard(tmp_path, monkeypatch):
+    # Persisted dashboards live under $OSINTINEL_HOME — isolate to tmp so the test is hermetic.
+    monkeypatch.setenv("OSINTINEL_HOME", str(tmp_path))
+    from osintinel.interfaces.web import app as webapp
+    from osintinel.interfaces.web import render_history
+
+    rid = run_and_store("Mast or turbine?", ["communications mast", "wind turbine"],
+                        parse_form({"question": ["x"], "candidates": ["x"],
+                                    "evidence": ["OSM | man_made=mast | 1"]})[2],
+                        profile="deterministic")
+    assert (tmp_path / "dashboards" / f"{rid}.html").is_file()
+
+    # Simulate a server restart: the in-memory run is gone, only disk remains.
+    webapp.RUNS.clear()
+    webapp.RUN_MODELS.clear()
+    page = build_result_page(rid)
+    assert page and "<svg" in page and "resultnav" in page   # full dashboard, reconstructed
+    # …and History still links to it (not a dead, unclickable row).
+    history = render_history()
+    assert f"/run/{rid}" in history
+
+
 def test_form_has_a_model_picker_with_every_profile():
     html = render_form()
     assert 'name="profile"' in html and "Launch default" in html

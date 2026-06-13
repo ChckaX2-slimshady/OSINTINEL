@@ -21,6 +21,23 @@ def test_save_and_list_roundtrip(tmp_path):
     assert store.load("missing") is None
 
 
+def test_dashboard_html_roundtrip_and_presence(tmp_path):
+    store = RunStore(base=tmp_path)
+    assert store.has_dashboard("run-1") is False
+    assert store.load_dashboard("run-1") is None
+    path = store.save_dashboard("run-1", "<html>report</html>")
+    assert path is not None and path.suffix == ".html"
+    assert store.has_dashboard("run-1") is True
+    assert store.load_dashboard("run-1") == "<html>report</html>"
+
+
+def test_dashboard_persistence_honors_opt_out(tmp_path, monkeypatch):
+    monkeypatch.setenv("OSINTINEL_NO_PERSIST", "1")
+    store = RunStore(base=tmp_path)
+    assert store.save_dashboard("run-x", "<html>x</html>") is None
+    assert store.has_dashboard("run-x") is False
+
+
 def test_opt_out_disables_persistence(tmp_path, monkeypatch):
     monkeypatch.setenv("OSINTINEL_NO_PERSIST", "1")
     store = RunStore(base=tmp_path)

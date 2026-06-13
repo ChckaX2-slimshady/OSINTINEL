@@ -122,6 +122,11 @@ def run_and_store(question: str, candidates: list[str], evidence: list[EvidenceI
     RUNS[run_id] = result
     RUN_MODELS[run_id] = model_label(profile)
     _STORE.save(InvestigationSummary.from_result(result), run_id, model=model_label(profile))
+    # Persist the fully rendered console so the History link still works after a restart, even
+    # once the in-memory result has been evicted (the dashboard is self-contained HTML).
+    page = build_result_page(run_id)
+    if page is not None:
+        _STORE.save_dashboard(run_id, page)
     while len(RUNS) > _MAX_RUNS:
         RUN_MODELS.pop(next(iter(RUNS)), None)
         RUNS.pop(next(iter(RUNS)))
@@ -270,7 +275,9 @@ def _banner(run_id: str) -> str:
 def build_result_page(run_id: str) -> str | None:
     result = RUNS.get(run_id)
     if result is None:
-        return None
+        # Not in memory (e.g. after a restart) — serve the persisted rendered dashboard if we have
+        # one, so a History link is never a dead end.
+        return _STORE.load_dashboard(run_id)
     page = render_dashboard(build_dashboard_data(result))
     return page.replace("<body>", "<body>\n" + _banner(run_id), 1)
 
@@ -285,8 +292,9 @@ def render_history() -> str:
             when = _dt.datetime.fromtimestamp(r.get("saved_at", 0)).strftime("%Y-%m-%d %H:%M")
             conf = r.get("leader_confidence", 0.0)
             rid = r.get("id", "")
+            clickable = rid in RUNS or _STORE.has_dashboard(rid)
             head = (f'<a href="/run/{_e(rid)}">{_e(r.get("question") or "—")}</a>'
-                    if rid in RUNS else _e(r.get("question") or "—"))
+                    if clickable else _e(r.get("question") or "—"))
             rows.append(
                 f'<div class="hcard"><div class="hq">{head}</div>'
                 f'<div class="muted">{when} · {_e(r.get("model") or "—")}</div>'
